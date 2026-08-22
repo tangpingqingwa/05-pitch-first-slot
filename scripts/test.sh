@@ -63,4 +63,32 @@ if grep -E '^[[:space:]]*(bash[[:space:]]+)?(\./)?scripts/live-smoke\.sh' script
   fail "scripts/test.sh must not invoke live-smoke.sh"
 fi
 
+if [[ -f package.json ]]; then
+  echo "== install =="
+  if [[ ! -d node_modules ]]; then
+    if [[ -f package-lock.json ]]; then
+      npm ci
+    else
+      npm install
+    fi
+  fi
+
+  echo "== tsc --noEmit =="
+  npx tsc --noEmit
+
+  echo "== unit tests =="
+  # Offline only. Do not set POLAR_LIVE=1. Fixture-only is set once billing exists.
+  unset POLAR_LIVE || true
+  [[ "${POLAR_LIVE:-}" != "1" ]] || fail "POLAR_LIVE must stay unset in test.sh"
+  test_log="$(mktemp)"
+  trap 'rm -f "$test_log"' EXIT
+  set +e
+  node --import tsx --test tests/*.test.ts | tee "$test_log"
+  test_status=${PIPESTATUS[0]}
+  set -e
+  [[ $test_status -eq 0 ]] || fail "unit tests failed"
+  grep -Eq 'tests[[:space:]]+[1-9][0-9]*|#[[:space:]]+pass[[:space:]]+[1-9]' "$test_log" \
+    || fail "test runner reported 0 tests"
+fi
+
 echo "OK: buildable and testable"
