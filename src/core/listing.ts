@@ -119,6 +119,17 @@ function mapRow(row: ListingRow): Listing {
   };
 }
 
+export function getListingById(db: AppDb, id: string): Listing | undefined {
+  const row = db
+    .prepare<[string], ListingRow>(
+      `SELECT id, company, one_liner, url, created_at, contact_email
+       FROM listings
+       WHERE id = ?`,
+    )
+    .get(id);
+  return row ? mapRow(row) : undefined;
+}
+
 export function getListingByUrl(db: AppDb, url: string): Listing | undefined {
   const row = db
     .prepare<[string], ListingRow>(

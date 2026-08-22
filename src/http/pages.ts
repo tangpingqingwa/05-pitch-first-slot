@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { listListings, type Listing } from "../core/listing.js";
+import { rankedBoard, type RankedListing } from "../core/rank.js";
+import { currentWeekId } from "../core/week.js";
 
 function escapeHtml(value: string): string {
   return value
@@ -10,7 +12,7 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-function renderListing(listing: Listing): string {
+function renderUnranked(listing: Listing): string {
   const company = escapeHtml(listing.company);
   const oneLiner = escapeHtml(listing.oneLiner);
   const url = escapeHtml(listing.url);
@@ -22,12 +24,33 @@ function renderListing(listing: Listing): string {
 </li>`;
 }
 
-export function renderBoard(listings: Listing[]): string {
+function renderRanked(listing: RankedListing): string {
+  const company = escapeHtml(listing.company);
+  const oneLiner = escapeHtml(listing.oneLiner);
+  const url = escapeHtml(listing.url);
+  return `<li class="listing" data-rank="${listing.rank}" data-bid="${listing.bid.amountUsd}">
+  <p class="rank">#${listing.rank} · $${listing.bid.amountUsd}</p>
+  <p class="company">${company}</p>
+  <p class="one-liner">${oneLiner}</p>
+  <p><a class="listing-url" href="${url}" rel="noopener noreferrer">${url}</a></p>
+</li>`;
+}
+
+export function renderBoard(
+  listings: Listing[],
+  ranked: RankedListing[] = [],
+): string {
+  const rankedIds = new Set(ranked.map((row) => row.id));
+  const unranked = listings.filter((listing) => !rankedIds.has(listing.id));
+  const items = [
+    ...ranked.map(renderRanked),
+    ...unranked.map(renderUnranked),
+  ];
   const rows =
     listings.length === 0
       ? `<p class="empty-board">The board is empty. No listings this week.</p>`
       : `<ul class="listings">
-${listings.map(renderListing).join("\n")}
+${items.join("\n")}
 </ul>`;
 
   return `<!DOCTYPE html>
@@ -48,7 +71,11 @@ ${listings.map(renderListing).join("\n")}
 
 export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get("/", async (_request, reply) => {
+    const weekId = currentWeekId(app.now());
     const listings = listListings(app.db);
-    return reply.type("text/html; charset=utf-8").send(renderBoard(listings));
+    const ranked = rankedBoard(app.db, weekId);
+    return reply
+      .type("text/html; charset=utf-8")
+      .send(renderBoard(listings, ranked));
   });
 };
