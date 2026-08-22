@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { AppDb } from "../db.js";
+import { canonicalizeUrl, UrlError } from "./url.js";
 
 export type Listing = {
   id: string;
@@ -55,19 +56,14 @@ function requireHttpsUrl(value: unknown): string {
   if (text === undefined || text.length < 1) {
     throw new ListingError("invalid_url", "url must be an https URL");
   }
-  let parsed: URL;
   try {
-    parsed = new URL(text);
-  } catch {
-    throw new ListingError("invalid_url", "url must be an https URL");
+    return canonicalizeUrl(text);
+  } catch (err) {
+    if (err instanceof UrlError) {
+      throw new ListingError(err.code, err.message);
+    }
+    throw err;
   }
-  if (parsed.protocol !== "https:") {
-    throw new ListingError("invalid_url", "url must be an https URL");
-  }
-  if (!parsed.hostname) {
-    throw new ListingError("invalid_url", "url must be an https URL");
-  }
-  return text;
 }
 
 function optionalContactEmail(value: unknown): string | undefined {
