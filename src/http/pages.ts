@@ -13,6 +13,40 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
+function navLink(href: string, label: string, current: string): string {
+  const active = href === current ? ' aria-current="page"' : "";
+  return `<a href="${href}"${active}>${escapeHtml(label)}</a>`;
+}
+
+function renderLayout(input: {
+  title: string;
+  path: string;
+  body: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(input.title)}</title>
+</head>
+<body>
+  <header>
+    <a href="/">Pitch First Slot</a>
+    <nav aria-label="Main">
+      ${navLink("/", "Board", input.path)}
+      ${navLink("/about", "About", input.path)}
+      ${navLink("/rules", "Rules", input.path)}
+    </nav>
+  </header>
+  <main>
+    ${input.body}
+  </main>
+</body>
+</html>
+`;
+}
+
 function clickHref(listingId: string): string {
   return `/listings/${encodeURIComponent(listingId)}/clicks`;
 }
@@ -62,20 +96,48 @@ export function renderBoard(
 ${items.join("\n")}
 </ul>`;
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pitch First Slot</title>
-</head>
-<body>
-  <h1>Pitch First Slot</h1>
+  return renderLayout({
+    title: "Pitch First Slot",
+    path: "/",
+    body: `<h1>Pitch First Slot</h1>
   <p>This week's first three minutes are for sale. The rest of the room is not.</p>
-  ${rows}
-</body>
-</html>
-`;
+  ${rows}`,
+  });
+}
+
+export function renderAbout(): string {
+  return renderLayout({
+    title: "About · Pitch First Slot",
+    path: "/about",
+    body: `<h1>About</h1>
+<p>This week's first three minutes are for sale. The rest of the room is not.</p>
+<p>Pitch First Slot is a public weekly auction for <strong>one</strong> scarce slot in front of angels and scouts: the <strong>opening 3-minute pitch</strong>, or <strong>#1 on that week's deal list</strong>. Rank is the bid. The room watches the price.</p>
+<p>You <strong>cannot buy the show</strong>. You cannot buy the rest of the show, the remaining agenda, remaining pitch slots, a private lock on every pitch, hosting the whole show, pinning #1 for multiple weeks, or hiding other listings.</p>
+<p>The window is one UTC week. Rank is a <strong>weekly reset</strong> at <strong>Monday 00:00 UTC</strong>. Last week's #1 does not carry rank into the new week.</p>
+<p>The board is new. We do not invent companies, bids, clicks, or traction.</p>`,
+  });
+}
+
+export function renderRules(): string {
+  return renderLayout({
+    title: "Rules · Pitch First Slot",
+    path: "/rules",
+    body: `<h1>Rules</h1>
+<p>Clone of outbid.lol economics, with a weekly reset and a single prize: this week's opening slot.</p>
+<ol>
+  <li><strong>Currency.</strong> USD. Integer dollars only. Store cents internally.</li>
+  <li><strong>Minimum.</strong> First paid bid on a listing in a week is <strong>$5</strong>.</li>
+  <li><strong>Rank = bid.</strong> Sort current-week bid descending. #1 is the opening slot.</li>
+  <li><strong>Ties.</strong> Same bid amount: the <strong>older</strong> successful payment wins (earlier paidAt, then earlier listing.createdAt).</li>
+  <li><strong>Raise = difference.</strong> If a listing is at $40 and the founder bids $55, Polar charges <strong>$15</strong>, not $55. The public bid becomes $55.</li>
+  <li><strong>Below #1 is allowed.</strong> A $5 bid still lists, at the rank that amount buys.</li>
+  <li><strong>Same listing, same week.</strong> One current bid per listing. A raise updates that row; it does not create a second row.</li>
+  <li><strong>New week / weekly reset.</strong> All current bids expire at <strong>Monday 00:00 UTC</strong>. The ranked board starts empty. Listings may remain; they are unranked until a new paid bid in the new weekId.</li>
+  <li><strong>No retract.</strong> A paid bid is not refundable because someone else raised.</li>
+</ol>
+<p>You <strong>cannot buy the show</strong>. You cannot buy the rest of the show. There is no product for the remaining pitch slots, hosting the whole show, pinning #1 for multiple weeks, or hiding other listings. A request to buy more than the opening slot is 400 <code>cannot_buy_show</code>.</p>
+<p>A bid becomes current only after a successful payment. Unpaid checkout sessions do not change rank.</p>`,
+  });
 }
 
 export const pageRoutes: FastifyPluginAsync = async (app) => {
@@ -87,5 +149,13 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
     return reply
       .type("text/html; charset=utf-8")
       .send(renderBoard(listings, ranked, clicks));
+  });
+
+  app.get("/about", async (_request, reply) => {
+    return reply.type("text/html; charset=utf-8").send(renderAbout());
+  });
+
+  app.get("/rules", async (_request, reply) => {
+    return reply.type("text/html; charset=utf-8").send(renderRules());
   });
 };
