@@ -85,6 +85,32 @@ if [[ -f package.json ]]; then
     || fail "listings route missing POST /listings"
   grep -q 'app.get("/"' src/http/pages.ts || fail "pages route missing GET /"
 
+  echo "== ranking, raise, weekly window files =="
+  for f in \
+    src/core/rank.ts \
+    src/core/week.ts \
+    src/http/bids.ts \
+    src/migrations/002_bids.sql \
+    tests/rank.test.ts \
+    tests/week.test.ts
+  do
+    [[ -f "$f" ]] || fail "missing $f"
+    [[ -s "$f" ]] || fail "empty $f"
+  done
+  grep -q 'CREATE TABLE bids' src/migrations/002_bids.sql \
+    || fail "002_bids.sql must create bids"
+  grep -q 'function rankKey' src/core/rank.ts || fail "rank.ts must export rankKey"
+  grep -q 'chargeUsd' src/core/rank.ts || fail "rank.ts must compute chargeUsd"
+  grep -q 'weekId' src/core/week.ts || fail "week.ts must compute weekId"
+  grep -q 'WEEK_NOW' src/core/week.ts || fail "week.ts must honor WEEK_NOW"
+  grep -q '/listings/:id/bids' src/http/bids.ts \
+    || fail "bids route missing POST /listings/:id/bids"
+  if grep -Rqi 'polar' src/core/rank.ts src/core/week.ts src/http/bids.ts; then
+    fail "PR 3 must not add Polar checkout"
+  fi
+  grep -q 'Monday' tests/week.test.ts || fail "week tests must cover Monday UTC reset"
+  grep -q 'older paidAt' tests/rank.test.ts || fail "rank tests must cover older-wins-ties"
+
   echo "== install =="
   if [[ ! -d node_modules ]]; then
     if [[ -f package-lock.json ]]; then
@@ -112,6 +138,8 @@ if [[ -f package.json ]]; then
     || fail "test runner reported 0 tests"
   grep -q 'empty week' "$test_log" || fail "listings tests must cover empty week"
   grep -q 'arr' tests/listings.test.ts || fail "listings tests must cover arr/users"
+  grep -q 'first bid $4' "$test_log" || fail "rank tests must cover min bid"
+  grep -q 'Monday 00:00 UTC' "$test_log" || fail "week tests must cover Monday UTC reset"
 fi
 
 echo "OK: buildable and testable"
