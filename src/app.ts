@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { openDatabase, type AppDb } from "./db.js";
 import { nowUtc } from "./core/week.js";
 import { bidRoutes } from "./http/bids.js";
+import { clickRoutes } from "./http/clicks.js";
 import { healthRoutes } from "./http/health.js";
 import { listingRoutes } from "./http/listings.js";
 import { pageRoutes } from "./http/pages.js";
@@ -36,6 +37,7 @@ export async function buildApp(
   await app.register(healthRoutes);
   await app.register(listingRoutes);
   await app.register(bidRoutes);
+  await app.register(clickRoutes);
   await app.register(pageRoutes);
   return app;
 }

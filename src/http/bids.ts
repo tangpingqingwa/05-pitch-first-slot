@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { BidError, placePaidBid } from "../core/rank.js";
+import { ShowError, assertOpeningSlotOnly } from "../core/show.js";
 
 type BidBody = {
   amountUsd?: unknown;
@@ -12,6 +13,7 @@ export const bidRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       try {
         const body = request.body ?? {};
+        assertOpeningSlotOnly(body);
         const nextUsd =
           body.amountUsd !== undefined ? body.amountUsd : body.nextUsd;
         const placed = placePaidBid(
@@ -28,7 +30,7 @@ export const bidRoutes: FastifyPluginAsync = async (app) => {
           paidAt: placed.bid.paidAt,
         };
       } catch (err) {
-        if (err instanceof BidError) {
+        if (err instanceof BidError || err instanceof ShowError) {
           return reply.code(err.statusCode).send({ error: err.code });
         }
         throw err;

@@ -111,6 +111,36 @@ if [[ -f package.json ]]; then
   grep -q 'Monday' tests/week.test.ts || fail "week tests must cover Monday UTC reset"
   grep -q 'older paidAt' tests/rank.test.ts || fail "rank tests must cover older-wins-ties"
 
+  echo "== URL hygiene, public clicks, cannot-buy-the-show files =="
+  for f in \
+    src/core/url.ts \
+    src/core/clicks.ts \
+    src/core/show.ts \
+    src/http/clicks.ts \
+    src/migrations/003_clicks.sql \
+    tests/url.test.ts \
+    tests/clicks.test.ts \
+    tests/show.test.ts
+  do
+    [[ -f "$f" ]] || fail "missing $f"
+    [[ -s "$f" ]] || fail "empty $f"
+  done
+  grep -q 'CREATE TABLE clicks' src/migrations/003_clicks.sql \
+    || fail "003_clicks.sql must create clicks"
+  grep -q 'utm_' src/core/url.ts || fail "url.ts must strip utm_ tracking keys"
+  grep -q 'fbclid' src/core/url.ts || fail "url.ts must strip fbclid"
+  grep -q 'no_chat' src/core/url.ts || fail "url.ts must reject chat hosts"
+  grep -q 'nsfw' src/core/url.ts || fail "url.ts must reject NSFW hosts"
+  grep -q 'function incrementClick' src/core/clicks.ts \
+    || fail "clicks.ts must increment only"
+  grep -q 'cannot_buy_show' src/core/show.ts \
+    || fail "show.ts must refuse cannot_buy_show"
+  grep -q '/listings/:id/clicks' src/http/clicks.ts \
+    || fail "clicks route missing POST /listings/:id/clicks"
+  if grep -Rqi 'polar' src/core/url.ts src/core/clicks.ts src/core/show.ts src/http/clicks.ts; then
+    fail "PR 4 must not add Polar checkout"
+  fi
+
   echo "== install =="
   if [[ ! -d node_modules ]]; then
     if [[ -f package-lock.json ]]; then
@@ -140,6 +170,10 @@ if [[ -f package.json ]]; then
   grep -q 'arr' tests/listings.test.ts || fail "listings tests must cover arr/users"
   grep -q 'first bid $4' "$test_log" || fail "rank tests must cover min bid"
   grep -q 'Monday 00:00 UTC' "$test_log" || fail "week tests must cover Monday UTC reset"
+  grep -q 'utm_source' "$test_log" || fail "url tests must cover tracking strip"
+  grep -q 'no_chat' "$test_log" || fail "url tests must cover chat reject"
+  grep -q '0 → 1' "$test_log" || fail "clicks tests must cover increment"
+  grep -q 'cannot_buy_show' "$test_log" || fail "show tests must cover extra-slot SKU"
 fi
 
 echo "OK: buildable and testable"
