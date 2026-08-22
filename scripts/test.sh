@@ -141,6 +141,38 @@ if [[ -f package.json ]]; then
     fail "PR 4 must not add Polar checkout"
   fi
 
+  echo "== about, rules, Polar fixture files =="
+  for f in \
+    src/http/pages.ts \
+    src/billing/polar.ts \
+    src/billing/polar_fixture.ts \
+    tests/polar-fixture.test.ts
+  do
+    [[ -f "$f" ]] || fail "missing $f"
+    [[ -s "$f" ]] || fail "empty $f"
+  done
+  grep -q 'app.get("/about"' src/http/pages.ts || fail "pages route missing GET /about"
+  grep -q 'app.get("/rules"' src/http/pages.ts || fail "pages route missing GET /rules"
+  grep -q 'cannot buy' src/http/pages.ts || fail "pages must state cannot-buy-the-show"
+  grep -q 'weekly reset' src/http/pages.ts || fail "pages must state weekly reset"
+  grep -q 'Monday 00:00 UTC' src/http/pages.ts || fail "pages must state Monday 00:00 UTC reset"
+  grep -q 'type PolarPort' src/billing/polar.ts || fail "polar.ts must export PolarPort"
+  grep -q 'createCheckout' src/billing/polar.ts || fail "polar.ts must define createCheckout"
+  grep -q 'applyPaid' src/billing/polar.ts || fail "polar.ts must define applyPaid"
+  grep -q 'POLAR_FIXTURE_ONLY' src/billing/polar.ts || fail "polar.ts must honor POLAR_FIXTURE_ONLY"
+  grep -q 'applyPaid' src/billing/polar_fixture.ts || fail "polar_fixture.ts must applyPaid"
+  grep -q 'class PolarFixture' src/billing/polar_fixture.ts || fail "polar_fixture.ts must export PolarFixture"
+  if grep -Rqi 'api.polar.sh\|polar.sh/v1' src/billing/polar.ts src/billing/polar_fixture.ts; then
+    fail "PR 5 fixture must not call live Polar"
+  fi
+  if [[ -f src/billing/polar_live.ts ]]; then
+    fail "PR 5 must not add live Polar"
+  fi
+  grep -q 'Polar fixture' tests/polar-fixture.test.ts \
+    || fail "polar-fixture tests must cover fixture rank update"
+  grep -q '/about' tests/polar-fixture.test.ts || fail "polar-fixture tests must cover GET /about"
+  grep -q '/rules' tests/polar-fixture.test.ts || fail "polar-fixture tests must cover GET /rules"
+
   echo "== install =="
   if [[ ! -d node_modules ]]; then
     if [[ -f package-lock.json ]]; then
@@ -154,8 +186,9 @@ if [[ -f package.json ]]; then
   npx tsc --noEmit
 
   echo "== unit tests =="
-  # Offline only. Do not set POLAR_LIVE=1. Fixture-only is set once billing exists.
-  unset POLAR_LIVE || true
+  # Offline only. Do not set POLAR_LIVE=1. Fixture-only wins once billing exists.
+  unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET || true
+  export POLAR_FIXTURE_ONLY=1
   [[ "${POLAR_LIVE:-}" != "1" ]] || fail "POLAR_LIVE must stay unset in test.sh"
   test_log="$(mktemp)"
   trap 'rm -f "$test_log"' EXIT
@@ -174,6 +207,9 @@ if [[ -f package.json ]]; then
   grep -q 'no_chat' "$test_log" || fail "url tests must cover chat reject"
   grep -q '0 → 1' "$test_log" || fail "clicks tests must cover increment"
   grep -q 'cannot_buy_show' "$test_log" || fail "show tests must cover extra-slot SKU"
+  grep -q 'Polar fixture' "$test_log" || fail "polar-fixture tests must cover fixture rank update"
+  grep -q 'GET /about' "$test_log" || fail "polar-fixture tests must cover GET /about"
+  grep -q 'GET /rules' "$test_log" || fail "polar-fixture tests must cover GET /rules"
 fi
 
 echo "OK: buildable and testable"
