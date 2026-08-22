@@ -165,13 +165,42 @@ if [[ -f package.json ]]; then
   if grep -Rqi 'api.polar.sh\|polar.sh/v1' src/billing/polar.ts src/billing/polar_fixture.ts; then
     fail "PR 5 fixture must not call live Polar"
   fi
-  if [[ -f src/billing/polar_live.ts ]]; then
-    fail "PR 5 must not add live Polar"
-  fi
   grep -q 'Polar fixture' tests/polar-fixture.test.ts \
     || fail "polar-fixture tests must cover fixture rank update"
   grep -q '/about' tests/polar-fixture.test.ts || fail "polar-fixture tests must cover GET /about"
   grep -q '/rules' tests/polar-fixture.test.ts || fail "polar-fixture tests must cover GET /rules"
+
+  echo "== live Polar env-gated files =="
+  for f in \
+    src/billing/polar_live.ts \
+    src/config.ts \
+    src/http/webhook.ts \
+    tests/polar-live-flag.test.ts
+  do
+    [[ -f "$f" ]] || fail "missing $f"
+    [[ -s "$f" ]] || fail "empty $f"
+  done
+  grep -q 'POLAR_LIVE' src/billing/polar_live.ts || fail "polar_live.ts must gate on POLAR_LIVE"
+  grep -q 'class PolarLive' src/billing/polar_live.ts || fail "polar_live.ts must export PolarLive"
+  grep -q 'BLOCKED-SECRET: POLAR_ACCESS_TOKEN' src/billing/polar_live.ts \
+    || fail "polar_live.ts must fail closed without POLAR_ACCESS_TOKEN"
+  grep -q 'BLOCKED-SECRET: POLAR_WEBHOOK_SECRET' src/billing/polar_live.ts \
+    || fail "polar_live.ts must fail closed without POLAR_WEBHOOK_SECRET"
+  grep -q 'POLAR_LIVE' src/config.ts || fail "config.ts must honor POLAR_LIVE"
+  grep -q 'POLAR_FIXTURE_ONLY' src/config.ts || fail "config.ts must honor POLAR_FIXTURE_ONLY"
+  grep -q '/webhooks/polar' src/http/webhook.ts || fail "webhook route missing POST /webhooks/polar"
+  grep -q 'handleWebhook' src/http/webhook.ts || fail "webhook route must apply payment"
+  grep -q 'unset' tests/polar-live-flag.test.ts || fail "live-flag tests must cover unset Polar"
+  grep -q 'POLAR_FIXTURE_ONLY' tests/polar-live-flag.test.ts \
+    || fail "live-flag tests must cover fixture-only wins"
+  grep -q 'BLOCKED-SECRET' tests/polar-live-flag.test.ts \
+    || fail "live-flag tests must cover missing secrets"
+  if grep -Rqi 'api.polar.sh\|https://polar.sh' src/billing/polar.ts src/billing/polar_fixture.ts src/config.ts tests/polar-live-flag.test.ts; then
+    fail "live Polar host must not be hard-coded in fixture/config/tests"
+  fi
+  if grep -E '^[[:space:]]*(export[[:space:]]+)?POLAR_LIVE=1' scripts/test.sh >/dev/null; then
+    fail "scripts/test.sh must not set POLAR_LIVE=1"
+  fi
 
   echo "== install =="
   if [[ ! -d node_modules ]]; then
@@ -210,6 +239,13 @@ if [[ -f package.json ]]; then
   grep -q 'Polar fixture' "$test_log" || fail "polar-fixture tests must cover fixture rank update"
   grep -q 'GET /about' "$test_log" || fail "polar-fixture tests must cover GET /about"
   grep -q 'GET /rules' "$test_log" || fail "polar-fixture tests must cover GET /rules"
+  grep -q 'unset / 0 / fixture-only never hits Polar' "$test_log" \
+    || fail "live-flag tests must cover unset / 0 / fixture-only"
+  grep -q 'POLAR_LIVE unset in test' "$test_log" \
+    || fail "live-flag tests must cover POLAR_LIVE unset"
+  if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
+    fail "unit tests must not call live Polar hosts"
+  fi
 fi
 
 echo "OK: buildable and testable"

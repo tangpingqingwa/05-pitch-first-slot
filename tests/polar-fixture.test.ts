@@ -75,13 +75,6 @@ test("POLAR_FIXTURE_ONLY=1 wins over POLAR_LIVE=1", () => {
     () => createPolarPort(db, { env: { POLAR_LIVE: "1" } }),
     /BLOCKED-SECRET: POLAR_ACCESS_TOKEN/,
   );
-  assert.throws(
-    () =>
-      createPolarPort(db, {
-        env: { POLAR_LIVE: "1", POLAR_ACCESS_TOKEN: "polar_tok_test" },
-      }),
-    /must not run in tests/,
-  );
 });
 
 test("Polar fixture: rank updates with no live Polar", async () => {

@@ -1,16 +1,19 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import { openDatabase, type AppDb } from "./db.js";
+import { createPolarPort, type PolarPort } from "./billing/polar.js";
 import { nowUtc } from "./core/week.js";
+import { openDatabase, type AppDb } from "./db.js";
 import { bidRoutes } from "./http/bids.js";
 import { clickRoutes } from "./http/clicks.js";
 import { healthRoutes } from "./http/health.js";
 import { listingRoutes } from "./http/listings.js";
 import { pageRoutes } from "./http/pages.js";
+import { webhookRoutes } from "./http/webhook.js";
 
 declare module "fastify" {
   interface FastifyInstance {
     db: AppDb;
     now: () => Date;
+    polar: PolarPort;
   }
 }
 
@@ -19,6 +22,7 @@ export type BuildAppOptions = {
   db?: AppDb;
   databasePath?: string;
   now?: () => Date;
+  polar?: PolarPort;
 };
 
 export async function buildApp(
@@ -27,8 +31,10 @@ export async function buildApp(
   const app = Fastify({ logger: options.logger ?? false });
   const ownsDb = options.db === undefined;
   const db = options.db ?? openDatabase(options.databasePath ?? ":memory:");
+  const polar = options.polar ?? createPolarPort(db);
   app.decorate("db", db);
   app.decorate("now", options.now ?? nowUtc);
+  app.decorate("polar", polar);
   if (ownsDb) {
     app.addHook("onClose", async () => {
       db.close();
@@ -39,5 +45,6 @@ export async function buildApp(
   await app.register(bidRoutes);
   await app.register(clickRoutes);
   await app.register(pageRoutes);
+  await app.register(webhookRoutes);
   return app;
 }
