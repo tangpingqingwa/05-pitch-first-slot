@@ -64,6 +64,27 @@ if grep -E '^[[:space:]]*(bash[[:space:]]+)?(\./)?scripts/live-smoke\.sh' script
 fi
 
 if [[ -f package.json ]]; then
+  echo "== listings and board files =="
+  for f in \
+    src/db.ts \
+    src/migrations/001_init.sql \
+    src/core/listing.ts \
+    src/http/listings.ts \
+    src/http/pages.ts \
+    tests/listings.test.ts
+  do
+    [[ -f "$f" ]] || fail "missing $f"
+    [[ -s "$f" ]] || fail "empty $f"
+  done
+  grep -q 'CREATE TABLE listings' src/migrations/001_init.sql \
+    || fail "001_init.sql must create listings"
+  if grep -Eqi 'arr|mrr|traction|users' src/migrations/001_init.sql; then
+    fail "listings schema must not store traction fields"
+  fi
+  grep -q 'app.post("/listings"' src/http/listings.ts \
+    || fail "listings route missing POST /listings"
+  grep -q 'app.get("/"' src/http/pages.ts || fail "pages route missing GET /"
+
   echo "== install =="
   if [[ ! -d node_modules ]]; then
     if [[ -f package-lock.json ]]; then
@@ -89,6 +110,8 @@ if [[ -f package.json ]]; then
   [[ $test_status -eq 0 ]] || fail "unit tests failed"
   grep -Eq 'tests[[:space:]]+[1-9][0-9]*|#[[:space:]]+pass[[:space:]]+[1-9]' "$test_log" \
     || fail "test runner reported 0 tests"
+  grep -q 'empty week' "$test_log" || fail "listings tests must cover empty week"
+  grep -q 'arr' tests/listings.test.ts || fail "listings tests must cover arr/users"
 fi
 
 echo "OK: buildable and testable"
