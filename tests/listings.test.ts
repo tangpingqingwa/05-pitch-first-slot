@@ -22,8 +22,10 @@ test("GET / empty week is 200 with zero listings and no sample companies", async
   assert.equal(response.statusCode, 200);
   assert.match(response.headers["content-type"] ?? "", /text\/html/);
   const html = response.body;
-  assert.match(html, /The board is empty\. No listings this week\./);
   assert.match(html, /The room is empty\./);
+  assert.match(html, /This week's first slot is still open\. Outbid takes it after Polar lands\./);
+  assert.doesNotMatch(html, /The board is empty/);
+  assert.doesNotMatch(html, /No listings this week/);
   assert.match(html, /Opening three minutes/);
   assert.match(html, /Outbid/);
   assert.doesNotMatch(html, /class="listing"/);
@@ -73,6 +75,7 @@ test("POST /listings company + one-liner + https URL appears unranked", async ()
   assert.match(html, /https:\/\/helix\.example\/deck/);
   assert.match(html, /Unranked — no paid bid yet/);
   assert.doesNotMatch(html, /The board is empty/);
+  assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /\$[0-9]/);
   assert.doesNotMatch(html, /#1/);
 });

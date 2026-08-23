@@ -267,6 +267,13 @@ if [[ -f package.json ]]; then
     || fail "board must clone dashed \$amount field"
   grep -q 'The room is empty' src/http/pages.ts \
     || fail "empty week must be an empty room"
+  grep -q "This week's first slot is still open" src/http/pages.ts \
+    || fail "empty room must tell a founder the first slot is still open"
+  grep -q 'Outbid takes it after Polar lands' src/http/pages.ts \
+    || fail "empty room must name Outbid as the move that takes the first slot"
+  if grep -q 'No listings this week' src/http/pages.ts; then
+    fail "empty room must not talk like a scout about listings"
+  fi
   grep -q 'Unranked — no paid bid yet' src/http/pages.ts \
     || fail "unranked listings must stay unranked until paid"
   if grep -Eqi 'hot deal|traction meter' src/http/pages.ts src/views/skin.ts; then
@@ -278,6 +285,8 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover opening three minutes"
   grep -q 'empty room' "$test_log" \
     || fail "pages tests must cover empty room"
+  grep -q 'first slot is still open' "$test_log" \
+    || fail "pages tests must cover founder first-slot empty copy"
   grep -q 'unranked listing stays' "$test_log" \
     || fail "pages tests must cover unranked until paid"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
