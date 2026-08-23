@@ -56,7 +56,13 @@ function clickHref(listingId: string): string {
   return `/listings/${encodeURIComponent(listingId)}/clicks`;
 }
 
-function raiseAfterDeckHop(): string {
+function raiseAfterDeckHop(raiseOne: boolean): string {
+  if (raiseOne) {
+    return `<a class="raise-after-deck raise-one" data-raise-after-deck="true" data-raise-one="true" href="#claim">
+          Then Outbid
+          <span class="raise-after-note">Polar charges only the difference</span>
+        </a>`;
+  }
   return `<a class="raise-after-deck" data-raise-after-deck="true" href="#claim">
           Then Outbid
           <span class="raise-after-note">Polar charges only the difference</span>
@@ -97,7 +103,7 @@ function deckHop(
   }
   if (paid && openOne) {
     const next = raiseAfter
-      ? `\n        ${raiseAfterDeckHop()}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
+      ? `\n        ${raiseAfterDeckHop(true)}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
       : "";
     return `<p class="deck">
         <a class="open-deck open-one" data-open-deck="true" data-open-one="true" href="${href}" rel="noopener noreferrer">
@@ -108,7 +114,7 @@ function deckHop(
   }
   if (paid) {
     const next = raiseAfter
-      ? `\n        ${raiseAfterDeckHop()}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
+      ? `\n        ${raiseAfterDeckHop(false)}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
       : "";
     return `<p class="deck">
         <a class="open-deck" data-open-deck="true" href="${href}" rel="noopener noreferrer">
@@ -149,7 +155,7 @@ function renderCueCard(input: {
   const attrs = later
     ? `${input.attrs} data-later-deck="true"`
     : openOne
-      ? `${input.attrs} data-open-one-first="true"`
+      ? `${input.attrs} data-open-one-first="true" data-raise-one-first="true"`
       : input.attrs;
   const body = later
     ? `<div class="cue later-cue">

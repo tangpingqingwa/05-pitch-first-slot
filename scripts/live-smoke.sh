@@ -450,6 +450,9 @@ else
     && html_has "$board6" 'data-open-later="true"' \
     && html_has "$board6" 'data-open-one-first="true"' \
     && html_has "$board6" 'data-open-one="true"' \
+    && html_has "$board6" 'data-raise-one-first="true"' \
+    && html_has "$board6" 'data-raise-one="true"' \
+    && html_has "$board6" 'Then Outbid' \
     && html_has "$board6" 'Open deck'; then
     record "6-tie-older-wins" "PASS" "both \$20; Alpha paid first stays #1"
   else

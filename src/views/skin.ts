@@ -297,7 +297,25 @@ h1.headline {
   text-align: left;
   min-width: 0;
 }
-.listing[data-open-one-first] .raise-after-deck,
+.listing[data-raise-one-first] .raise-one {
+  display: inline-block;
+  margin-top: 0.45rem;
+  padding-top: 0.2rem;
+  border-top: 0;
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: rgb(138, 75, 18);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.14em;
+}
+.listing[data-raise-one-first] .raise-one .raise-after-note {
+  margin-top: 0.2rem;
+  color: var(--ink-soft);
+}
 .listing[data-open-one-first] .open-after-raise,
 .listing[data-open-one-first] .raise-after-open {
   font-size: 1rem;
