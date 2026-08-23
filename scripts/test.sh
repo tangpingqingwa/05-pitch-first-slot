@@ -384,7 +384,7 @@ if [[ -f package.json ]]; then
     || fail "#1 cue must stamp data-open-one-first when later decks exist"
   grep -q 'data-open-one="true"' src/http/pages.ts \
     || fail "#1 Open deck must stamp data-open-one when later decks exist"
-  grep -q 'class="open-deck open-one"' src/http/pages.ts \
+  grep -q 'class="open-deck open-one open-after-raise-one"' src/http/pages.ts \
     || fail "#1 Open deck must use the concentrated hop class"
   grep -q 'data-open-one-first' src/views/skin.ts \
     || fail "#1 Open deck must be styled ahead of \$bid when later decks exist"
@@ -416,6 +416,27 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover concentrated Then Outbid after Open deck"
   grep -q 'Then Outbid is concentrated after Open deck' "$test_log" \
     || fail "pages tests must cover concentrated Then Outbid after Open deck"
+  grep -q 'data-open-after-raise-one-first="true"' src/http/pages.ts \
+    || fail "#1 cue must stamp data-open-after-raise-one-first when later decks exist"
+  grep -q 'data-open-after-raise-one="true"' src/http/pages.ts \
+    || fail "#1 Open deck must stamp data-open-after-raise-one after Then Outbid is concentrated"
+  grep -q 'class="open-deck open-one open-after-raise-one"' src/http/pages.ts \
+    || fail "#1 Open deck must use the after-raise concentrate class"
+  grep -q 'data-open-after-raise-one-first' src/views/skin.ts \
+    || fail "#1 Open deck must be styled after concentrated Then Outbid"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'open-after-raise-one|open-after-raise-one-first'; then
+    fail "unpaid cue must not stamp Open deck after Then Outbid"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 8 src/http/pages.ts | grep -q 'open-after-raise-one'; then
+    fail "Then Outbid hop must stay a raise hop, not Open deck"
+  fi
+  if grep -n 'function openAfterRaiseHop' -A 8 src/http/pages.ts | grep -q 'open-after-raise-one'; then
+    fail "later Open deck after Then Outbid must stay the later hop, not the first Open deck"
+  fi
+  grep -q 'occupied #1 Open deck is concentrated after Then Outbid when later decks exist' tests/pages.test.ts \
+    || fail "pages tests must cover concentrated Open deck after Then Outbid"
+  grep -q 'Open deck is concentrated after Then Outbid' "$test_log" \
+    || fail "pages tests must cover concentrated Open deck after Then Outbid"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
