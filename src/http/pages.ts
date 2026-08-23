@@ -56,30 +56,53 @@ function clickHref(listingId: string): string {
   return `/listings/${encodeURIComponent(listingId)}/clicks`;
 }
 
-function renderUnranked(listing: Listing, clicks: number): string {
-  const company = escapeHtml(listing.company);
-  const oneLiner = escapeHtml(listing.oneLiner);
-  const url = escapeHtml(listing.url);
-  return `<li class="listing" data-unranked="true" data-clicks="${clicks}">
-  <p class="company">${company}</p>
-  <p class="one-liner">${oneLiner}</p>
-  <p><a class="listing-url" href="${clickHref(listing.id)}" rel="noopener noreferrer">${url}</a></p>
-  <p class="clicks">${clicks} clicks</p>
-  <p class="rank">Unranked — no paid bid yet</p>
+function renderCueCard(input: {
+  listing: Listing;
+  clicks: number;
+  rankHtml: string;
+  attrs: string;
+  extraClass?: string;
+}): string {
+  const company = escapeHtml(input.listing.company);
+  const oneLiner = escapeHtml(input.listing.oneLiner);
+  const url = escapeHtml(input.listing.url);
+  const klass = input.extraClass ? `listing ${input.extraClass}` : "listing";
+  return `<li class="${klass}"${input.attrs} data-clicks="${input.clicks}">
+  <div class="cue">
+    <div class="who">
+      <p class="company">${company}</p>
+      <p class="one-liner">${oneLiner}</p>
+      <p class="deck">
+        <span class="cue-label">Deck or site</span>
+        <a class="listing-url" href="${clickHref(input.listing.id)}" rel="noopener noreferrer">${url}</a>
+      </p>
+    </div>
+    <div class="seat">
+      <span class="cue-label">Bid</span>
+      <p class="rank">${input.rankHtml}</p>
+      <p class="clicks">${input.clicks} clicks</p>
+    </div>
+  </div>
 </li>`;
 }
 
+function renderUnranked(listing: Listing, clicks: number): string {
+  return renderCueCard({
+    listing,
+    clicks,
+    rankHtml: "Unranked — no paid bid yet",
+    attrs: ' data-unranked="true"',
+  });
+}
+
 function renderRanked(listing: RankedListing, clicks: number): string {
-  const company = escapeHtml(listing.company);
-  const oneLiner = escapeHtml(listing.oneLiner);
-  const url = escapeHtml(listing.url);
-  return `<li class="listing${listing.rank === 1 ? " top" : ""}" data-rank="${listing.rank}" data-bid="${listing.bid.amountUsd}" data-clicks="${clicks}">
-  <p class="rank">#${listing.rank} · $${listing.bid.amountUsd}</p>
-  <p class="company">${company}</p>
-  <p class="one-liner">${oneLiner}</p>
-  <p><a class="listing-url" href="${clickHref(listing.id)}" rel="noopener noreferrer">${url}</a></p>
-  <p class="clicks">${clicks} clicks</p>
-</li>`;
+  return renderCueCard({
+    listing,
+    clicks,
+    rankHtml: `#${listing.rank} · $${listing.bid.amountUsd}`,
+    attrs: ` data-rank="${listing.rank}" data-bid="${listing.bid.amountUsd}"`,
+    extraClass: listing.rank === 1 ? "top" : undefined,
+  });
 }
 
 function claimChrome(defaultBidUsd: number, emptyRoom: boolean): string {

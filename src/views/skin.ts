@@ -171,8 +171,6 @@ h1.headline {
   gap: 0.7rem;
 }
 .listing {
-  display: grid;
-  gap: 0.2rem;
   padding: 1rem 1.05rem 0.9rem;
   background: var(--card);
   color: var(--ink);
@@ -183,21 +181,59 @@ h1.headline {
   outline: 2px solid var(--spot);
   outline-offset: 2px;
 }
+.cue {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 1.1rem;
+  align-items: start;
+}
+.who { min-width: 0; display: grid; gap: 0.15rem; }
+.seat {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+  gap: 0.15rem;
+  min-width: 7.2rem;
+}
+.cue-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
 .company {
   margin: 0;
   font-family: var(--serif);
   font-size: 1.45rem;
   line-height: 1.15;
 }
-.one-liner { margin: 0.15rem 0 0; color: var(--ink-soft); }
+.one-liner { margin: 0; color: var(--ink-soft); }
+.deck { margin: 0.25rem 0 0; }
 .listing-url {
   color: rgb(138, 75, 18);
   font-weight: 600;
   word-break: break-all;
 }
 .listing-url:hover { text-decoration: underline; }
-.clicks, .rank { margin: 0.35rem 0 0; color: var(--ink-soft); font-size: 0.82rem; }
-.listing.top .rank { color: rgb(138, 75, 18); font-weight: 700; }
+.seat .rank {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  color: var(--ink);
+  max-width: 10rem;
+}
+.listing[data-unranked] .seat .rank {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  max-width: 8.5rem;
+}
+.seat .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
+.listing.top .seat .rank { color: rgb(138, 75, 18); font-weight: 700; }
 .program {
   background: var(--card);
   color: var(--ink);
