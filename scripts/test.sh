@@ -300,6 +300,19 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover unranked until paid"
   grep -q 'occupied raise cue' "$test_log" \
     || fail "pages tests must cover occupied raise cue"
+  grep -q 'data-open-deck="true"' src/http/pages.ts \
+    || fail "paid cue must name Open deck with data-open-deck"
+  grep -q 'class="open-deck"' src/http/pages.ts \
+    || fail "paid cue hop must be the Open deck action"
+  grep -q 'Open deck' src/http/pages.ts \
+    || fail "paid cue hop must say Open deck"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'open-deck|Open deck'; then
+    fail "unpaid cue must not use the Open deck hop"
+  fi
+  grep -q 'occupied paid cue names Open deck' tests/pages.test.ts \
+    || fail "pages tests must cover occupied Open deck hop"
+  grep -q 'Open deck' "$test_log" \
+    || fail "pages tests must cover Open deck hop"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
