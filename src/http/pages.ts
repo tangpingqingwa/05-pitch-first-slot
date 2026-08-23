@@ -105,13 +105,25 @@ function renderRanked(listing: RankedListing, clicks: number): string {
   });
 }
 
-function claimChrome(defaultBidUsd: number, emptyRoom: boolean): string {
-  const note = emptyRoom
-    ? `<p class="claim-note" data-empty-room>
+function claimChrome(
+  defaultBidUsd: number,
+  emptyRoom: boolean,
+  topUsd?: number,
+): string {
+  let note: string;
+  if (emptyRoom) {
+    note = `<p class="claim-note" data-empty-room>
   <span class="room">The room is empty.</span>
   This week's first slot is still open. Outbid takes it after Polar lands.
-</p>`
-    : `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>`;
+</p>`;
+  } else if (topUsd !== undefined) {
+    note = `<p class="claim-note" data-occupied-raise>
+  <span class="room">#1 is $${topUsd}.</span>
+  The $ you type is the public bid. New deck: Polar charges that full amount. Same deck already ranked: Polar charges only the difference.
+</p>`;
+  } else {
+    note = `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>`;
+  }
   return `<section id="claim">
   <div class="stage-head">
     <h1 class="headline">Opening three minutes</h1>
@@ -177,7 +189,7 @@ ${items.join("\n")}
   return renderLayout({
     title: "Opening three minutes",
     path: "/",
-    body: `${claimChrome(defaultBid, emptyRoom)}
+    body: `${claimChrome(defaultBid, emptyRoom, topUsd)}
   ${rows}`,
   });
 }

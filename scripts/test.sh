@@ -276,6 +276,15 @@ if [[ -f package.json ]]; then
   fi
   grep -q 'Unranked — no paid bid yet' src/http/pages.ts \
     || fail "unranked listings must stay unranked until paid"
+  grep -q 'data-occupied-raise' src/http/pages.ts \
+    || fail "occupied board must expose a raise cue"
+  grep -q 'Polar charges only the difference' src/http/pages.ts \
+    || fail "occupied raise cue must say Polar charges only the difference"
+  grep -q 'The $ you type is the public bid' src/http/pages.ts \
+    || fail "occupied raise cue must say the typed \$ is the public bid"
+  if grep -Eqi 'claim this rank' src/http/pages.ts src/views/skin.ts; then
+    fail "occupied raise cue must not hide behind claim-this-rank copy"
+  fi
   if grep -Eqi 'hot deal|traction meter' src/http/pages.ts src/views/skin.ts; then
     fail "product UI must not sell traction meters or hot-deal chips"
   fi
@@ -289,6 +298,8 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover founder first-slot empty copy"
   grep -q 'unranked listing stays' "$test_log" \
     || fail "pages tests must cover unranked until paid"
+  grep -q 'occupied raise cue' "$test_log" \
+    || fail "pages tests must cover occupied raise cue"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
