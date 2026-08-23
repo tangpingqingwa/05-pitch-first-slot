@@ -82,7 +82,13 @@ function renderRanked(listing: RankedListing, clicks: number): string {
 </li>`;
 }
 
-function claimChrome(defaultBidUsd: number): string {
+function claimChrome(defaultBidUsd: number, emptyRoom: boolean): string {
+  const note = emptyRoom
+    ? `<p class="claim-note" data-empty-room>
+  <span class="room">The room is empty.</span>
+  The board is empty. No listings this week.
+</p>`
+    : `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>`;
   return `<section id="claim">
   <div class="stage-head">
     <h1 class="headline">Opening three minutes</h1>
@@ -95,7 +101,7 @@ function claimChrome(defaultBidUsd: number): string {
     </label>
     <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
   </div>
-  <p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>
+  ${note}
   <form id="bid-form" class="bid-form" method="post" action="/listings">
     <div class="bid-row">
       <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
@@ -138,20 +144,17 @@ export function renderBoard(
   ];
   const topUsd = ranked[0]?.bid.amountUsd;
   const defaultBid = topUsd === undefined ? MIN_BID_USD : topUsd + 1;
-  const rows =
-    listings.length === 0
-      ? `<div class="empty-board" data-empty-room>
-  <p class="room">The room is empty.</p>
-  <p>The board is empty. No listings this week.</p>
-</div>`
-      : `<ul class="listings">
+  const emptyRoom = listings.length === 0;
+  const rows = emptyRoom
+    ? ""
+    : `<ul class="listings">
 ${items.join("\n")}
 </ul>`;
 
   return renderLayout({
     title: "Opening three minutes",
     path: "/",
-    body: `${claimChrome(defaultBid)}
+    body: `${claimChrome(defaultBid, emptyRoom)}
   ${rows}`,
   });
 }
