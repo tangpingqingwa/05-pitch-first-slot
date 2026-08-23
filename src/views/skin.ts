@@ -243,6 +243,32 @@ h1.headline {
   text-decoration: none;
   word-break: break-all;
 }
+.listing[data-later-deck] .later-cue {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+.listing[data-later-deck] .deck {
+  margin: 0.2rem 0 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.listing[data-later-deck] .open-later {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.listing[data-later-deck] .seat {
+  justify-items: start;
+  text-align: left;
+  min-width: 0;
+}
+.listing[data-later-deck] .seat .rank {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
 .raise-after-deck {
   display: block;
   margin: 0.65rem 0 0;

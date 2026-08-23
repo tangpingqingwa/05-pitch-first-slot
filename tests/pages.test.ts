@@ -92,6 +92,8 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(boardMarkup(html), /after Then Outbid/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open/);
   assert.doesNotMatch(boardMarkup(html), /after Open deck/);
+  assert.doesNotMatch(boardMarkup(html), /data-later-deck/);
+  assert.doesNotMatch(boardMarkup(html), /data-open-later/);
   assertNoFalsePositiveRank(html);
   for (const name of SAMPLE_COMPANIES) {
     assert.doesNotMatch(html, new RegExp(name, "i"));
@@ -127,10 +129,13 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(unpaid, /after Then Outbid/);
   assert.doesNotMatch(unpaid, /data-raise-after-open/);
   assert.doesNotMatch(unpaid, /after Open deck/);
+  assert.doesNotMatch(unpaid, /data-later-deck/);
+  assert.doesNotMatch(unpaid, /data-open-later/);
   assert.doesNotMatch(boardMarkup(html), /data-open-deck/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-deck/);
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open/);
+  assert.doesNotMatch(boardMarkup(html), /data-later-deck/);
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /data-empty-room/);
@@ -266,11 +271,11 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   );
   assert.match(
     html,
-    /class="cue"[\s\S]*class="who"[\s\S]*Helix Labs[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#2 · \$5/,
+    /class="cue later-cue"[\s\S]*class="who"[\s\S]*Helix Labs[\s\S]*data-open-later="true"[\s\S]*Open deck[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#2 · \$5/,
   );
   assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 2);
   assert.equal((listingCard(html, "Stage Co").match(/class="open-deck"/g) ?? []).length, 1);
-  assert.equal((listingCard(html, "Helix Labs").match(/class="open-deck"/g) ?? []).length, 1);
+  assert.equal((listingCard(html, "Helix Labs").match(/class="open-deck open-later"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-deck="true"/g) ?? []).length, 1);
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-deck="true"/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-raise-after-deck/);
@@ -280,6 +285,8 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.equal((html.match(/data-raise-after-open="true"/g) ?? []).length, 1);
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-open="true"/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-raise-after-open/);
+  assert.doesNotMatch(listingCard(html, "Stage Co"), /data-later-deck/);
+  assert.match(listingCard(html, "Helix Labs"), /data-later-deck="true"/);
   assert.doesNotMatch(html, /data-empty-room/);
   assert.doesNotMatch(html, /The room is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
@@ -344,6 +351,10 @@ test("occupied paid cue names Open deck as the only outbound hop", async () => {
   assert.doesNotMatch(unpaid, /after Then Outbid/);
   assert.doesNotMatch(unpaid, /data-raise-after-open/);
   assert.doesNotMatch(unpaid, /after Open deck/);
+  assert.doesNotMatch(paid, /data-later-deck/);
+  assert.doesNotMatch(paid, /data-open-later/);
+  assert.doesNotMatch(unpaid, /data-later-deck/);
+  assert.doesNotMatch(unpaid, /data-open-later/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
   assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 1);
@@ -415,6 +426,8 @@ test("occupied #1 cue hops Then Outbid after Open deck", async () => {
   );
   assert.match(below, /data-rank="2"/);
   assert.match(below, /data-open-deck="true"/);
+  assert.match(below, /data-later-deck="true"/);
+  assert.match(below, /data-open-later="true"/);
   assert.doesNotMatch(below, /data-raise-after-deck/);
   assert.doesNotMatch(below, /Then Outbid/);
   assert.doesNotMatch(below, /href="#claim"/);
@@ -422,6 +435,8 @@ test("occupied #1 cue hops Then Outbid after Open deck", async () => {
   assert.doesNotMatch(below, /after Then Outbid/);
   assert.doesNotMatch(below, /data-raise-after-open/);
   assert.doesNotMatch(below, /after Open deck/);
+  assert.doesNotMatch(paid, /data-later-deck/);
+  assert.doesNotMatch(paid, /data-open-later/);
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /The \$ you type is the public bid/);
   assert.doesNotMatch(html, /typical raise/i);
@@ -490,12 +505,16 @@ test("occupied #1 cue hops Open deck after Then Outbid", async () => {
   );
   assert.match(below, /data-rank="2"/);
   assert.match(below, /data-open-deck="true"/);
+  assert.match(below, /data-later-deck="true"/);
+  assert.match(below, /data-open-later="true"/);
   assert.doesNotMatch(below, /data-raise-after-deck/);
   assert.doesNotMatch(below, /Then Outbid/);
   assert.doesNotMatch(below, /data-open-after-raise/);
   assert.doesNotMatch(below, /after Then Outbid/);
   assert.doesNotMatch(below, /data-raise-after-open/);
   assert.doesNotMatch(below, /after Open deck/);
+  assert.doesNotMatch(paid, /data-later-deck/);
+  assert.doesNotMatch(paid, /data-open-later/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /claim this rank/i);
   assert.doesNotMatch(html, /hot deal/i);
@@ -578,15 +597,149 @@ test("occupied #1 cue hops Then Outbid after the after-raise Open deck", async (
   );
   assert.match(below, /data-rank="2"/);
   assert.match(below, /data-open-deck="true"/);
+  assert.match(below, /data-later-deck="true"/);
+  assert.match(below, /data-open-later="true"/);
   assert.doesNotMatch(below, /data-raise-after-deck/);
   assert.doesNotMatch(below, /Then Outbid/);
   assert.doesNotMatch(below, /data-open-after-raise/);
   assert.doesNotMatch(below, /after Then Outbid/);
   assert.doesNotMatch(below, /data-raise-after-open/);
   assert.doesNotMatch(below, /after Open deck/);
+  assert.doesNotMatch(paid, /data-later-deck/);
+  assert.doesNotMatch(paid, /data-open-later/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /claim this rank/i);
   assert.doesNotMatch(html, /hot deal/i);
+});
+
+test("occupied later ranks stamp Open deck as the certain hop, not a second #1 take", async () => {
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+
+  const challenger = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${challenger.id}/bids`,
+    payload: { amountUsd: 8 },
+  });
+  assert.equal(second.statusCode, 200);
+
+  const rival = await createListing(app, {
+    company: "Rival Pitch",
+    oneLiner: "Lists below at five",
+    url: "https://rival.example/deck",
+  });
+  const third = await app.inject({
+    method: "POST",
+    url: `/listings/${rival.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(third.statusCode, 200);
+  await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const paid = listingCard(html, "Stage Co");
+  const later = listingCard(html, "Helix Labs");
+  const last = listingCard(html, "Rival Pitch");
+  const unpaid = listingCard(html, "Cue Only");
+
+  assert.match(later, /data-rank="2"/);
+  assert.match(later, /data-later-deck="true"/);
+  assert.match(later, /data-open-later="true"/);
+  assert.match(later, /class="open-deck open-later"/);
+  assert.match(later, /data-open-deck="true"/);
+  assert.match(later, /Open deck/);
+  assert.match(
+    later,
+    new RegExp(
+      `href="/listings/${challenger.id}/clicks"[\\s\\S]*Open deck[\\s\\S]*https://helix\\.example/deck`,
+    ),
+  );
+  const laterStamp = later.indexOf('data-later-deck="true"');
+  const laterWho = later.indexOf('class="who"');
+  const laterHop = later.indexOf('data-open-later="true"');
+  const laterOpen = later.indexOf("Open deck");
+  const laterSeat = later.indexOf('class="seat"');
+  const laterBid = later.indexOf("#2 · $8");
+  assert.ok(laterStamp > -1 && laterWho > laterStamp && laterHop > laterWho);
+  assert.ok(laterOpen > laterHop && laterSeat > laterOpen && laterBid > laterSeat);
+  assert.match(later, /#2 · \$8/);
+  assert.doesNotMatch(later, /data-raise-after-deck/);
+  assert.doesNotMatch(later, /Then Outbid/);
+  assert.doesNotMatch(later, /href="#claim"/);
+  assert.doesNotMatch(later, /class="listing top"/);
+  assert.doesNotMatch(later, /data-rank="1"/);
+
+  assert.match(last, /data-rank="3"/);
+  assert.match(last, /data-later-deck="true"/);
+  assert.match(last, /data-open-later="true"/);
+  assert.match(last, /Open deck/);
+  assert.doesNotMatch(last, /data-raise-after-deck/);
+  assert.doesNotMatch(last, /Then Outbid/);
+
+  assert.match(paid, /data-rank="1"/);
+  assert.match(paid, /data-open-deck="true"/);
+  assert.match(paid, /data-raise-after-deck="true"/);
+  assert.match(paid, /Then Outbid/);
+  assert.match(paid, /data-open-after-raise="true"/);
+  assert.match(paid, /data-raise-after-open="true"/);
+  assert.doesNotMatch(paid, /data-later-deck/);
+  assert.doesNotMatch(paid, /data-open-later/);
+  assert.doesNotMatch(paid, /open-later/);
+  const whoAt = paid.indexOf('class="who"');
+  const seatAt = paid.indexOf('class="seat"');
+  const hopAt = paid.indexOf('data-open-deck="true"');
+  assert.ok(whoAt > -1 && seatAt > whoAt && hopAt > seatAt);
+
+  assert.doesNotMatch(unpaid, /data-later-deck/);
+  assert.doesNotMatch(unpaid, /data-open-later/);
+  assert.doesNotMatch(unpaid, /Open deck/);
+  assert.match(unpaid, /Deck or site/);
+  assert.match(unpaid, /Unranked — no paid bid yet/);
+
+  assert.equal((html.match(/data-later-deck="true"/g) ?? []).length, 2);
+  assert.equal((html.match(/data-open-later="true"/g) ?? []).length, 2);
+  assert.equal((html.match(/data-raise-after-deck="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/>\s*Then Outbid\s*</g) ?? []).length, 2);
+  assert.doesNotMatch(later, /data-open-after-raise/);
+  assert.doesNotMatch(later, /data-raise-after-open/);
+  assert.doesNotMatch(last, /data-open-after-raise/);
+  assert.doesNotMatch(last, /data-raise-after-open/);
+  assert.doesNotMatch(html, /typical raise/i);
+  assert.doesNotMatch(html, /hot deal/i);
+  assert.doesNotMatch(html, /claim this rank/i);
+
+  const opened = await app.inject({
+    method: "GET",
+    url: `/listings/${challenger.id}/clicks`,
+  });
+  assert.equal(opened.statusCode, 302);
+  assert.equal(opened.headers.location, "https://helix.example/deck");
+  const boardAfter = (await app.inject({ method: "GET", url: "/" })).body;
+  assert.match(listingCard(boardAfter, "Helix Labs"), /data-clicks="1"/);
+  assert.match(listingCard(boardAfter, "Helix Labs"), /1 clicks/);
+  assert.match(listingCard(boardAfter, "Stage Co"), /data-clicks="0"/);
 });
 
 test("GET /checkout/complete returns to the room", async () => {
