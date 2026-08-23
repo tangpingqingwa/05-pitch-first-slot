@@ -24,6 +24,7 @@ export type FixtureCheckoutRecord = {
 export type PolarFixtureOptions = {
   /** Default true: createCheckout immediately applyPaid. Tests may turn this off. */
   autoSettle?: boolean;
+  now?: () => Date;
 };
 
 export function fixtureCheckoutUrl(checkoutId: string): string {
@@ -47,12 +48,14 @@ export class PolarFixture implements PolarPort {
   readonly kind = "fixture" as const;
   private readonly sessions = new Map<string, FixtureCheckoutRecord>();
   private readonly autoSettle: boolean;
+  private readonly now: () => Date;
 
   constructor(
     private readonly db: AppDb,
     options: PolarFixtureOptions = {},
   ) {
     this.autoSettle = options.autoSettle ?? true;
+    this.now = options.now ?? (() => new Date());
   }
 
   async createCheckout(input: CreateCheckoutInput): Promise<CheckoutStart> {
@@ -81,7 +84,7 @@ export class PolarFixture implements PolarPort {
     });
 
     if (this.autoSettle) {
-      await this.applyPaid(checkoutId, new Date().toISOString());
+      await this.applyPaid(checkoutId, this.now().toISOString());
     }
 
     return { checkoutId, url };

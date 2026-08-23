@@ -46,6 +46,8 @@ BASE="${LIVE_SMOKE_BASE:-}"
 OP_POLAR_LIVE="${POLAR_LIVE:-}"
 OP_POLAR_ACCESS_TOKEN="${POLAR_ACCESS_TOKEN:-}"
 OP_POLAR_WEBHOOK_SECRET="${POLAR_WEBHOOK_SECRET:-}"
+OP_POLAR_PRODUCT_ID="${POLAR_PRODUCT_ID:-}"
+OP_POLAR_API_BASE="${POLAR_API_BASE:-}"
 
 cleanup() {
   if [[ -n "${LIVE_PID}" ]] && kill -0 "${LIVE_PID}" 2>/dev/null; then
@@ -276,6 +278,11 @@ fi
 
 echo "base=${BASE}"
 echo "operator POLAR_LIVE=${OP_POLAR_LIVE:-<unset>}"
+if [[ -n "${OP_POLAR_API_BASE}" ]]; then
+  echo "operator POLAR_API_BASE_set=1"
+else
+  echo "operator POLAR_API_BASE=<unset>"
+fi
 
 # --- healthz (process is up) ---
 health_body="${WORKDIR}/healthz.json"
@@ -643,12 +650,19 @@ fi
 
 # --- Live Polar checkout (not a SPEC numbered row; env-gated) ---
 echo "== polar live-checkout =="
+is_sandbox_checkout_url() {
+  local value="$1"
+  [[ "$value" == https://sandbox.polar.sh/* ]]
+}
+
 if [[ "${OP_POLAR_LIVE}" == "1" ]]; then
   missing=""
   if [[ -z "${OP_POLAR_ACCESS_TOKEN}" ]]; then
     missing="POLAR_ACCESS_TOKEN"
   elif [[ -z "${OP_POLAR_WEBHOOK_SECRET}" ]]; then
     missing="POLAR_WEBHOOK_SECRET"
+  elif [[ -z "${OP_POLAR_PRODUCT_ID}" ]]; then
+    missing="POLAR_PRODUCT_ID"
   fi
   if [[ -n "$missing" ]]; then
     echo "BLOCKED-SECRET: ${missing}"
@@ -664,6 +678,10 @@ if [[ "${OP_POLAR_LIVE}" == "1" ]]; then
       export POLAR_LIVE=1
       export POLAR_ACCESS_TOKEN="${OP_POLAR_ACCESS_TOKEN}"
       export POLAR_WEBHOOK_SECRET="${OP_POLAR_WEBHOOK_SECRET}"
+      export POLAR_PRODUCT_ID="${OP_POLAR_PRODUCT_ID}"
+      if [[ -n "${OP_POLAR_API_BASE}" ]]; then
+        export POLAR_API_BASE="${OP_POLAR_API_BASE}"
+      fi
       export PORT="${live_port}"
       export DATABASE_PATH="${live_db}"
       export PUBLIC_BASE_URL="${live_base}"
@@ -677,6 +695,9 @@ if [[ "${OP_POLAR_LIVE}" == "1" ]]; then
       elif grep -q 'BLOCKED-SECRET: POLAR_WEBHOOK_SECRET' "${live_log}"; then
         echo "BLOCKED-SECRET: POLAR_WEBHOOK_SECRET"
         record "live-checkout" "BLOCKED-SECRET" "POLAR_WEBHOOK_SECRET"
+      elif grep -q 'BLOCKED-SECRET: POLAR_PRODUCT_ID' "${live_log}"; then
+        echo "BLOCKED-SECRET: POLAR_PRODUCT_ID"
+        record "live-checkout" "BLOCKED-SECRET" "POLAR_PRODUCT_ID"
       else
         record "live-checkout" "FAIL" "live Polar process did not become healthy"
       fi
@@ -691,21 +712,30 @@ if [[ "${OP_POLAR_LIVE}" == "1" ]]; then
       live_bid_hdrs="${WORKDIR}/live-bid.hdrs"
       live_bid_code="000"
       live_bid_url=""
+      live_bid_loc=""
+      live_bid_err=""
       if [[ -n "$live_id" ]]; then
         live_bid_code="$(http_post_json "$live_base" "/listings/${live_id}/bids" \
           '{"amountUsd":5}' "$live_bid" "$live_bid_hdrs" || true)"
         live_bid_url="$(json_field "$live_bid" "url" || true)"
+        live_bid_loc="$(header_value "$live_bid_hdrs" "location" || true)"
+        live_bid_err="$(json_field "$live_bid" "error" || true)"
       fi
       live_board="${WORKDIR}/live-board.html"
       http_get "$live_base" "/" "$live_board" >/dev/null || true
-      if [[ "$live_bid_code" =~ ^30[12378]$ ]] && [[ "$live_bid_url" == https://*polar.sh* || "$(header_value "$live_bid_hdrs" "location" || true)" == https://*polar.sh* ]]; then
-        if html_has "$live_board" '#1 · \$5'; then
+      if [[ "$live_bid_url" == /checkout/complete* ]] || grep -Eiq 'fix_' "$live_bid" 2>/dev/null; then
+        record "live-checkout" "FAIL" "live Polar returned a fixture listing, not sandbox.polar.sh"
+      elif { [[ "$live_bid_code" == "200" ]] || [[ "$live_bid_code" =~ ^30[12378]$ ]]; } \
+        && { is_sandbox_checkout_url "$live_bid_url" || is_sandbox_checkout_url "$live_bid_loc"; }; then
+        if html_has "$live_board" '#1 · \$5' || html_has "$live_board" 'data-bid="5"'; then
           record "live-checkout" "FAIL" "unpaid live Polar session appeared as ranked"
         else
-          record "live-checkout" "PASS" "live checkout returned Polar URL; unpaid session not ranked"
+          record "live-checkout" "PASS" "live Polar sandbox Checkout URL; unpaid session not ranked"
         fi
+      elif [[ "$live_bid_code" == "503" && "$live_bid_err" == "polar_unavailable" ]]; then
+        record "live-checkout" "PASS-ERROR" "POLAR_LIVE=1 secrets present; Polar sandbox checkout failed closed"
       elif [[ "$live_list_code" == "200" ]]; then
-        record "live-checkout" "PASS-ERROR" "POLAR_LIVE=1 secrets present; HTTP bid did not start Polar checkout (HTTP ${live_bid_code})"
+        record "live-checkout" "FAIL" "live bid HTTP ${live_bid_code} did not return sandbox.polar.sh"
       else
         record "live-checkout" "FAIL" "live listing HTTP ${live_list_code} bid HTTP ${live_bid_code}"
       fi
@@ -723,6 +753,9 @@ else
   elif [[ -z "${OP_POLAR_WEBHOOK_SECRET}" ]]; then
     echo "BLOCKED-SECRET: POLAR_WEBHOOK_SECRET"
     record "live-checkout" "BLOCKED-SECRET" "POLAR_WEBHOOK_SECRET"
+  elif [[ -z "${OP_POLAR_PRODUCT_ID}" ]]; then
+    echo "BLOCKED-SECRET: POLAR_PRODUCT_ID"
+    record "live-checkout" "BLOCKED-SECRET" "POLAR_PRODUCT_ID"
   else
     record "live-checkout" "PASS-ERROR" "POLAR_LIVE unset; secrets present but live Polar not invoked"
   fi

@@ -4,6 +4,7 @@ import {
   polarApiBase,
   polarFixtureOnly,
   polarLiveEnabled,
+  polarProductId,
   polarWebhookSecret,
   publicBaseUrl,
   type PolarEnv,
@@ -89,17 +90,7 @@ export class PolarLive implements PolarPort {
           "content-type": "application/json",
           accept: "application/json",
         },
-        body: JSON.stringify({
-          amount: quote.chargeUsd * 100,
-          currency: "usd",
-          success_url: `${publicBaseUrl(this.env)}/`,
-          metadata: {
-            listingId: input.listingId,
-            weekId: input.weekId,
-            chargeUsd: String(quote.chargeUsd),
-            nextUsd: String(quote.nextUsd),
-          },
-        }),
+        body: JSON.stringify(liveCheckoutBody(this.env, quote, input)),
       });
     } catch {
       throw new PolarError("polar_unavailable", "polar checkout failed closed", 503);
@@ -245,6 +236,30 @@ function safeEqual(left: string, right: string): boolean {
   const a = Buffer.from(left);
   const b = Buffer.from(right);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function liveCheckoutBody(
+  env: PolarEnv,
+  quote: { chargeUsd: number; nextUsd: number },
+  input: CreateCheckoutInput,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    amount: quote.chargeUsd * 100,
+    currency: "usd",
+    success_url: `${publicBaseUrl(env)}/`,
+    metadata: {
+      listingId: input.listingId,
+      weekId: input.weekId,
+      chargeUsd: String(quote.chargeUsd),
+      nextUsd: String(quote.nextUsd),
+    },
+  };
+  const productId = polarProductId(env);
+  if (productId) {
+    body.product_id = productId;
+    body.products = [productId];
+  }
+  return body;
 }
 
 function parseLiveWebhookJson(rawBody: string): unknown {

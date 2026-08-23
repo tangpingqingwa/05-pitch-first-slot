@@ -16,15 +16,17 @@ The script:
 2. Starts `node --import tsx src/server.ts` on a free loopback port with a temp SQLite file, Polar env unset, `POLAR_FIXTURE_ONLY=1`.
 3. Or attaches to `LIVE_SMOKE_BASE` if that server already answers `GET /healthz`.
 4. Walks every SPEC §12 row against the running process.
-5. Live Polar: if `POLAR_LIVE` is not `1` or `POLAR_ACCESS_TOKEN` / `POLAR_WEBHOOK_SECRET` is empty, prints `BLOCKED-SECRET: <env>` for the live-checkout row.
+5. Live Polar: if `POLAR_LIVE` is not `1` or `POLAR_ACCESS_TOKEN` / `POLAR_WEBHOOK_SECRET` / `POLAR_PRODUCT_ID` is empty, prints `BLOCKED-SECRET: <env>` for the live-checkout row. A live PASS requires a real `https://sandbox.polar.sh/…` Checkout URL. A fixture `/checkout/complete` listing is FAIL.
 6. Kills the process it started and deletes the temp database.
 
 Overrides: `LIVE_SMOKE_BASE`, `LIVE_SMOKE_PORT`.
 
-Live Polar (operator machine with real secrets):
+Live Polar sandbox (operator machine with sandbox secrets; production `api.polar.sh` is 401 for this token):
 
 ```bash
-POLAR_LIVE=1 POLAR_ACCESS_TOKEN=… POLAR_WEBHOOK_SECRET=… bash scripts/live-smoke.sh
+set -a && . /Users/yann/.polar/sandbox.env && set +a
+unset POLAR_FIXTURE_ONLY
+POLAR_LIVE=1 POLAR_API_BASE=https://sandbox-api.polar.sh bash scripts/live-smoke.sh
 ```
 
 ## Verdicts
@@ -38,9 +40,7 @@ POLAR_LIVE=1 POLAR_ACCESS_TOKEN=… POLAR_WEBHOOK_SECRET=… bash scripts/live-s
 
 ## This session
 
-Ran `bash scripts/live-smoke.sh` on **2026-08-22** from `feat/live-smoke` (parent `63f5f12`, Polar live on `origin/main`). Local process started by the script on `http://127.0.0.1:52157`. Temp SQLite. `POLAR_LIVE` unset. `POLAR_ACCESS_TOKEN` unset. `POLAR_WEBHOOK_SECRET` unset. Fixture path. No invented companies: empty board first, then unique `*.example` URLs for this run.
-
-Also refused `CI=true` (`FAIL: live-smoke refuses CI=true`) and `GITHUB_ACTIONS=true`.
+Ran `bash scripts/test.sh` then `bash scripts/live-smoke.sh` on **2026-08-23** from `feat/live-polar-sandbox-smoke` (parent `origin/main` `25dd28e`). Offline `scripts/test.sh` green (`tsc --noEmit`, 45 unit tests). Operator sourced `/Users/yann/.polar/sandbox.env` (mode 600; token/webhook/product present by length only; values not logged). `POLAR_LIVE=1`. `POLAR_FIXTURE_ONLY` unset. `POLAR_API_BASE=https://sandbox-api.polar.sh`. Fixture walk on `http://127.0.0.1:57909` (script-started local process, temp SQLite). Live Polar walk on a second live-flagged local process. No invented companies: empty board first, then unique `*.example` URLs for this run.
 
 | # | Case | Result | Note |
 |---|---|---|---|
@@ -56,11 +56,11 @@ Also refused `CI=true` (`FAIL: live-smoke refuses CI=true`) and `GITHUB_ACTIONS=
 | 10 | Field `arr` or `users` on create | **PASS** | Ignored. Never rendered. |
 | 11 | Checkout “all remaining slots” | **PASS-ERROR** | 400 `cannot_buy_show`. |
 | 12 | Monday 00:00 UTC | **PASS** | Previous bids unranked. Listing remains; board has no current-week rank until a new pay. |
-| 13 | Polar fixture | **PASS** | Rank updates with `POLAR_LIVE` unset. No Polar network. |
+| 13 | Polar fixture | **PASS** | Rank updates on the fixture process. No Polar network. |
 | 14 | `GET /about` and `GET /rules` | **PASS** | 200. Cannot-buy-the-show + weekly reset. |
-| — | Live Polar checkout | **BLOCKED-SECRET** | `BLOCKED-SECRET: POLAR_ACCESS_TOKEN` |
+| — | Live Polar checkout | **PASS** | Live-flagged process returned a real Polar sandbox Checkout URL (`sandbox.polar.sh`). Unpaid session not ranked. Not a fixture listing. |
 
-Process exit 0 (`PASS=11` `PASS-ERROR=3` `BLOCKED-SECRET=1` `FAIL=0`). Re-run with `POLAR_LIVE=1` and real Polar secrets to complete hosted checkout; missing token must stay `BLOCKED-SECRET`, never a fixture listing.
+Process exit 0 (`PASS=12` `PASS-ERROR=3` `BLOCKED-SECRET=0` `FAIL=0`). Missing secret still records `BLOCKED-SECRET` and must never invent a paid row. `scripts/test.sh` and Actions stay offline and must not set `POLAR_LIVE`.
 
 ## What this does not do
 
@@ -68,3 +68,4 @@ Process exit 0 (`PASS=11` `PASS-ERROR=3` `BLOCKED-SECRET=1` `FAIL=0`). Re-run wi
 - Does not set `POLAR_LIVE=1` in CI.
 - Does not seed fake companies, bids, or click counts on an empty week.
 - Does not treat a missing Polar secret as a paid listing.
+- Does not accept a fixture `/checkout/complete` URL as live Polar checkout.

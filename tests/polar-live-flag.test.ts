@@ -7,7 +7,9 @@ import { PolarFixture } from "../src/billing/polar_fixture.js";
 import { PolarLive } from "../src/billing/polar_live.js";
 import {
   polarAccessToken,
+  polarApiBase,
   polarFixtureOnly,
+  polarProductId,
   polarWebhookSecret,
 } from "../src/config.js";
 import { getBid, rankedBoard } from "../src/core/rank.js";
@@ -59,6 +61,13 @@ test("unset / 0 / fixture-only never hits Polar", () => {
   assert.equal(polarFixtureOnly({ POLAR_FIXTURE_ONLY: "1" }), true);
   assert.equal(polarAccessToken({ POLAR_ACCESS_TOKEN: "  " }), undefined);
   assert.equal(polarWebhookSecret({}), undefined);
+  assert.equal(polarProductId({}), undefined);
+  assert.equal(polarProductId({ POLAR_PRODUCT_ID: " prod_test " }), "prod_test");
+  assert.match(polarApiBase({}), /^https:\/\/[a-z.]+$/);
+  assert.equal(
+    polarApiBase({ POLAR_API_BASE: "https://polar-api.test/" }),
+    "https://polar-api.test",
+  );
 
   const db = openDatabase(":memory:");
   after(() => db.close());
@@ -102,6 +111,47 @@ test("POLAR_LIVE unset in test — no live Polar host", () => {
   const polar = createPolarPort(db);
   assert.equal(polar.kind, "fixture");
   assert.ok(polar instanceof PolarFixture);
+});
+
+test("PolarLive createCheckout uses POLAR_API_BASE override", async () => {
+  const db = openDatabase(":memory:");
+  after(() => db.close());
+  const app = await buildApp({ db, now: () => NOW });
+  after(() => app.close());
+  const listing = await createListing(app, {
+    company: "Sandbox Override",
+    oneLiner: "API base must be overridable",
+    url: "https://sandbox-override.example",
+  });
+
+  const seen: string[] = [];
+  const live = new PolarLive(db, {
+    env: {
+      ...LIVE_ENV,
+      POLAR_API_BASE: "https://polar-api.test",
+      POLAR_PRODUCT_ID: "prod_test",
+    },
+    fetch: (async (input) => {
+      seen.push(String(input));
+      return new Response(
+        JSON.stringify({
+          id: "chk_sandbox_override",
+          url: "https://polar-checkout.test/c/chk_sandbox_override",
+        }),
+        { status: 201, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch,
+  });
+  const started = await live.createCheckout({
+    listingId: listing.id,
+    weekId: WEEK,
+    chargeUsd: 5,
+    nextUsd: 5,
+  });
+  assert.deepEqual(seen, ["https://polar-api.test/v1/checkouts/"]);
+  assert.equal(started.checkoutId, "chk_sandbox_override");
+  assert.equal(started.url, "https://polar-checkout.test/c/chk_sandbox_override");
+  assert.equal(getBid(db, listing.id, WEEK), undefined);
 });
 
 test("PolarLive constructor does not fetch Polar", () => {
