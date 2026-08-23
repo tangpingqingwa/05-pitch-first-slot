@@ -59,10 +59,13 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room"
   assert.equal(response.statusCode, 200);
   const html = response.body;
   assertPitchNightChrome(html);
+  assert.match(html, /id="claim"/);
+  assert.match(html, /class="claim-note" data-empty-room/);
   assert.match(html, /The room is empty\./);
-  assert.match(html, /data-empty-room/);
   assert.match(html, /The board is empty\. No listings this week\./);
+  assert.doesNotMatch(html, /class="empty-board"/);
   assert.doesNotMatch(html, /class="listing"/);
+  assert.doesNotMatch(html, /<ul class="listings">/);
   assertNoFalsePositiveRank(html);
   for (const name of SAMPLE_COMPANIES) {
     assert.doesNotMatch(html, new RegExp(name, "i"));
@@ -87,6 +90,7 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.match(html, /Unranked — no paid bid yet/);
   assert.match(html, /data-unranked="true"/);
   assert.doesNotMatch(html, /The board is empty/);
+  assert.doesNotMatch(html, /data-empty-room/);
   assert.doesNotMatch(html, /data-rank="/);
   assertNoFalsePositiveRank(html);
 });

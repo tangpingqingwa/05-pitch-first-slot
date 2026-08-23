@@ -128,6 +128,13 @@ h1.headline {
   color: rgb(203, 183, 154);
   font-size: 0.95rem;
 }
+.claim-note .room {
+  display: block;
+  margin: 0 0 0.15rem;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--cream);
+}
 .bid-form { margin-top: 1.25rem; display: grid; gap: 0.55rem; }
 .bid-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .field { flex: 1; min-width: 11rem; }
@@ -156,22 +163,6 @@ h1.headline {
   color: rgb(143, 122, 98);
   font-size: 0.75rem;
 }
-.empty-board {
-  margin: 2.2rem auto 0;
-  max-width: 22rem;
-  padding: 2.2rem 1rem 1.8rem;
-  text-align: center;
-  color: rgb(203, 183, 154);
-  border: 1px dashed rgb(232 177 90 / 0.35);
-  border-radius: 999px 999px 1.2rem 1.2rem;
-}
-.empty-board .room {
-  margin: 0 0 0.35rem;
-  font-family: var(--serif);
-  font-size: 1.45rem;
-  color: var(--cream);
-}
-.empty-board p { margin: 0; }
 .listings {
   list-style: none;
   margin: 1.8rem 0 0;
