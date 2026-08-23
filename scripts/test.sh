@@ -326,6 +326,22 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover raise after Open deck"
   grep -q 'Then Outbid' "$test_log" \
     || fail "pages tests must cover Then Outbid after Open deck"
+  grep -q 'data-open-after-raise="true"' src/http/pages.ts \
+    || fail "occupied #1 cue must hop Open deck after Then Outbid"
+  grep -q 'after Then Outbid' src/http/pages.ts \
+    || fail "open-after-raise hop must sit after Then Outbid"
+  grep -q 'class="open-after-raise"' src/http/pages.ts \
+    || fail "open-after-raise hop must use the later Open deck class"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'open-after-raise|after Then Outbid'; then
+    fail "unpaid cue must not hop Open deck after Then Outbid"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 8 src/http/pages.ts | grep -q 'open-after-raise'; then
+    fail "Then Outbid hop must stay a raise hop, not Open deck"
+  fi
+  grep -q 'occupied #1 cue hops Open deck after Then Outbid' tests/pages.test.ts \
+    || fail "pages tests must cover Open deck after Then Outbid"
+  grep -q 'Open deck after Then Outbid' "$test_log" \
+    || fail "pages tests must cover Open deck after Then Outbid"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
