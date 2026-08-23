@@ -109,7 +109,7 @@ function claimChrome(defaultBidUsd: number, emptyRoom: boolean): string {
   const note = emptyRoom
     ? `<p class="claim-note" data-empty-room>
   <span class="room">The room is empty.</span>
-  The board is empty. No listings this week.
+  This week's first slot is still open. Outbid takes it after Polar lands.
 </p>`
     : `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>`;
   return `<section id="claim">

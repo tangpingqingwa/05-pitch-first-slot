@@ -297,7 +297,9 @@ fi
 board0="${WORKDIR}/board0.html"
 board0_code="$(http_get "$BASE" "/" "$board0" || true)"
 if [[ "$board0_code" == "200" ]] \
-  && html_has "$board0" 'The board is empty\. No listings this week\.' \
+  && html_has "$board0" 'The room is empty\.' \
+  && html_has "$board0" "This week's first slot is still open. Outbid takes it after Polar lands." \
+  && ! html_has "$board0" 'No listings this week' \
   && ! html_has "$board0" 'class="listing"' \
   && ! html_has "$board0" '\$[0-9]' \
   && ! sample_company_leak "$board0"; then
@@ -323,6 +325,7 @@ if [[ "$list2_code" == "200" && -n "$list2_id" ]] \
   && html_has "$board2" 'Benchtop instruments for small labs' \
   && html_has "$board2" 'Unranked — no paid bid yet' \
   && ! html_has "$board2" 'The board is empty' \
+  && ! html_has "$board2" 'first slot is still open' \
   && ! html_has "$board2" '#1 · \$'; then
   record "2-listing-unranked" "PASS" "POST /listings 200; Helix Labs unranked until paid"
 else

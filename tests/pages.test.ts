@@ -51,7 +51,7 @@ async function createListing(
   return created.json() as { id: string };
 }
 
-test("GET / opening three minutes is a pitch-night stage with honest empty room", async () => {
+test("GET / opening three minutes is a pitch-night stage with honest empty room — first slot is still open", async () => {
   const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
   after(() => app.close());
 
@@ -62,7 +62,9 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room"
   assert.match(html, /id="claim"/);
   assert.match(html, /class="claim-note" data-empty-room/);
   assert.match(html, /The room is empty\./);
-  assert.match(html, /The board is empty\. No listings this week\./);
+  assert.match(html, /This week's first slot is still open\. Outbid takes it after Polar lands\./);
+  assert.doesNotMatch(html, /The board is empty/);
+  assert.doesNotMatch(html, /No listings this week/);
   assert.doesNotMatch(html, /class="empty-board"/);
   assert.doesNotMatch(html, /class="listing"/);
   assert.doesNotMatch(html, /<ul class="listings">/);
@@ -92,6 +94,7 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.match(html, /class="who"[\s\S]*Helix Labs[\s\S]*Benchtop instruments for small labs[\s\S]*Deck or site[\s\S]*https:\/\/helix\.example\/deck/);
   assert.match(html, /class="seat"[\s\S]*Bid[\s\S]*Unranked — no paid bid yet/);
   assert.doesNotMatch(html, /The board is empty/);
+  assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /data-empty-room/);
   assert.doesNotMatch(html, /data-rank="/);
   assertNoFalsePositiveRank(html);
@@ -129,6 +132,7 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   );
   assert.doesNotMatch(board.body, /Unranked — no paid bid yet/);
   assert.doesNotMatch(board.body, /The room is empty/);
+  assert.doesNotMatch(board.body, /first slot is still open/);
 });
 
 test("same deck URL on the form raises the existing row by the difference", async () => {
