@@ -269,6 +269,40 @@ h1.headline {
   font-weight: 400;
   color: var(--ink-soft);
 }
+.listing[data-open-one-first] .open-one-cue {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+}
+.listing[data-open-one-first] .open-one-cue .deck {
+  margin: 0.15rem 0 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.listing[data-open-one-first] .open-one {
+  display: inline-block;
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.14em;
+}
+.listing[data-open-one-first] .open-one .deck-url {
+  margin-top: 0.25rem;
+}
+.listing[data-open-one-first] .seat {
+  justify-items: start;
+  text-align: left;
+  min-width: 0;
+}
+.listing[data-open-one-first] .raise-after-deck,
+.listing[data-open-one-first] .open-after-raise,
+.listing[data-open-one-first] .raise-after-open {
+  font-size: 1rem;
+  color: var(--ink-soft);
+}
 .raise-after-deck {
   display: block;
   margin: 0.65rem 0 0;

@@ -378,6 +378,26 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover later-rank Open deck hop"
   grep -q 'later ranks stamp Open deck' "$test_log" \
     || fail "pages tests must cover later-rank Open deck hop"
+  grep -q 'class="cue open-one-cue"' src/http/pages.ts \
+    || fail "#1 cue must scan Open deck before \$bid when later decks exist"
+  grep -q 'data-open-one-first="true"' src/http/pages.ts \
+    || fail "#1 cue must stamp data-open-one-first when later decks exist"
+  grep -q 'data-open-one="true"' src/http/pages.ts \
+    || fail "#1 Open deck must stamp data-open-one when later decks exist"
+  grep -q 'class="open-deck open-one"' src/http/pages.ts \
+    || fail "#1 Open deck must use the concentrated hop class"
+  grep -q 'data-open-one-first' src/views/skin.ts \
+    || fail "#1 Open deck must be styled ahead of \$bid when later decks exist"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'open-one|open-one-first'; then
+    fail "unpaid cue must not stamp a #1 Open deck hop"
+  fi
+  if grep -n 'later: listing.rank > 1' -A 2 src/http/pages.ts | grep -q 'openOne: listing.rank > 1'; then
+    fail "#1 Open deck hop must not reuse the later-rank cue"
+  fi
+  grep -q 'occupied #1 Open deck is the first hop after later decks exist' tests/pages.test.ts \
+    || fail "pages tests must cover concentrated #1 Open deck"
+  grep -q 'Open deck is the first hop after later decks exist' "$test_log" \
+    || fail "pages tests must cover concentrated #1 Open deck"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
