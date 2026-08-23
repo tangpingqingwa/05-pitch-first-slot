@@ -313,6 +313,19 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover occupied Open deck hop"
   grep -q 'Open deck' "$test_log" \
     || fail "pages tests must cover Open deck hop"
+  grep -q 'data-raise-after-deck="true"' src/http/pages.ts \
+    || fail "occupied #1 cue must hop to Outbid after Open deck"
+  grep -q 'Then Outbid' src/http/pages.ts \
+    || fail "raise-after-deck hop must say Then Outbid"
+  grep -q 'href="#claim"' src/http/pages.ts \
+    || fail "raise-after-deck hop must return to #claim"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'raise-after-deck|Then Outbid|#claim'; then
+    fail "unpaid cue must not hop to Outbid after a deck"
+  fi
+  grep -q 'occupied #1 cue hops Then Outbid after Open deck' tests/pages.test.ts \
+    || fail "pages tests must cover raise after Open deck"
+  grep -q 'Then Outbid' "$test_log" \
+    || fail "pages tests must cover Then Outbid after Open deck"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
