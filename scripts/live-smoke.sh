@@ -369,6 +369,8 @@ else
     && [[ "$board4_code" == "200" ]] \
     && html_has "$board4" '#1 · \$5' \
     && html_has "$board4" 'Helix Labs' \
+    && html_has "$board4" 'data-occupied-raise' \
+    && html_has "$board4" 'Polar charges only the difference' \
     && ! html_has "$board4" 'Unranked — no paid bid yet'; then
     record "4-first-bid-5" "PASS" "fixture charged \$5; public rank #1 · \$5"
   else

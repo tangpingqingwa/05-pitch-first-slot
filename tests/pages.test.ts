@@ -68,6 +68,8 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(html, /class="empty-board"/);
   assert.doesNotMatch(html, /class="listing"/);
   assert.doesNotMatch(html, /<ul class="listings">/);
+  assert.doesNotMatch(html, /data-occupied-raise/);
+  assert.doesNotMatch(html, /Polar charges only the difference/);
   assertNoFalsePositiveRank(html);
   for (const name of SAMPLE_COMPANIES) {
     assert.doesNotMatch(html, new RegExp(name, "i"));
@@ -96,6 +98,8 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /data-empty-room/);
+  assert.doesNotMatch(html, /data-occupied-raise/);
+  assert.doesNotMatch(html, /Polar charges only the difference/);
   assert.doesNotMatch(html, /data-rank="/);
   assertNoFalsePositiveRank(html);
 });
@@ -133,6 +137,9 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.doesNotMatch(board.body, /Unranked — no paid bid yet/);
   assert.doesNotMatch(board.body, /The room is empty/);
   assert.doesNotMatch(board.body, /first slot is still open/);
+  assert.match(board.body, /class="claim-note" data-occupied-raise/);
+  assert.match(board.body, /#1 is \$5\./);
+  assert.match(board.body, /Polar charges only the difference/);
 });
 
 test("same deck URL on the form raises the existing row by the difference", async () => {
@@ -172,6 +179,65 @@ test("same deck URL on the form raises the existing row by the difference", asyn
   assert.match(html, /#1 · \$12/);
   assert.doesNotMatch(html, /#2/);
   assert.equal((html.match(/Stage Co/g) ?? []).length, 1);
+  assert.match(html, /#1 is \$12\./);
+  assert.match(html, /Polar charges only the difference/);
+});
+
+test("occupied raise cue tells a founder who is not #1 what Polar charges", async () => {
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+
+  const challenger = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${challenger.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(second.statusCode, 200);
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  assert.match(html, /class="claim-note" data-occupied-raise/);
+  assert.match(html, /#1 is \$20\./);
+  assert.match(html, /The \$ you type is the public bid/);
+  assert.match(html, /New deck: Polar charges that full amount/);
+  assert.match(
+    html,
+    /Same deck already ranked: Polar charges only the difference/,
+  );
+  assert.match(html, /value="21"/);
+  assert.match(html, /#1 · \$20/);
+  assert.match(html, /#2 · \$5/);
+  assert.match(
+    html,
+    /class="cue"[\s\S]*class="who"[\s\S]*Stage Co[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#1 · \$20/,
+  );
+  assert.match(
+    html,
+    /class="cue"[\s\S]*class="who"[\s\S]*Helix Labs[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#2 · \$5/,
+  );
+  assert.doesNotMatch(html, /data-empty-room/);
+  assert.doesNotMatch(html, /The room is empty/);
+  assert.doesNotMatch(html, /first slot is still open/);
+  assert.doesNotMatch(html, /claim this rank/i);
+  assert.doesNotMatch(html, /typical raise/i);
+  assert.doesNotMatch(html, /hot deal/i);
 });
 
 test("GET /checkout/complete returns to the room", async () => {
