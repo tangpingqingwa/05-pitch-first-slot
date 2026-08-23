@@ -243,6 +243,26 @@ h1.headline {
   text-decoration: none;
   word-break: break-all;
 }
+.raise-after-deck {
+  display: block;
+  margin: 0.65rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px dashed rgb(26 18 12 / 0.12);
+  color: rgb(138, 75, 18);
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.raise-after-deck:hover { text-decoration: underline; }
+.raise-after-note {
+  display: block;
+  margin: 0.15rem 0 0;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
 .seat .rank {
   margin: 0;
   font-family: var(--serif);

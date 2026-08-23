@@ -56,15 +56,23 @@ function clickHref(listingId: string): string {
   return `/listings/${encodeURIComponent(listingId)}/clicks`;
 }
 
-function deckHop(listing: Listing, paid: boolean): string {
+function raiseAfterDeckHop(): string {
+  return `<a class="raise-after-deck" data-raise-after-deck="true" href="#claim">
+          Then Outbid
+          <span class="raise-after-note">Polar charges only the difference</span>
+        </a>`;
+}
+
+function deckHop(listing: Listing, paid: boolean, raiseAfter: boolean): string {
   const url = escapeHtml(listing.url);
   const href = clickHref(listing.id);
   if (paid) {
+    const next = raiseAfter ? `\n        ${raiseAfterDeckHop()}` : "";
     return `<p class="deck">
         <a class="open-deck" data-open-deck="true" href="${href}" rel="noopener noreferrer">
           Open deck
           <span class="deck-url">${url}</span>
-        </a>
+        </a>${next}
       </p>`;
   }
   return `<p class="deck">
@@ -80,11 +88,12 @@ function renderCueCard(input: {
   attrs: string;
   extraClass?: string;
   paid: boolean;
+  raiseAfter?: boolean;
 }): string {
   const company = escapeHtml(input.listing.company);
   const oneLiner = escapeHtml(input.listing.oneLiner);
   const klass = input.extraClass ? `listing ${input.extraClass}` : "listing";
-  const hop = deckHop(input.listing, input.paid);
+  const hop = deckHop(input.listing, input.paid, input.raiseAfter === true);
   const body = input.paid
     ? `<div class="cue">
     <div class="who">
@@ -133,6 +142,7 @@ function renderRanked(listing: RankedListing, clicks: number): string {
     attrs: ` data-rank="${listing.rank}" data-bid="${listing.bid.amountUsd}"`,
     extraClass: listing.rank === 1 ? "top" : undefined,
     paid: true,
+    raiseAfter: listing.rank === 1,
   });
 }
 
