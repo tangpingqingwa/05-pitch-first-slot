@@ -89,6 +89,8 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.match(html, /https:\/\/helix\.example\/deck/);
   assert.match(html, /Unranked — no paid bid yet/);
   assert.match(html, /data-unranked="true"/);
+  assert.match(html, /class="who"[\s\S]*Helix Labs[\s\S]*Benchtop instruments for small labs[\s\S]*Deck or site[\s\S]*https:\/\/helix\.example\/deck/);
+  assert.match(html, /class="seat"[\s\S]*Bid[\s\S]*Unranked — no paid bid yet/);
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /data-empty-room/);
   assert.doesNotMatch(html, /data-rank="/);
@@ -121,6 +123,10 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.match(board.body, /Stage Co/);
   assert.match(board.body, /Opens the room/);
   assert.match(board.body, /https:\/\/stage\.example\/deck/);
+  assert.match(
+    board.body,
+    /class="cue"[\s\S]*class="who"[\s\S]*Stage Co[\s\S]*Opens the room[\s\S]*Deck or site[\s\S]*https:\/\/stage\.example\/deck[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#1 · \$5/,
+  );
   assert.doesNotMatch(board.body, /Unranked — no paid bid yet/);
   assert.doesNotMatch(board.body, /The room is empty/);
 });
