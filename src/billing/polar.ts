@@ -48,6 +48,7 @@ export type CreatePolarPortOptions = {
   env?: PolarEnv;
   autoSettle?: boolean;
   fetch?: typeof fetch;
+  now?: () => Date;
 };
 
 /** Fixture unless `POLAR_LIVE=1`. `POLAR_FIXTURE_ONLY=1` always wins. Missing secrets fail closed. */
@@ -62,5 +63,8 @@ export function createPolarPort(
     }
     return new PolarLive(db, { env, fetch: options.fetch });
   }
-  return new PolarFixture(db, { autoSettle: options.autoSettle });
+  return new PolarFixture(db, {
+    autoSettle: options.autoSettle,
+    now: options.now,
+  });
 }

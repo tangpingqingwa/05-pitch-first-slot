@@ -105,8 +105,13 @@ if [[ -f package.json ]]; then
   grep -q 'WEEK_NOW' src/core/week.ts || fail "week.ts must honor WEEK_NOW"
   grep -q '/listings/:id/bids' src/http/bids.ts \
     || fail "bids route missing POST /listings/:id/bids"
-  if grep -Rqi 'polar' src/core/rank.ts src/core/week.ts src/http/bids.ts; then
-    fail "PR 3 must not add Polar checkout"
+  grep -q 'createCheckout' src/http/bids.ts \
+    || fail "bids route must start Polar checkout"
+  if grep -Rqi 'polar_live' src/http/bids.ts; then
+    fail "HTTP bids must not import the live Polar client"
+  fi
+  if grep -Rqi 'polar' src/core/rank.ts src/core/week.ts; then
+    fail "core rank/week must not import Polar"
   fi
   grep -q 'Monday' tests/week.test.ts || fail "week tests must cover Monday UTC reset"
   grep -q 'older paidAt' tests/rank.test.ts || fail "rank tests must cover older-wins-ties"
@@ -167,6 +172,8 @@ if [[ -f package.json ]]; then
   fi
   grep -q 'Polar fixture' tests/polar-fixture.test.ts \
     || fail "polar-fixture tests must cover fixture rank update"
+  grep -q 'POST /listings/:id/bids starts Polar fixture' tests/polar-fixture.test.ts \
+    || fail "polar-fixture tests must cover HTTP bid Polar checkout"
   grep -q '/about' tests/polar-fixture.test.ts || fail "polar-fixture tests must cover GET /about"
   grep -q '/rules' tests/polar-fixture.test.ts || fail "polar-fixture tests must cover GET /rules"
 
@@ -188,6 +195,7 @@ if [[ -f package.json ]]; then
     || fail "polar_live.ts must fail closed without POLAR_WEBHOOK_SECRET"
   grep -q 'POLAR_LIVE' src/config.ts || fail "config.ts must honor POLAR_LIVE"
   grep -q 'POLAR_FIXTURE_ONLY' src/config.ts || fail "config.ts must honor POLAR_FIXTURE_ONLY"
+  grep -q 'POLAR_API_BASE' src/config.ts || fail "config.ts must honor POLAR_API_BASE"
   grep -q '/webhooks/polar' src/http/webhook.ts || fail "webhook route missing POST /webhooks/polar"
   grep -q 'handleWebhook' src/http/webhook.ts || fail "webhook route must apply payment"
   grep -q 'unset' tests/polar-live-flag.test.ts || fail "live-flag tests must cover unset Polar"

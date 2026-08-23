@@ -163,6 +163,41 @@ test("Polar fixture raise $5 → $12 charges $7 then rank updates", async () => 
   assert.doesNotMatch(board.body, /#2/);
 });
 
+test("POST /listings/:id/bids starts Polar fixture checkout then ranks", async () => {
+  const app = await buildApp({
+    databasePath: ":memory:",
+    now: () => NOW,
+  });
+  after(() => app.close());
+
+  const listing = await createListing(app, {
+    company: "Bid Route",
+    oneLiner: "HTTP bid starts Polar fixture",
+    url: "https://bid-route.example",
+  });
+  const bidRes = await app.inject({
+    method: "POST",
+    url: `/listings/${listing.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(bidRes.statusCode, 200);
+  const body = bidRes.json() as {
+    amountUsd: number;
+    chargeUsd: number;
+    checkoutId: string;
+    url: string;
+  };
+  assert.equal(body.amountUsd, 5);
+  assert.equal(body.chargeUsd, 5);
+  assert.match(body.checkoutId, /^fix_/);
+  assert.doesNotMatch(body.url, /polar\.sh/i);
+  assert.equal(getBid(app.db, listing.id, WEEK)?.amountUsd, 5);
+  assert.match(
+    (await app.inject({ method: "GET", url: "/" })).body,
+    /#1 · \$5/,
+  );
+});
+
 test("unpaid Polar fixture checkout does not change rank", async () => {
   const app = await buildApp({
     databasePath: ":memory:",

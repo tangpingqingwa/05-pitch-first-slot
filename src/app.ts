@@ -31,9 +31,10 @@ export async function buildApp(
   const app = Fastify({ logger: options.logger ?? false });
   const ownsDb = options.db === undefined;
   const db = options.db ?? openDatabase(options.databasePath ?? ":memory:");
-  const polar = options.polar ?? createPolarPort(db);
+  const now = options.now ?? nowUtc;
+  const polar = options.polar ?? createPolarPort(db, { now });
   app.decorate("db", db);
-  app.decorate("now", options.now ?? nowUtc);
+  app.decorate("now", now);
   app.decorate("polar", polar);
   if (ownsDb) {
     app.addHook("onClose", async () => {

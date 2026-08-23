@@ -1,6 +1,14 @@
 import type { FastifyPluginAsync } from "fastify";
-import { BidError, placePaidBid } from "../core/rank.js";
+import { PolarError } from "../billing/polar.js";
+import { getListingById } from "../core/listing.js";
+import {
+  BidError,
+  getBid,
+  parseBidUsd,
+  quoteBid,
+} from "../core/rank.js";
 import { ShowError, assertOpeningSlotOnly } from "../core/show.js";
+import { currentWeekId } from "../core/week.js";
 
 type BidBody = {
   amountUsd?: unknown;
@@ -14,24 +22,52 @@ export const bidRoutes: FastifyPluginAsync = async (app) => {
       try {
         const body = request.body ?? {};
         assertOpeningSlotOnly(body);
-        const nextUsd =
-          body.amountUsd !== undefined ? body.amountUsd : body.nextUsd;
-        const placed = placePaidBid(
-          app.db,
-          request.params.id,
-          nextUsd,
-          app.now(),
+        const listing = getListingById(app.db, request.params.id);
+        if (listing === undefined) {
+          throw new BidError("listing_not_found", "listing not found", 404);
+        }
+        const weekId = currentWeekId(app.now());
+        const nextUsd = parseBidUsd(
+          body.amountUsd !== undefined ? body.amountUsd : body.nextUsd,
         );
+        const quote = quoteBid(getBid(app.db, listing.id, weekId), nextUsd);
+        const started = await app.polar.createCheckout({
+          listingId: listing.id,
+          weekId,
+          chargeUsd: quote.chargeUsd,
+          nextUsd: quote.nextUsd,
+        });
+        const paid = getBid(app.db, listing.id, weekId);
+        if (app.polar.kind === "live" || paid === undefined) {
+          return reply.code(303).header("location", started.url).send({
+            listingId: listing.id,
+            weekId,
+            amountUsd: quote.nextUsd,
+            chargeUsd: quote.chargeUsd,
+            checkoutId: started.checkoutId,
+            url: started.url,
+          });
+        }
         return {
-          listingId: placed.bid.listingId,
-          weekId: placed.bid.weekId,
-          amountUsd: placed.bid.amountUsd,
-          chargeUsd: placed.chargeUsd,
-          paidAt: placed.bid.paidAt,
+          listingId: paid.listingId,
+          weekId: paid.weekId,
+          amountUsd: paid.amountUsd,
+          chargeUsd: quote.chargeUsd,
+          paidAt: paid.paidAt,
+          checkoutId: started.checkoutId,
+          url: started.url,
         };
       } catch (err) {
-        if (err instanceof BidError || err instanceof ShowError) {
+        if (
+          err instanceof BidError ||
+          err instanceof ShowError ||
+          err instanceof PolarError
+        ) {
           return reply.code(err.statusCode).send({ error: err.code });
+        }
+        const message = err instanceof Error ? err.message : "";
+        if (message.startsWith("BLOCKED-SECRET")) {
+          return reply.code(503).send({ error: "polar_unavailable" });
         }
         throw err;
       }

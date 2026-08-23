@@ -23,6 +23,12 @@ export function polarWebhookSecret(env: PolarEnv = process.env): string | undefi
   return secret ? secret : undefined;
 }
 
+/** Optional Polar product for hosted checkout. Live sandbox needs this. */
+export function polarProductId(env: PolarEnv = process.env): string | undefined {
+  const productId = env.POLAR_PRODUCT_ID?.trim();
+  return productId ? productId : undefined;
+}
+
 export function publicBaseUrl(env: PolarEnv = process.env): string {
   const raw = env.PUBLIC_BASE_URL?.trim();
   if (raw) {
