@@ -71,12 +71,19 @@ function openAfterRaiseHop(listing: Listing): string {
         </a>`;
 }
 
+function raiseAfterOpenHop(): string {
+  return `<a class="raise-after-open" data-raise-after-open="true" href="#claim">
+          Then Outbid
+          <span class="raise-after-open-note">after Open deck</span>
+        </a>`;
+}
+
 function deckHop(listing: Listing, paid: boolean, raiseAfter: boolean): string {
   const url = escapeHtml(listing.url);
   const href = clickHref(listing.id);
   if (paid) {
     const next = raiseAfter
-      ? `\n        ${raiseAfterDeckHop()}\n        ${openAfterRaiseHop(listing)}`
+      ? `\n        ${raiseAfterDeckHop()}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
       : "";
     return `<p class="deck">
         <a class="open-deck" data-open-deck="true" href="${href}" rel="noopener noreferrer">

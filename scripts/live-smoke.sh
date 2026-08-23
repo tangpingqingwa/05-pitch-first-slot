@@ -379,6 +379,8 @@ else
     && html_has "$board4" 'Then Outbid' \
     && html_has "$board4" 'data-open-after-raise="true"' \
     && html_has "$board4" 'after Then Outbid' \
+    && html_has "$board4" 'data-raise-after-open="true"' \
+    && html_has "$board4" 'after Open deck' \
     && ! html_has "$board4" 'Unranked — no paid bid yet'; then
     record "4-first-bid-5" "PASS" "fixture charged \$5; public rank #1 · \$5"
   else
