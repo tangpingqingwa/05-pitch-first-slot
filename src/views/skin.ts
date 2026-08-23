@@ -316,6 +316,25 @@ h1.headline {
   margin-top: 0.2rem;
   color: var(--ink-soft);
 }
+.listing[data-raise-after-open-two-first] .raise-after-open-two {
+  display: inline-block;
+  margin-top: 0.45rem;
+  padding-top: 0.2rem;
+  border-top: 0;
+  font-family: var(--serif);
+  font-size: 2.15rem;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: rgb(138, 75, 18);
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.12em;
+}
+.listing[data-raise-after-open-two-first] .raise-after-open-two .raise-after-note {
+  margin-top: 0.22rem;
+  color: var(--ink-soft);
+}
 .listing[data-open-after-raise-one-first] .open-after-raise-one {
   display: inline-block;
   font-family: var(--serif);

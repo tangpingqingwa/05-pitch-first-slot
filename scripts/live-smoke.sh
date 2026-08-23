@@ -384,6 +384,7 @@ else
     && ! html_has "$board4" 'data-later-deck' \
     && ! html_has "$board4" 'data-open-later' \
     && ! html_has "$board4" 'data-open-after-raise-one' \
+    && ! html_has "$board4" 'data-raise-after-open-two' \
     && ! html_has "$board4" 'Unranked — no paid bid yet'; then
     record "4-first-bid-5" "PASS" "fixture charged \$5; public rank #1 · \$5"
   else
@@ -455,6 +456,8 @@ else
     && html_has "$board6" 'data-raise-one="true"' \
     && html_has "$board6" 'data-open-after-raise-one-first="true"' \
     && html_has "$board6" 'data-open-after-raise-one="true"' \
+    && html_has "$board6" 'data-raise-after-open-two-first="true"' \
+    && html_has "$board6" 'data-raise-after-open-two="true"' \
     && html_has "$board6" 'Then Outbid' \
     && html_has "$board6" 'Open deck'; then
     record "6-tie-older-wins" "PASS" "both \$20; Alpha paid first stays #1"
