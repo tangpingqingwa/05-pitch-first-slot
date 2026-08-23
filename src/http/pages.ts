@@ -1,8 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
 import { clickCountsByListing } from "../core/clicks.js";
 import { listListings, type Listing } from "../core/listing.js";
-import { rankedBoard, type RankedListing } from "../core/rank.js";
+import { MIN_BID_USD, rankedBoard, type RankedListing } from "../core/rank.js";
 import { currentWeekId } from "../core/week.js";
+import { BOARD_CSS } from "../views/skin.js";
 
 function escapeHtml(value: string): string {
   return value
@@ -29,17 +30,21 @@ function renderLayout(input: {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(input.title)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+  <style>${BOARD_CSS}</style>
 </head>
 <body>
-  <header>
-    <a href="/">Pitch First Slot</a>
+  <header class="site-header">
+    <a class="brand" href="/">first.<em>slot</em></a>
     <nav aria-label="Main">
       ${navLink("/", "Board", input.path)}
       ${navLink("/about", "About", input.path)}
       ${navLink("/rules", "Rules", input.path)}
     </nav>
   </header>
-  <main>
+  <main class="page">
     ${input.body}
   </main>
 </body>
@@ -68,13 +73,55 @@ function renderRanked(listing: RankedListing, clicks: number): string {
   const company = escapeHtml(listing.company);
   const oneLiner = escapeHtml(listing.oneLiner);
   const url = escapeHtml(listing.url);
-  return `<li class="listing" data-rank="${listing.rank}" data-bid="${listing.bid.amountUsd}" data-clicks="${clicks}">
+  return `<li class="listing${listing.rank === 1 ? " top" : ""}" data-rank="${listing.rank}" data-bid="${listing.bid.amountUsd}" data-clicks="${clicks}">
   <p class="rank">#${listing.rank} · $${listing.bid.amountUsd}</p>
   <p class="company">${company}</p>
   <p class="one-liner">${oneLiner}</p>
   <p><a class="listing-url" href="${clickHref(listing.id)}" rel="noopener noreferrer">${url}</a></p>
   <p class="clicks">${clicks} clicks</p>
 </li>`;
+}
+
+function claimChrome(defaultBidUsd: number): string {
+  return `<section id="claim">
+  <div class="stage-head">
+    <h1 class="headline">Opening three minutes</h1>
+  </div>
+  <div class="claim">
+    <button type="button" class="step" data-bid-step="-1" aria-label="Decrease bid by one">−</button>
+    <label class="bid-field">
+      <span class="sr-only">Amount in dollars</span>
+      <span class="currency">$</span><input id="bid" name="amountUsd" form="bid-form" inputmode="numeric" pattern="[0-9]*" value="${defaultBidUsd}"/>
+    </label>
+    <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
+  </div>
+  <p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>
+  <form id="bid-form" class="bid-form" method="post" action="/listings">
+    <div class="bid-row">
+      <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
+      <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
+      <button type="submit" class="outbid">Outbid</button>
+    </div>
+    <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
+    <p class="form-hint">Company, deck URL, and a one-liner. Unpaid checkout does not rank.</p>
+  </form>
+</section>
+<script>
+  (function () {
+    var min = ${MIN_BID_USD};
+    var input = document.getElementById("bid");
+    if (!input) return;
+    function parseBid(raw) {
+      var n = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
+      return Number.isFinite(n) ? Math.max(min, n) : min;
+    }
+    document.querySelectorAll("[data-bid-step]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        input.value = String(parseBid(input.value) + Number(btn.getAttribute("data-bid-step")));
+      });
+    });
+  })();
+</script>`;
 }
 
 export function renderBoard(
@@ -89,18 +136,22 @@ export function renderBoard(
     ...ranked.map((row) => renderRanked(row, clicksOf(row.id))),
     ...unranked.map((row) => renderUnranked(row, clicksOf(row.id))),
   ];
+  const topUsd = ranked[0]?.bid.amountUsd;
+  const defaultBid = topUsd === undefined ? MIN_BID_USD : topUsd + 1;
   const rows =
     listings.length === 0
-      ? `<p class="empty-board">The board is empty. No listings this week.</p>`
+      ? `<div class="empty-board" data-empty-room>
+  <p class="room">The room is empty.</p>
+  <p>The board is empty. No listings this week.</p>
+</div>`
       : `<ul class="listings">
 ${items.join("\n")}
 </ul>`;
 
   return renderLayout({
-    title: "Pitch First Slot",
+    title: "Opening three minutes",
     path: "/",
-    body: `<h1>Pitch First Slot</h1>
-  <p>This week's first three minutes are for sale. The rest of the room is not.</p>
+    body: `${claimChrome(defaultBid)}
   ${rows}`,
   });
 }
@@ -109,12 +160,14 @@ export function renderAbout(): string {
   return renderLayout({
     title: "About · Pitch First Slot",
     path: "/about",
-    body: `<h1>About</h1>
+    body: `<article class="program">
+<h1>About</h1>
 <p>This week's first three minutes are for sale. The rest of the room is not.</p>
 <p>Pitch First Slot is a public weekly auction for <strong>one</strong> scarce slot in front of angels and scouts: the <strong>opening 3-minute pitch</strong>, or <strong>#1 on that week's deal list</strong>. Rank is the bid. The room watches the price.</p>
 <p>You <strong>cannot buy the show</strong>. You cannot buy the rest of the show, the remaining agenda, remaining pitch slots, a private lock on every pitch, hosting the whole show, pinning #1 for multiple weeks, or hiding other listings.</p>
 <p>The window is one UTC week. Rank is a <strong>weekly reset</strong> at <strong>Monday 00:00 UTC</strong>. Last week's #1 does not carry rank into the new week.</p>
-<p>The board is new. We do not invent companies, bids, clicks, or traction.</p>`,
+<p>The board is new. We do not invent companies, bids, clicks, or traction.</p>
+</article>`,
   });
 }
 
@@ -122,7 +175,8 @@ export function renderRules(): string {
   return renderLayout({
     title: "Rules · Pitch First Slot",
     path: "/rules",
-    body: `<h1>Rules</h1>
+    body: `<article class="program">
+<h1>Rules</h1>
 <p>Clone of outbid.lol economics, with a weekly reset and a single prize: this week's opening slot.</p>
 <ol>
   <li><strong>Currency.</strong> USD. Integer dollars only. Store cents internally.</li>
@@ -136,7 +190,8 @@ export function renderRules(): string {
   <li><strong>No retract.</strong> A paid bid is not refundable because someone else raised.</li>
 </ol>
 <p>You <strong>cannot buy the show</strong>. You cannot buy the rest of the show. There is no product for the remaining pitch slots, hosting the whole show, pinning #1 for multiple weeks, or hiding other listings. A request to buy more than the opening slot is 400 <code>cannot_buy_show</code>.</p>
-<p>A bid becomes current only after a successful payment. Unpaid checkout sessions do not change rank.</p>`,
+<p>A bid becomes current only after a successful payment. Unpaid checkout sessions do not change rank.</p>
+</article>`,
   });
 }
 
@@ -157,5 +212,9 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/rules", async (_request, reply) => {
     return reply.type("text/html; charset=utf-8").send(renderRules());
+  });
+
+  app.get("/checkout/complete", async (_request, reply) => {
+    return reply.redirect("/", 303);
   });
 };
