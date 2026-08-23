@@ -381,6 +381,8 @@ else
     && html_has "$board4" 'after Then Outbid' \
     && html_has "$board4" 'data-raise-after-open="true"' \
     && html_has "$board4" 'after Open deck' \
+    && ! html_has "$board4" 'data-later-deck' \
+    && ! html_has "$board4" 'data-open-later' \
     && ! html_has "$board4" 'Unranked — no paid bid yet'; then
     record "4-first-bid-5" "PASS" "fixture charged \$5; public rank #1 · \$5"
   else
@@ -443,7 +445,10 @@ else
   beta_bid="$(bid_for_company "$board6" "Beta Pitch" || true)"
   if [[ "$a_code" == "200" && "$b_code" == "200" && "$board6_code" == "200" ]] \
     && [[ "$alpha_rank" == "1" && "$beta_rank" == "2" ]] \
-    && [[ "$alpha_bid" == "20" && "$beta_bid" == "20" ]]; then
+    && [[ "$alpha_bid" == "20" && "$beta_bid" == "20" ]] \
+    && html_has "$board6" 'data-later-deck="true"' \
+    && html_has "$board6" 'data-open-later="true"' \
+    && html_has "$board6" 'Open deck'; then
     record "6-tie-older-wins" "PASS" "both \$20; Alpha paid first stays #1"
   else
     record "6-tie-older-wins" "FAIL" "tie rank HTTP a=${a_code} b=${b_code} alpha=${alpha_rank}/${alpha_bid} beta=${beta_rank}/${beta_bid}"

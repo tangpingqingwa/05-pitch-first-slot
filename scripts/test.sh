@@ -358,6 +358,26 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover Then Outbid after the after-raise Open deck"
   grep -q 'Then Outbid after the after-raise Open deck' "$test_log" \
     || fail "pages tests must cover Then Outbid after the after-raise Open deck"
+  grep -q 'class="cue later-cue"' src/http/pages.ts \
+    || fail "later-rank cue must scan Open deck before \$bid"
+  grep -q 'data-later-deck="true"' src/http/pages.ts \
+    || fail "later-rank cue must stamp data-later-deck"
+  grep -q 'data-open-later="true"' src/http/pages.ts \
+    || fail "later-rank Open deck must stamp data-open-later"
+  grep -q 'class="open-deck open-later"' src/http/pages.ts \
+    || fail "later-rank Open deck must use the later hop class"
+  grep -q 'data-later-deck' src/views/skin.ts \
+    || fail "later-rank Open deck must be styled ahead of \$bid"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'later-deck|open-later'; then
+    fail "unpaid cue must not stamp a later-rank Open deck hop"
+  fi
+  if grep -n 'raiseAfter: listing.rank === 1' -A 4 src/http/pages.ts | grep -q 'later: listing.rank === 1'; then
+    fail "later-rank hop must not reuse the #1 cue"
+  fi
+  grep -q 'occupied later ranks stamp Open deck' tests/pages.test.ts \
+    || fail "pages tests must cover later-rank Open deck hop"
+  grep -q 'later ranks stamp Open deck' "$test_log" \
+    || fail "pages tests must cover later-rank Open deck hop"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi

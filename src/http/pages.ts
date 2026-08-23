@@ -78,9 +78,22 @@ function raiseAfterOpenHop(): string {
         </a>`;
 }
 
-function deckHop(listing: Listing, paid: boolean, raiseAfter: boolean): string {
+function deckHop(
+  listing: Listing,
+  paid: boolean,
+  raiseAfter: boolean,
+  later: boolean,
+): string {
   const url = escapeHtml(listing.url);
   const href = clickHref(listing.id);
+  if (paid && later) {
+    return `<p class="deck">
+        <a class="open-deck open-later" data-open-deck="true" data-open-later="true" href="${href}" rel="noopener noreferrer">
+          Open deck
+          <span class="deck-url">${url}</span>
+        </a>
+      </p>`;
+  }
   if (paid) {
     const next = raiseAfter
       ? `\n        ${raiseAfterDeckHop()}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
@@ -106,13 +119,34 @@ function renderCueCard(input: {
   extraClass?: string;
   paid: boolean;
   raiseAfter?: boolean;
+  later?: boolean;
 }): string {
   const company = escapeHtml(input.listing.company);
   const oneLiner = escapeHtml(input.listing.oneLiner);
+  const later = input.later === true;
   const klass = input.extraClass ? `listing ${input.extraClass}` : "listing";
-  const hop = deckHop(input.listing, input.paid, input.raiseAfter === true);
-  const body = input.paid
-    ? `<div class="cue">
+  const hop = deckHop(
+    input.listing,
+    input.paid,
+    input.raiseAfter === true,
+    later,
+  );
+  const attrs = later ? `${input.attrs} data-later-deck="true"` : input.attrs;
+  const body = later
+    ? `<div class="cue later-cue">
+    <div class="who">
+      <p class="company">${company}</p>
+      <p class="one-liner">${oneLiner}</p>
+    </div>
+    ${hop}
+    <div class="seat">
+      <span class="cue-label">Bid</span>
+      <p class="rank">${input.rankHtml}</p>
+      <p class="clicks">${input.clicks} clicks</p>
+    </div>
+  </div>`
+    : input.paid
+      ? `<div class="cue">
     <div class="who">
       <p class="company">${company}</p>
       <p class="one-liner">${oneLiner}</p>
@@ -124,7 +158,7 @@ function renderCueCard(input: {
     </div>
   </div>
   ${hop}`
-    : `<div class="cue">
+      : `<div class="cue">
     <div class="who">
       <p class="company">${company}</p>
       <p class="one-liner">${oneLiner}</p>
@@ -136,7 +170,7 @@ function renderCueCard(input: {
       <p class="clicks">${input.clicks} clicks</p>
     </div>
   </div>`;
-  return `<li class="${klass}"${input.attrs} data-clicks="${input.clicks}">
+  return `<li class="${klass}"${attrs} data-clicks="${input.clicks}">
   ${body}
 </li>`;
 }
@@ -160,6 +194,7 @@ function renderRanked(listing: RankedListing, clicks: number): string {
     extraClass: listing.rank === 1 ? "top" : undefined,
     paid: true,
     raiseAfter: listing.rank === 1,
+    later: listing.rank > 1,
   });
 }
 
