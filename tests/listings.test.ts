@@ -23,8 +23,12 @@ test("GET / empty week is 200 with zero listings and no sample companies", async
   assert.match(response.headers["content-type"] ?? "", /text\/html/);
   const html = response.body;
   assert.match(html, /The board is empty\. No listings this week\./);
+  assert.match(html, /The room is empty\./);
+  assert.match(html, /Opening three minutes/);
+  assert.match(html, /Outbid/);
   assert.doesNotMatch(html, /class="listing"/);
   assert.doesNotMatch(html, /\$[0-9]/);
+  assert.doesNotMatch(html, /#1/);
   for (const name of SAMPLE_COMPANIES) {
     assert.doesNotMatch(html, new RegExp(name, "i"));
   }

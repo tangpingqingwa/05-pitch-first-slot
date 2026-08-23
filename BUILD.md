@@ -82,6 +82,7 @@ HTTP handlers call `core/*` only. They do not import the live Polar client.
     migrations/001_init.sql
     core/{week,listing,rank,url,clicks,show}.ts
     http/{health,pages,listings,bids,clicks}.ts
+    views/skin.ts                # pitch-night stage, not a dashboard recolor
     billing/polar.ts             # PolarPort
     billing/polar_fixture.ts
     billing/polar_live.ts        # POLAR_LIVE=1 only
@@ -93,6 +94,7 @@ HTTP handlers call `core/*` only. They do not import the live Polar client.
     polar-fixture.test.ts
     clicks.test.ts
     show.test.ts
+    pages.test.ts
 ```
 
 ---
@@ -205,6 +207,13 @@ Each PR is independently mergeable. Dependencies are hard.
 - **Files:** `scripts/live-smoke.sh`, `docs/live-smoke.md`
 - **Dependencies:** PR 6
 - **Acceptance:** script refuses `CI=true`. Offline `scripts/test.sh` still green. `docs/live-smoke.md` records PASS / PASS-ERROR / BLOCKED-SECRET per SPEC row. CI must not set `POLAR_LIVE`.
+
+### PR 10: product UI — opening three minutes
+
+- **Description:** Pitch-night stage for the opening slot. Claim chrome, dashed $amount, ±, Outbid. Empty week is an empty room. Company + deck URL + one-liner is the whole card. Unranked stays unranked until paid. Not a night-blue recolor.
+- **Files:** `src/http/pages.ts`, `src/http/listings.ts`, `src/views/skin.ts`, `tests/pages.test.ts`, `scripts/test.sh`
+- **Dependencies:** PR 9
+- **Acceptance:** `GET /` headline is opening three minutes. Empty/unranked HTML still forbids false-positive `#1`. Form Outbid starts Polar/fixture checkout. `scripts/test.sh` green offline.
 
 ---
 

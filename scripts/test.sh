@@ -251,6 +251,35 @@ if [[ -f package.json ]]; then
     || fail "live-flag tests must cover unset / 0 / fixture-only"
   grep -q 'POLAR_LIVE unset in test' "$test_log" \
     || fail "live-flag tests must cover POLAR_LIVE unset"
+
+  echo "== product UI opening three minutes =="
+  for f in src/views/skin.ts src/http/pages.ts tests/pages.test.ts; do
+    [[ -f "$f" ]] || fail "missing $f"
+    [[ -s "$f" ]] || fail "empty $f"
+  done
+  grep -q 'Opening three minutes' src/http/pages.ts \
+    || fail "board headline must be Opening three minutes"
+  grep -q 'class="outbid">Outbid' src/http/pages.ts \
+    || fail "board must clone Outbid claim chrome"
+  grep -q 'data-bid-step' src/http/pages.ts \
+    || fail "board must clone ± bid stepper"
+  grep -q 'bid-field' src/http/pages.ts \
+    || fail "board must clone dashed \$amount field"
+  grep -q 'The room is empty' src/http/pages.ts \
+    || fail "empty week must be an empty room"
+  grep -q 'Unranked — no paid bid yet' src/http/pages.ts \
+    || fail "unranked listings must stay unranked until paid"
+  if grep -Eqi 'hot deal|traction meter' src/http/pages.ts src/views/skin.ts; then
+    fail "product UI must not sell traction meters or hot-deal chips"
+  fi
+  grep -q 'doesNotMatch(html, /#1/)' tests/pages.test.ts \
+    || fail "pages tests must keep false-positive #1 forbidden on empty/unranked"
+  grep -q 'opening three minutes' "$test_log" \
+    || fail "pages tests must cover opening three minutes"
+  grep -q 'empty room' "$test_log" \
+    || fail "pages tests must cover empty room"
+  grep -q 'unranked listing stays' "$test_log" \
+    || fail "pages tests must cover unranked until paid"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
