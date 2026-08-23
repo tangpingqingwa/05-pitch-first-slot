@@ -56,26 +56,40 @@ function clickHref(listingId: string): string {
   return `/listings/${encodeURIComponent(listingId)}/clicks`;
 }
 
+function deckHop(listing: Listing, paid: boolean): string {
+  const url = escapeHtml(listing.url);
+  const href = clickHref(listing.id);
+  if (paid) {
+    return `<p class="deck">
+        <a class="open-deck" data-open-deck="true" href="${href}" rel="noopener noreferrer">
+          Open deck
+          <span class="deck-url">${url}</span>
+        </a>
+      </p>`;
+  }
+  return `<p class="deck">
+        <span class="cue-label">Deck or site</span>
+        <a class="listing-url" href="${href}" rel="noopener noreferrer">${url}</a>
+      </p>`;
+}
+
 function renderCueCard(input: {
   listing: Listing;
   clicks: number;
   rankHtml: string;
   attrs: string;
   extraClass?: string;
+  paid: boolean;
 }): string {
   const company = escapeHtml(input.listing.company);
   const oneLiner = escapeHtml(input.listing.oneLiner);
-  const url = escapeHtml(input.listing.url);
   const klass = input.extraClass ? `listing ${input.extraClass}` : "listing";
-  return `<li class="${klass}"${input.attrs} data-clicks="${input.clicks}">
-  <div class="cue">
+  const hop = deckHop(input.listing, input.paid);
+  const body = input.paid
+    ? `<div class="cue">
     <div class="who">
       <p class="company">${company}</p>
       <p class="one-liner">${oneLiner}</p>
-      <p class="deck">
-        <span class="cue-label">Deck or site</span>
-        <a class="listing-url" href="${clickHref(input.listing.id)}" rel="noopener noreferrer">${url}</a>
-      </p>
     </div>
     <div class="seat">
       <span class="cue-label">Bid</span>
@@ -83,6 +97,21 @@ function renderCueCard(input: {
       <p class="clicks">${input.clicks} clicks</p>
     </div>
   </div>
+  ${hop}`
+    : `<div class="cue">
+    <div class="who">
+      <p class="company">${company}</p>
+      <p class="one-liner">${oneLiner}</p>
+      ${hop}
+    </div>
+    <div class="seat">
+      <span class="cue-label">Bid</span>
+      <p class="rank">${input.rankHtml}</p>
+      <p class="clicks">${input.clicks} clicks</p>
+    </div>
+  </div>`;
+  return `<li class="${klass}"${input.attrs} data-clicks="${input.clicks}">
+  ${body}
 </li>`;
 }
 
@@ -92,6 +121,7 @@ function renderUnranked(listing: Listing, clicks: number): string {
     clicks,
     rankHtml: "Unranked — no paid bid yet",
     attrs: ' data-unranked="true"',
+    paid: false,
   });
 }
 
@@ -102,6 +132,7 @@ function renderRanked(listing: RankedListing, clicks: number): string {
     rankHtml: `#${listing.rank} · $${listing.bid.amountUsd}`,
     attrs: ` data-rank="${listing.rank}" data-bid="${listing.bid.amountUsd}"`,
     extraClass: listing.rank === 1 ? "top" : undefined,
+    paid: true,
   });
 }
 

@@ -324,8 +324,10 @@ if [[ "$list2_code" == "200" && -n "$list2_id" ]] \
   && html_has "$board2" 'Helix Labs' \
   && html_has "$board2" 'Benchtop instruments for small labs' \
   && html_has "$board2" 'Unranked — no paid bid yet' \
+  && html_has "$board2" 'Deck or site' \
   && ! html_has "$board2" 'The board is empty' \
   && ! html_has "$board2" 'first slot is still open' \
+  && ! html_has "$board2" 'data-open-deck' \
   && ! html_has "$board2" '#1 · \$'; then
   record "2-listing-unranked" "PASS" "POST /listings 200; Helix Labs unranked until paid"
 else
@@ -371,6 +373,8 @@ else
     && html_has "$board4" 'Helix Labs' \
     && html_has "$board4" 'data-occupied-raise' \
     && html_has "$board4" 'Polar charges only the difference' \
+    && html_has "$board4" 'data-open-deck="true"' \
+    && html_has "$board4" 'Open deck' \
     && ! html_has "$board4" 'Unranked — no paid bid yet'; then
     record "4-first-bid-5" "PASS" "fixture charged \$5; public rank #1 · \$5"
   else

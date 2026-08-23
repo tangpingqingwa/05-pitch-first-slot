@@ -211,12 +211,38 @@ h1.headline {
 }
 .one-liner { margin: 0; color: var(--ink-soft); }
 .deck { margin: 0.25rem 0 0; }
+.listing[data-rank] > .deck {
+  margin: 0.7rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgb(26 18 12 / 0.18);
+}
 .listing-url {
   color: rgb(138, 75, 18);
   font-weight: 600;
   word-break: break-all;
 }
 .listing-url:hover { text-decoration: underline; }
+.open-deck {
+  display: block;
+  color: rgb(138, 75, 18);
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.15;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+.open-deck:hover { text-decoration-thickness: 2px; }
+.open-deck .deck-url {
+  display: block;
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  word-break: break-all;
+}
 .seat .rank {
   margin: 0;
   font-family: var(--serif);
