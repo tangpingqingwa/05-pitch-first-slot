@@ -263,6 +263,26 @@ h1.headline {
   font-size: 0.78rem;
   font-weight: 600;
 }
+.open-after-raise {
+  display: block;
+  margin: 0.55rem 0 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.15;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+.open-after-raise:hover { text-decoration-thickness: 2px; }
+.open-after-note {
+  display: block;
+  margin: 0.15rem 0 0;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
 .seat .rank {
   margin: 0;
   font-family: var(--serif);
