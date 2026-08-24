@@ -690,6 +690,25 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover unpaid off-board"
   grep -q 'unpaid cue stays off the board' "$test_log" \
     || fail "pages tests must cover unpaid off-board"
+  grep -q 'export const HOUSE_CSS' src/views/skin.ts \
+    || fail "empty house must export HOUSE_CSS"
+  grep -q 'export const OCCUPIED_CSS' src/views/skin.ts \
+    || fail "occupied / unpaid chrome must live in OCCUPIED_CSS"
+  grep -q 'emptyHouse' src/http/pages.ts \
+    || fail "empty / must choose the house sheet"
+  grep -q 'data-empty-house="true"' src/http/pages.ts \
+    || fail "empty / must stamp data-empty-house"
+  if grep -n 'emptyHouse === true ? HOUSE_CSS' -A 0 src/http/pages.ts | grep -q 'OCCUPIED_CSS'; then
+    fail "empty house must not ship occupied CSS"
+  fi
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -Eq 'data-prize-first|data-off-board|off-board-cue'; then
+    fail "HOUSE_CSS must not contain occupied / unpaid chrome"
+  fi
+  grep -q 'empty house stays empty' tests/pages.test.ts \
+    || fail "pages tests must cover empty house stays empty"
+  grep -q 'empty house stays empty' "$test_log" \
+    || fail "pages tests must cover empty house stays empty"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi

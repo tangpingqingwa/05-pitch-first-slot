@@ -1,5 +1,5 @@
 /** Pitch-night house: warm dark room, follow-spot, cream cue cards. Not a night-blue dashboard. */
-export const BOARD_CSS = /* css */ `
+export const HOUSE_CSS = /* css */ `
 :root {
   --house: rgb(20, 12, 8);
   --house-deep: rgb(11, 7, 5);
@@ -163,6 +163,27 @@ h1.headline {
   color: rgb(143, 122, 98);
   font-size: 0.75rem;
 }
+.program {
+  background: var(--card);
+  color: var(--ink);
+  padding: 1.4rem 1.3rem 1.6rem;
+  border-radius: 0.15rem 0.15rem 0.8rem 0.8rem;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
+}
+.program h1 {
+  margin: 0 0 0.8rem;
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+.program p, .program li { color: var(--ink-soft); }
+.program strong { color: var(--ink); }
+.program a { color: rgb(138, 75, 18); text-decoration: underline; }
+.program ol { padding-left: 1.2rem; }
+`;
+
+/** Occupied / unpaid cue chrome. Empty house must not ship this. */
+export const OCCUPIED_CSS = /* css */ `
 .listings {
   list-style: none;
   margin: 1.8rem 0 0;
@@ -600,21 +621,7 @@ h1.headline {
   color: var(--ink-soft);
 }
 .listing[data-prize-first] .seat .clicks { font-size: 0.75rem; }
-.program {
-  background: var(--card);
-  color: var(--ink);
-  padding: 1.4rem 1.3rem 1.6rem;
-  border-radius: 0.15rem 0.15rem 0.8rem 0.8rem;
-  box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
-}
-.program h1 {
-  margin: 0 0 0.8rem;
-  font-family: var(--serif);
-  font-weight: 400;
-  letter-spacing: -0.03em;
-}
-.program p, .program li { color: var(--ink-soft); }
-.program strong { color: var(--ink); }
-.program a { color: rgb(138, 75, 18); text-decoration: underline; }
-.program ol { padding-left: 1.2rem; }
 `;
+
+export const BOARD_CSS = `${HOUSE_CSS}
+${OCCUPIED_CSS}`;
