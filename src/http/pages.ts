@@ -139,11 +139,13 @@ function renderCueCard(input: {
   raiseAfter?: boolean;
   later?: boolean;
   openOne?: boolean;
+  prizeFirst?: boolean;
 }): string {
   const company = escapeHtml(input.listing.company);
   const oneLiner = escapeHtml(input.listing.oneLiner);
   const later = input.later === true;
   const openOne = input.openOne === true;
+  const prizeFirst = input.prizeFirst === true;
   const klass = input.extraClass ? `listing ${input.extraClass}` : "listing";
   const hop = deckHop(
     input.listing,
@@ -155,8 +157,10 @@ function renderCueCard(input: {
   const attrs = later
     ? `${input.attrs} data-later-deck="true"`
     : openOne
-      ? `${input.attrs} data-open-one-first="true" data-raise-one-first="true" data-open-after-raise-one-first="true" data-raise-after-open-two-first="true" data-open-after-raise-two-first="true" data-raise-after-open-three-first="true" data-open-after-raise-three-first="true" data-raise-after-open-four-first="true" data-open-after-raise-four-first="true" data-raise-after-open-five-first="true" data-open-after-raise-five-first="true" data-raise-after-open-six-first="true"`
-      : input.attrs;
+      ? `${input.attrs} data-open-one-first="true" data-raise-one-first="true" data-open-after-raise-one-first="true" data-raise-after-open-two-first="true" data-open-after-raise-two-first="true" data-raise-after-open-three-first="true" data-open-after-raise-three-first="true" data-raise-after-open-four-first="true" data-open-after-raise-four-first="true" data-raise-after-open-five-first="true" data-open-after-raise-five-first="true" data-raise-after-open-six-first="true" data-prize-first="true"`
+      : prizeFirst
+        ? `${input.attrs} data-prize-first="true"`
+        : input.attrs;
   const body = later
     ? `<div class="cue later-cue">
     <div class="who">
@@ -238,6 +242,7 @@ function renderRanked(
     raiseAfter: listing.rank === 1,
     later: listing.rank > 1,
     openOne: listing.rank === 1 && laterDecksExist,
+    prizeFirst: listing.rank === 1,
   });
 }
 

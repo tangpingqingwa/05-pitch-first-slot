@@ -653,6 +653,22 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover Then Outbid after Open deck is re-concentrated six"
   grep -q 'Then Outbid is concentrated after Open deck is re-concentrated six' "$test_log" \
     || fail "pages tests must cover Then Outbid after Open deck is re-concentrated six"
+  grep -q 'data-prize-first="true"' src/http/pages.ts \
+    || fail "occupied #1 must stamp data-prize-first"
+  grep -q 'data-prize-first' src/views/skin.ts \
+    || fail "occupied #1 prize must be styled ahead of \$bid"
+  grep -q 'listing\[data-prize-first\] .company' src/views/skin.ts \
+    || fail "occupied #1 pitch title must read larger than \$bid"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -q 'prize-first'; then
+    fail "unpaid cue must not stamp prize-first"
+  fi
+  if grep -n 'later: listing.rank > 1' -A 2 src/http/pages.ts | grep -q 'prizeFirst: listing.rank > 1'; then
+    fail "later ranks must stay quieter than occupied #1 prize"
+  fi
+  grep -q 'occupied #1 pitch title reads first and larger than $bid' tests/pages.test.ts \
+    || fail "pages tests must cover prize before price on occupied #1"
+  grep -q 'pitch title reads first and larger than $bid' "$test_log" \
+    || fail "pages tests must cover prize before price on occupied #1"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
