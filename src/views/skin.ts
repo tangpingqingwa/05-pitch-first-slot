@@ -182,7 +182,11 @@ h1.headline {
 .program ol { padding-left: 1.2rem; }
 .house-empty[data-empty-house] [data-prize-first],
 .house-empty[data-empty-house] [data-later-fact],
-.house-empty[data-empty-house] .later-fact {
+.house-empty[data-empty-house] .later-fact,
+.house-empty[data-empty-house] [data-later-seat],
+.house-empty[data-empty-house] [data-later-seats],
+.house-empty[data-empty-house] .listings-later,
+.house-empty[data-empty-house] [data-first-click="open"] {
   display: none;
 }
 `;
@@ -652,6 +656,58 @@ export const OCCUPIED_CSS = /* css */ `
   max-width: none;
 }
 .house-occupied[data-occupied-house] .listing[data-prize-first] .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
+.house-occupied[data-occupied-house] .listing[data-open-one-first] .open-one[data-first-click="open"] {
+  display: inline-block;
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.14em;
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] {
+  margin-top: 0.85rem;
+  gap: 0.45rem;
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .listing {
+  padding: 0.7rem 0.9rem 0.65rem;
+  background: rgb(244 234 214 / 0.72);
+  box-shadow: none;
+  outline: 1px dashed rgb(26 18 12 / 0.16);
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .company {
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .one-liner {
+  font-size: 0.88rem;
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .open-later {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat] {
+  justify-items: start;
+  text-align: left;
+  min-width: 0;
+  gap: 0.08rem;
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat] .cue-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: rgb(143, 122, 98);
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat] .rank {
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat] .clicks {
+  font-size: 0.72rem;
+}
 .claim-note .raise-charge {
   display: block;
   margin: 0.4rem 0 0.2rem;

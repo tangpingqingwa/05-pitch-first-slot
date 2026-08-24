@@ -458,8 +458,12 @@ else
     && [[ "$alpha_bid" == "20" && "$beta_bid" == "20" ]] \
     && html_has "$board6" 'data-later-deck="true"' \
     && html_has "$board6" 'data-open-later="true"' \
+    && html_has "$board6" 'data-later-seat="true"' \
+    && html_has "$board6" 'data-later-seats="true"' \
+    && html_has "$board6" 'listings-later' \
     && html_has "$board6" 'data-open-one-first="true"' \
     && html_has "$board6" 'data-open-one="true"' \
+    && html_has "$board6" 'data-first-click="open"' \
     && html_has "$board6" 'data-raise-one-first="true"' \
     && html_has "$board6" 'data-raise-one="true"' \
     && html_has "$board6" 'data-open-after-raise-one-first="true"' \

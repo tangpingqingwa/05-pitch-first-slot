@@ -714,8 +714,13 @@ if [[ -f package.json ]]; then
     fail "occupied #1 must not keep a Bid seat beside the pitch title"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -E 'data-later-fact|later-fact' | grep -v 'house-empty\[data-empty-house\]'; then
+    | grep -E 'data-later-fact|later-fact' | grep -v 'house-empty\[data-empty-house\]' | grep -v 'listings-later'; then
     fail "HOUSE_CSS must not style later-fact chrome — only hide a leak"
+  fi
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -E 'data-later-seat|listings-later|data-first-click="open"' \
+    | grep -v 'house-empty\[data-empty-house\]'; then
+    fail "HOUSE_CSS must not style later Bid seats / occupied Open — only hide a leak"
   fi
   grep -q 'occupied #1 pitch title stays the prize — Bid seat is not beside the title' tests/pages.test.ts \
     || fail "pages tests must keep occupied #1 money off the Bid seat"
@@ -778,6 +783,14 @@ if [[ -f package.json ]]; then
     || fail "empty house must hide leaked later-fact chrome"
   grep -F -q '.house-empty[data-empty-house] .later-fact' src/views/skin.ts \
     || fail "empty house must hide leaked later-fact class"
+  grep -F -q '.house-empty[data-empty-house] [data-later-seat]' src/views/skin.ts \
+    || fail "empty house must hide leaked later Bid seats"
+  grep -F -q '.house-empty[data-empty-house] [data-later-seats]' src/views/skin.ts \
+    || fail "empty house must hide leaked later-seat lists"
+  grep -F -q '.house-empty[data-empty-house] .listings-later' src/views/skin.ts \
+    || fail "empty house must hide leaked listings-later"
+  grep -F -q '.house-empty[data-empty-house] [data-first-click="open"]' src/views/skin.ts \
+    || fail "empty house must hide leaked occupied Open first click"
   if grep -E '^\.listing\[data-prize-first\] \.company' src/views/skin.ts; then
     fail "prize-first CSS must not apply outside house-occupied"
   fi
@@ -814,6 +827,55 @@ if [[ -f package.json ]]; then
     || fail "empty / must not wrap in occupied house"
   grep -q 'doesNotMatch(boardMarkup(occupied), /data-empty-house/)' tests/pages.test.ts \
     || fail "occupied / must not wrap in empty house"
+  grep -q 'function laterBidSeat' src/http/pages.ts \
+    || fail "later Bid seats must live in laterBidSeat, not steal occupied #1 Open"
+  grep -q 'class="seat later-seat" data-later-seat="true"' src/http/pages.ts \
+    || fail "later Bid seats must stamp data-later-seat"
+  grep -q 'class="listings listings-later"' src/http/pages.ts \
+    || fail "later Bid seats must sit in listings-later, after occupied #1"
+  grep -q 'data-later-seats="true"' src/http/pages.ts \
+    || fail "later Bid seats must stamp data-later-seats on the later list"
+  grep -q "aria-label=\"This week's opening slot\"" src/http/pages.ts \
+    || fail "occupied #1 list must name this week's opening slot"
+  grep -q 'aria-label="Later seats this week"' src/http/pages.ts \
+    || fail "later Bid seats must name Later seats this week"
+  grep -q 'data-first-click="open"' src/http/pages.ts \
+    || fail "occupied #1 Open must be the first founder click"
+  grep -F -q '.house-occupied[data-occupied-house] .listing[data-open-one-first] .open-one[data-first-click="open"]' src/views/skin.ts \
+    || fail "occupied #1 Open first click must be styled in the occupied house"
+  grep -F -q '.house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat]' src/views/skin.ts \
+    || fail "later Bid seats must be quieter than occupied #1 Open"
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'later-seat'; then
+    fail "unpaid cue must not stamp a later Bid seat"
+  fi
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'data-first-click="open"'; then
+    fail "unpaid cue must not stamp occupied Open as the first click"
+  fi
+  if grep -n 'function prizeLaterFact' -A 8 src/http/pages.ts | grep -q 'later-seat'; then
+    fail "occupied #1 later-fact money must not sit in a later Bid seat"
+  fi
+  if awk '/prizeFirst && openOne/,/: prizeFirst/' src/http/pages.ts | grep -q 'laterBidSeat'; then
+    fail "occupied #1 must not keep a later Bid seat beside Open"
+  fi
+  if grep -n 'function laterBidSeat' -A 8 src/http/pages.ts | grep -q 'open-deck'; then
+    fail "later Bid seat must stay money, not a second hop"
+  fi
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -E 'data-later-seat|listings-later|data-first-click="open"' \
+    | grep -v 'house-empty\[data-empty-house\]'; then
+    fail "HOUSE_CSS must not style later Bid seats / occupied Open — only hide a leak"
+  fi
+  if grep -E '^\.listings-later' src/views/skin.ts; then
+    fail "later Bid seat CSS must stay scoped to house-occupied"
+  fi
+  grep -q 'occupied #1 Open is the first founder click' tests/pages.test.ts \
+    || fail "pages tests must cover occupied #1 Open as the first founder click"
+  grep -q 'later Bid seats stay quieter' tests/pages.test.ts \
+    || fail "pages tests must cover quieter later Bid seats"
+  grep -q 'Open is the first founder click' "$test_log" \
+    || fail "pages tests must cover occupied #1 Open as the first founder click"
+  grep -q 'later Bid seats stay quieter' "$test_log" \
+    || fail "pages tests must cover quieter later Bid seats"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
