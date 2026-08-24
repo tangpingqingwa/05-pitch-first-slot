@@ -396,16 +396,25 @@ if [[ -f package.json ]]; then
   grep -q 'Then Outbid after the after-raise Open deck' "$test_log" \
     || fail "pages tests must cover Then Outbid after the after-raise Open deck"
   grep -q 'class="cue later-cue"' src/http/pages.ts \
-    || fail "later-rank cue must scan Open deck before \$bid"
+    || fail "later-rank cue must scan company then Bid then later Open foot"
   grep -q 'data-later-deck="true"' src/http/pages.ts \
     || fail "later-rank cue must stamp data-later-deck"
   grep -q 'data-open-later="true"' src/http/pages.ts \
     || fail "later-rank Open deck must stamp data-open-later"
-  grep -q 'class="open-deck open-later"' src/http/pages.ts \
-    || fail "later-rank Open deck must use the later hop class"
+  grep -q 'function laterOpenFoot' src/http/pages.ts \
+    || fail "later-rank Open must live in laterOpenFoot, not filled open-deck"
+  grep -q 'class="later-open-foot" data-later-open-foot="true"' src/http/pages.ts \
+    || fail "later-rank Open must sit in later-open-foot, not a filled deck hop"
+  grep -q 'class="open-later"' src/http/pages.ts \
+    || fail "later-rank Open must use the later hop class"
+  if grep -n 'function laterOpenFoot' -A 10 src/http/pages.ts | grep -q 'open-deck'; then
+    fail "later-rank Open foot must not reuse filled open-deck"
+  fi
+  grep -q 'data-later-open-foot' src/views/skin.ts \
+    || fail "later-rank Open foot must be styled quieter than #1 Open"
   grep -q 'data-later-deck' src/views/skin.ts \
     || fail "later-rank Open deck must be styled ahead of \$bid"
-  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'later-deck|open-later'; then
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'later-deck|open-later|later-open-foot'; then
     fail "unpaid cue must not stamp a later-rank Open deck hop"
   fi
   if grep -n 'raiseAfter: listing.rank === 1' -A 4 src/http/pages.ts | grep -q 'later: listing.rank === 1'; then
@@ -732,7 +741,7 @@ if [[ -f package.json ]]; then
     fail "HOUSE_CSS must not style later-fact chrome — only hide a leak"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -E 'data-later-seat|listings-later|data-first-click="open"|data-claim-after-slot' \
+    | grep -E 'data-later-seat|listings-later|data-later-open-foot|later-open-foot|data-first-click="open"|data-claim-after-slot' \
     | grep -v 'house-empty\[data-empty-house\]'; then
     fail "HOUSE_CSS must not style later Bid seats / occupied Open / Claim-after-slot — only hide a leak"
   fi
@@ -814,6 +823,10 @@ if [[ -f package.json ]]; then
     || fail "empty house must hide leaked later-seat lists"
   grep -F -q '.house-empty[data-empty-house] .listings-later' src/views/skin.ts \
     || fail "empty house must hide leaked listings-later"
+  grep -F -q '.house-empty[data-empty-house] [data-later-open-foot]' src/views/skin.ts \
+    || fail "empty house must hide leaked later Open foot"
+  grep -F -q '.house-empty[data-empty-house] .later-open-foot' src/views/skin.ts \
+    || fail "empty house must hide leaked later-open-foot class"
   grep -F -q '.house-empty[data-empty-house] [data-first-click="open"]' src/views/skin.ts \
     || fail "empty house must hide leaked occupied Open first click"
   grep -F -q '.house-empty[data-empty-house] [data-claim-after-slot]' src/views/skin.ts \
@@ -872,6 +885,14 @@ if [[ -f package.json ]]; then
     || fail "occupied #1 Open first click must be styled in the occupied house"
   grep -F -q '.house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat]' src/views/skin.ts \
     || fail "later Bid seats must be quieter than occupied #1 Open"
+  grep -F -q '.house-occupied[data-occupied-house] .listings-later[data-later-seats] .later-open-foot[data-later-open-foot] .open-later' src/views/skin.ts \
+    || fail "later Open foot must be quieter than occupied #1 Open"
+  if grep -n 'function laterOpenFoot' -A 10 src/http/pages.ts | grep -q 'data-open-deck'; then
+    fail "later Open foot must not stamp filled data-open-deck"
+  fi
+  if grep -n 'function laterOpenFoot' -A 10 src/http/pages.ts | grep -q 'data-first-click="open"'; then
+    fail "later Open foot must not steal occupied #1 first click"
+  fi
   if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'later-seat'; then
     fail "unpaid cue must not stamp a later Bid seat"
   fi
@@ -884,11 +905,11 @@ if [[ -f package.json ]]; then
   if awk '/prizeFirst && openOne/,/: prizeFirst/' src/http/pages.ts | grep -q 'laterBidSeat'; then
     fail "occupied #1 must not keep a later Bid seat beside Open"
   fi
-  if grep -n 'function laterBidSeat' -A 8 src/http/pages.ts | grep -q 'open-deck'; then
+  if grep -n 'function laterBidSeat' -A 8 src/http/pages.ts | grep -Eq 'open-deck|open-later'; then
     fail "later Bid seat must stay money, not a second hop"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -E 'data-later-seat|listings-later|data-first-click="open"|data-claim-after-slot' \
+    | grep -E 'data-later-seat|listings-later|data-later-open-foot|later-open-foot|data-first-click="open"|data-claim-after-slot' \
     | grep -v 'house-empty\[data-empty-house\]'; then
     fail "HOUSE_CSS must not style later Bid seats / occupied Open / Claim-after-slot — only hide a leak"
   fi
@@ -899,10 +920,14 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover occupied #1 Open as the first founder click"
   grep -q 'later Bid seats stay quieter' tests/pages.test.ts \
     || fail "pages tests must cover quieter later Bid seats"
+  grep -q 'later Open is a foot hop, not a filled deck' tests/pages.test.ts \
+    || fail "pages tests must keep later Open off filled open-deck"
   grep -q 'Open is the first founder click' "$test_log" \
     || fail "pages tests must cover occupied #1 Open as the first founder click"
   grep -q 'later Bid seats stay quieter' "$test_log" \
     || fail "pages tests must cover quieter later Bid seats"
+  grep -q 'later Open is a foot hop' "$test_log" \
+    || fail "pages tests must cover later Open as a foot hop"
   grep -q 'data-rolling-week="true"' src/http/pages.ts \
     || fail "house must stamp the rolling last-7-days window"
   grep -q 'Rolling last 7 days. Not Monday 00:00 UTC.' src/http/pages.ts \
