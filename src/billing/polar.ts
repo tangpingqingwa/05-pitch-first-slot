@@ -61,7 +61,7 @@ export function createPolarPort(
     if (!polarAccessToken(env)) {
       throw new Error("BLOCKED-SECRET: POLAR_ACCESS_TOKEN");
     }
-    return new PolarLive(db, { env, fetch: options.fetch });
+    return new PolarLive(db, { env, fetch: options.fetch, now: options.now });
   }
   return new PolarFixture(db, {
     autoSettle: options.autoSettle,

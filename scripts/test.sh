@@ -103,6 +103,12 @@ if [[ -f package.json ]]; then
   grep -q 'chargeUsd' src/core/rank.ts || fail "rank.ts must compute chargeUsd"
   grep -q 'weekId' src/core/week.ts || fail "week.ts must compute weekId"
   grep -q 'WEEK_NOW' src/core/week.ts || fail "week.ts must honor WEEK_NOW"
+  grep -q 'ROLLING_WEEK_MS' src/core/week.ts || fail "week.ts must export a rolling last-7-days window"
+  grep -q 'bidInRollingWeek' src/core/week.ts || fail "week.ts must test paidAt against the rolling week"
+  grep -q 'getBidInRollingWeek' src/core/rank.ts \
+    || fail "rank.ts must quote against the rolling last-7-days window"
+  grep -q 'bidInRollingWeek' src/core/rank.ts \
+    || fail "rankedBoard must filter by rolling paidAt, not Monday weekId"
   grep -q '/listings/:id/bids' src/http/bids.ts \
     || fail "bids route missing POST /listings/:id/bids"
   grep -q 'createCheckout' src/http/bids.ts \
@@ -110,10 +116,12 @@ if [[ -f package.json ]]; then
   if grep -Rqi 'polar_live' src/http/bids.ts; then
     fail "HTTP bids must not import the live Polar client"
   fi
-  if grep -Rqi 'polar' src/core/rank.ts src/core/week.ts; then
+  if grep -qi 'polar' src/core/rank.ts src/core/week.ts; then
     fail "core rank/week must not import Polar"
   fi
   grep -q 'Monday' tests/week.test.ts || fail "week tests must cover Monday UTC reset"
+  grep -q 'rolling last-7-days' tests/week.test.ts \
+    || fail "week tests must cover rolling last-7-days window"
   grep -q 'older paidAt' tests/rank.test.ts || fail "rank tests must cover older-wins-ties"
 
   echo "== URL hygiene, public clicks, cannot-buy-the-show files =="
@@ -161,6 +169,10 @@ if [[ -f package.json ]]; then
   grep -q 'cannot buy' src/http/pages.ts || fail "pages must state cannot-buy-the-show"
   grep -q 'weekly reset' src/http/pages.ts || fail "pages must state weekly reset"
   grep -q 'Monday 00:00 UTC' src/http/pages.ts || fail "pages must state Monday 00:00 UTC reset"
+  grep -q 'rolling last 7 days' src/http/pages.ts \
+    || fail "pages must state the rolling last-7-days house window"
+  grep -q 'data-rolling-week="true"' src/http/pages.ts \
+    || fail "occupied / empty / must stamp data-rolling-week"
   grep -q 'type PolarPort' src/billing/polar.ts || fail "polar.ts must export PolarPort"
   grep -q 'createCheckout' src/billing/polar.ts || fail "polar.ts must define createCheckout"
   grep -q 'applyPaid' src/billing/polar.ts || fail "polar.ts must define applyPaid"
@@ -240,6 +252,8 @@ if [[ -f package.json ]]; then
   grep -q 'arr' tests/listings.test.ts || fail "listings tests must cover arr/users"
   grep -q 'first bid $4' "$test_log" || fail "rank tests must cover min bid"
   grep -q 'Monday 00:00 UTC' "$test_log" || fail "week tests must cover Monday UTC reset"
+  grep -q 'rolling last-7-days' "$test_log" \
+    || fail "week tests must cover rolling last-7-days window"
   grep -q 'utm_source' "$test_log" || fail "url tests must cover tracking strip"
   grep -q 'no_chat' "$test_log" || fail "url tests must cover chat reject"
   grep -q '0 → 1' "$test_log" || fail "clicks tests must cover increment"
@@ -876,6 +890,22 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover occupied #1 Open as the first founder click"
   grep -q 'later Bid seats stay quieter' "$test_log" \
     || fail "pages tests must cover quieter later Bid seats"
+  grep -q 'data-rolling-week="true"' src/http/pages.ts \
+    || fail "house must stamp the rolling last-7-days window"
+  grep -q 'Rolling last 7 days. Not Monday 00:00 UTC.' src/http/pages.ts \
+    || fail "house must name the rolling last-7-days window, not Monday midnight"
+  grep -F -q '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts \
+    || fail "occupied rolling week cue must be composed in occupied CSS"
+  grep -q 'occupied week window is rolling last-7-days' tests/pages.test.ts \
+    || fail "pages tests must cover occupied rolling last-7-days window"
+  grep -q 'rolling last-7-days — not Monday 00:00 UTC' "$test_log" \
+    || fail "pages tests must cover occupied rolling last-7-days window"
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'data-rolling-week'; then
+    fail "unpaid cue must not stamp the rolling week window"
+  fi
+  if grep -Eqi '24h lock|lock on #1' src/http/pages.ts src/views/skin.ts; then
+    fail "rolling week is not a 24h lock on #1"
+  fi
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi

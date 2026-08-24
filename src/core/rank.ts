@@ -1,6 +1,12 @@
 import type { AppDb } from "../db.js";
 import { getListingById, type Listing } from "./listing.js";
-import { currentWeekId, type WeekId } from "./week.js";
+import {
+  bidInRollingWeek,
+  currentWeekId,
+  nowUtc,
+  rollingWeekStart,
+  type WeekId,
+} from "./week.js";
 
 export const MIN_BID_USD = 5;
 
@@ -109,10 +115,17 @@ export function compareRank(
 
 export function rankListings(
   rows: readonly { bid: Bid; listing: Listing }[],
-  weekId: WeekId,
+  now: Date,
 ): RankedListing[] {
-  const current = rows.filter((row) => row.bid.weekId === weekId);
-  const ordered = [...current].sort(compareRank);
+  const current = rows.filter((row) => bidInRollingWeek(row.bid.paidAt, now));
+  const bestByListing = new Map<string, { bid: Bid; listing: Listing }>();
+  for (const row of current) {
+    const prev = bestByListing.get(row.listing.id);
+    if (prev === undefined || compareRank(row, prev) < 0) {
+      bestByListing.set(row.listing.id, row);
+    }
+  }
+  const ordered = [...bestByListing.values()].sort(compareRank);
   return ordered.map((row, index) => ({
     ...row.listing,
     bid: row.bid,
@@ -154,14 +167,62 @@ export function getBid(
   return row ? mapBid(row) : undefined;
 }
 
+/** Current paid bid still inside the rolling last-7-days window. */
+export function getBidInRollingWeek(
+  db: AppDb,
+  listingId: string,
+  now: Date = nowUtc(),
+): Bid | undefined {
+  const since = rollingWeekStart(now).toISOString();
+  const until = now.toISOString();
+  const rows = db
+    .prepare<[string, string, string], BidRow>(
+      `SELECT listing_id, week_id, amount_cents, paid_at
+       FROM bids
+       WHERE listing_id = ? AND paid_at >= ? AND paid_at <= ?`,
+    )
+    .all(listingId, since, until);
+  const current = rows
+    .map(mapBid)
+    .filter((bid) => bidInRollingWeek(bid.paidAt, now));
+  if (current.length === 0) {
+    return undefined;
+  }
+  current.sort((a, b) => {
+    if (b.amountUsd !== a.amountUsd) {
+      return b.amountUsd - a.amountUsd;
+    }
+    if (a.paidAt < b.paidAt) {
+      return -1;
+    }
+    if (a.paidAt > b.paidAt) {
+      return 1;
+    }
+    return a.weekId < b.weekId ? -1 : a.weekId > b.weekId ? 1 : 0;
+  });
+  return current[0];
+}
+
+export function checkoutWeekId(
+  db: AppDb,
+  listingId: string,
+  now: Date = nowUtc(),
+): { current: Bid | undefined; weekId: WeekId } {
+  const current = getBidInRollingWeek(db, listingId, now);
+  return { current, weekId: current?.weekId ?? currentWeekId(now) };
+}
+
 export function applyPaidBid(
   db: AppDb,
   listingId: string,
   weekId: WeekId,
   nextUsd: number,
   paidAt: string,
+  now: Date = nowUtc(),
 ): Bid {
-  const quote = quoteBid(getBid(db, listingId, weekId), nextUsd);
+  const current = getBidInRollingWeek(db, listingId, now);
+  const quote = quoteBid(current, nextUsd);
+  const persistWeekId = current?.weekId ?? weekId;
   db.prepare(
     `INSERT INTO bids (listing_id, week_id, amount_cents, paid_at)
      VALUES (@listingId, @weekId, @amountCents, @paidAt)
@@ -170,13 +231,13 @@ export function applyPaidBid(
        paid_at = excluded.paid_at`,
   ).run({
     listingId,
-    weekId,
+    weekId: persistWeekId,
     amountCents: quote.nextUsd * 100,
     paidAt,
   });
   return {
     listingId,
-    weekId,
+    weekId: persistWeekId,
     amountUsd: quote.nextUsd,
     paidAt,
   };
@@ -192,9 +253,8 @@ export function placePaidBid(
   if (listing === undefined) {
     throw new BidError("listing_not_found", "listing not found", 404);
   }
-  const weekId = currentWeekId(now);
+  const { current, weekId } = checkoutWeekId(db, listingId, now);
   const amountUsd = parseBidUsd(nextUsd);
-  const current = getBid(db, listingId, weekId);
   const quote = quoteBid(current, amountUsd);
   const bid = applyPaidBid(
     db,
@@ -202,25 +262,28 @@ export function placePaidBid(
     weekId,
     quote.nextUsd,
     now.toISOString(),
+    now,
   );
   return { bid, chargeUsd: quote.chargeUsd, listing };
 }
 
 export function rankedBoard(
   db: AppDb,
-  weekId: WeekId = currentWeekId(),
+  now: Date = nowUtc(),
 ): RankedListing[] {
+  const since = rollingWeekStart(now).toISOString();
+  const until = now.toISOString();
   const rows = db
-    .prepare<[string], RankJoinRow>(
+    .prepare<[string, string], RankJoinRow>(
       `SELECT l.id, l.company, l.one_liner, l.url, l.created_at, l.contact_email,
               b.listing_id, b.week_id, b.amount_cents, b.paid_at
        FROM bids b
        JOIN listings l ON l.id = b.listing_id
-       WHERE b.week_id = ?`,
+       WHERE b.paid_at >= ? AND b.paid_at <= ?`,
     )
-    .all(weekId);
+    .all(since, until);
   return rankListings(
     rows.map((row) => ({ bid: mapBid(row), listing: mapListing(row) })),
-    weekId,
+    now,
   );
 }

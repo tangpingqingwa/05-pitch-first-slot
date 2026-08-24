@@ -55,7 +55,7 @@ Ran `bash scripts/test.sh` then `bash scripts/live-smoke.sh` on **2026-08-23** f
 | 9 | Public click | **PASS** | `POST /listings/:id/clicks` 302 to canonical URL. Clicks `0 → 1`. |
 | 10 | Field `arr` or `users` on create | **PASS** | Ignored. Never rendered. |
 | 11 | Checkout “all remaining slots” | **PASS-ERROR** | 400 `cannot_buy_show`. |
-| 12 | Monday 00:00 UTC | **PASS** | Previous bids unranked. Listing remains; board has no current-week rank until a new pay. |
+| 12 | Rolling last 7 days | **PASS** | Monday 00:00 UTC keeps a bid still inside the window. Seven days after `paidAt` the listing is unranked until a new pay. |
 | 13 | Polar fixture | **PASS** | Rank updates on the fixture process. No Polar network. |
 | 14 | `GET /about` and `GET /rules` | **PASS** | 200. Cannot-buy-the-show + weekly reset. |
 | — | Live Polar checkout | **PASS** | Live-flagged process returned a real Polar sandbox Checkout URL (`sandbox.polar.sh`). Unpaid session not ranked. Not a fixture listing. |

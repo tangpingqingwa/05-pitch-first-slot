@@ -1,6 +1,6 @@
 # Pitch First Slot
 
-Weekly public auction for the opening 3-minute pitch (or #1 on a weekly deal list) in front of angels and scouts. You cannot buy the whole show.
+Weekly public auction for the opening 3-minute pitch (or #1 on a weekly deal list) in front of angels and scouts. Rank lives in a rolling last-7-days window, not Monday 00:00 UTC. You cannot buy the whole show.
 
 Pay-to-rank clone of [outbid.lol](https://outbid.lol/) for the global English market. USD, min $5, rank is the bid.
 

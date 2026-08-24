@@ -603,7 +603,7 @@ else
   fi
 fi
 
-# --- SPEC 12: Monday 00:00 UTC previous bids unranked ---
+# --- SPEC 12: rolling last 7 days — Monday 00:00 UTC is not the drop ---
 week_db="${WORKDIR}/week-reset.sqlite"
 week_old_port="$(pick_port)"
 week_old_log="${WORKDIR}/week-old.log"
@@ -633,26 +633,51 @@ else
     wait "${WEEK_PID}" 2>/dev/null || true
   fi
   WEEK_PID=""
+  week_monday_port="$(pick_port)"
+  week_monday_log="${WORKDIR}/week-monday.log"
+  week_monday_base="http://127.0.0.1:${week_monday_port}"
+  WEEK_PID="$(start_server "$week_monday_port" "$week_db" "$week_monday_log" \
+    "WEEK_NOW=2026-08-17T00:00:00.000Z")"
+  week_monday_ok=0
+  if ! wait_health "$week_monday_base"; then
+    record "12-monday-reset" "FAIL" "Monday 00:00 UTC process did not become healthy"
+  else
+    week_monday_board="${WORKDIR}/week-monday.html"
+    week_monday_code="$(http_get "$week_monday_base" "/" "$week_monday_board" || true)"
+    if [[ "$week_list_code" == "200" && "$week_bid_code" == "200" ]] \
+      && html_has "$week_old_board" '#1 · \$5' \
+      && [[ "$week_monday_code" == "200" ]] \
+      && html_has "$week_monday_board" 'Last Week Winner' \
+      && html_has "$week_monday_board" '#1 · \$5' \
+      && html_has "$week_monday_board" 'data-rolling-week="true"' \
+      && html_has "$week_monday_board" 'Rolling last 7 days'; then
+      week_monday_ok=1
+    fi
+  fi
+  if [[ -n "${WEEK_PID}" ]] && kill -0 "${WEEK_PID}" 2>/dev/null; then
+    kill "${WEEK_PID}" 2>/dev/null || true
+    wait "${WEEK_PID}" 2>/dev/null || true
+  fi
+  WEEK_PID=""
   week_new_port="$(pick_port)"
   week_new_log="${WORKDIR}/week-new.log"
   week_new_base="http://127.0.0.1:${week_new_port}"
   WEEK_PID="$(start_server "$week_new_port" "$week_db" "$week_new_log" \
-    "WEEK_NOW=2026-08-17T00:00:00.000Z")"
+    "WEEK_NOW=2026-08-23T12:00:01.000Z")"
   if ! wait_health "$week_new_base"; then
-    record "12-monday-reset" "FAIL" "Monday 00:00 UTC process did not become healthy"
+    record "12-monday-reset" "FAIL" "rolling 7-day expiry process did not become healthy"
   else
     week_new_board="${WORKDIR}/week-new.html"
     week_new_code="$(http_get "$week_new_base" "/" "$week_new_board" || true)"
-    if [[ "$week_list_code" == "200" && "$week_bid_code" == "200" ]] \
-      && html_has "$week_old_board" '#1 · \$5' \
+    if [[ "$week_monday_ok" == "1" ]] \
       && [[ "$week_new_code" == "200" ]] \
       && html_has "$week_new_board" 'Last Week Winner' \
       && html_has "$week_new_board" 'Unranked — no paid bid yet' \
       && ! html_has "$week_new_board" 'data-rank="' \
       && ! html_has "$week_new_board" '#1 · \$5'; then
-      record "12-monday-reset" "PASS" "Monday 00:00 UTC drops last week rank; listing stays unranked"
+      record "12-monday-reset" "PASS" "rolling last 7 days drops rank; Monday 00:00 UTC does not"
     else
-      record "12-monday-reset" "FAIL" "reset list=${week_list_code} bid=${week_bid_code} monday=${week_new_code}"
+      record "12-monday-reset" "FAIL" "reset list=${week_list_code} bid=${week_bid_code} monday_ok=${week_monday_ok} expire=${week_new_code}"
     fi
   fi
   if [[ -n "${WEEK_PID}" ]] && kill -0 "${WEEK_PID}" 2>/dev/null; then
@@ -698,11 +723,13 @@ if [[ "$about_code" == "200" && "$rules_code" == "200" ]] \
   && html_has "$about_body" 'cannot buy the show' \
   && html_has "$about_body" 'weekly reset' \
   && html_has "$about_body" 'Monday 00:00 UTC' \
+  && html_has "$about_body" 'rolling last 7 days' \
   && html_has "$rules_body" 'cannot buy the show' \
   && html_has "$rules_body" 'weekly reset' \
   && html_has "$rules_body" 'Monday 00:00 UTC' \
+  && html_has "$rules_body" 'rolling last 7 days' \
   && html_has "$rules_body" 'cannot_buy_show'; then
-  record "14-about-rules" "PASS" "GET /about and /rules 200; cannot-buy-the-show + weekly reset"
+  record "14-about-rules" "PASS" "GET /about and /rules 200; cannot-buy-the-show + rolling last-7-days weekly reset"
 else
   record "14-about-rules" "FAIL" "about HTTP ${about_code} rules HTTP ${rules_code}"
 fi

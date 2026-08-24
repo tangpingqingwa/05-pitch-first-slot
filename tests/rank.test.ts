@@ -12,7 +12,6 @@ import {
 import type { Listing } from "../src/core/listing.js";
 
 const WEEK = "2026-08-17";
-const NEXT_WEEK = "2026-08-24";
 
 function listing(
   partial: Partial<Listing> & Pick<Listing, "id" | "createdAt">,
@@ -100,13 +99,14 @@ test("older paidAt wins a tie, then older listing.createdAt", () => {
   assert.ok(compareRank(olderListing, newerListing) < 0);
 });
 
-test("rankListings uses only the current weekId", () => {
+test("rankListings uses only the rolling last-7-days paidAt window", () => {
+  const now = new Date("2026-08-24T00:00:00.000Z");
   const current = {
     listing: listing({ id: "now", createdAt: "2026-08-17T00:00:00.000Z" }),
     bid: bid({
       listingId: "now",
       amountUsd: 5,
-      paidAt: "2026-08-17T01:00:00.000Z",
+      paidAt: "2026-08-17T00:00:00.000Z",
     }),
   };
   const previous = {
@@ -115,10 +115,10 @@ test("rankListings uses only the current weekId", () => {
       listingId: "then",
       weekId: "2026-08-10",
       amountUsd: 99,
-      paidAt: "2026-08-10T01:00:00.000Z",
+      paidAt: "2026-08-16T23:59:59.000Z",
     }),
   };
-  const ranked = rankListings([previous, current], WEEK);
+  const ranked = rankListings([previous, current], now);
   assert.deepEqual(
     ranked.map((row) => ({ id: row.id, rank: row.rank, amountUsd: row.bid.amountUsd })),
     [{ id: "now", rank: 1, amountUsd: 5 }],
@@ -328,8 +328,8 @@ test("below #1 still lists at the rank that amount buys", async () => {
   assert.match(board.body, /Under Slot/);
 });
 
-test("SPEC 12: Monday 00:00 UTC drops last week's rank", async () => {
-  let now = new Date("2026-08-23T23:59:59.000Z");
+test("SPEC 12: rolling last 7 days drops last week's rank — not Monday 00:00 UTC", async () => {
+  let now = new Date("2026-08-16T12:00:00.000Z");
   const app = await buildApp({
     databasePath: ":memory:",
     now: () => now,
@@ -347,13 +347,21 @@ test("SPEC 12: Monday 00:00 UTC drops last week's rank", async () => {
     payload: { amountUsd: 20 },
   });
   assert.equal(paid.statusCode, 200);
-  assert.equal((paid.json() as { weekId: string }).weekId, WEEK);
+  assert.equal((paid.json() as { weekId: string }).weekId, "2026-08-10");
   assert.match(
     (await app.inject({ method: "GET", url: "/" })).body,
     /#1 · \$20/,
   );
 
-  now = new Date("2026-08-24T00:00:00.000Z");
+  now = new Date("2026-08-17T00:00:00.000Z");
+  const monday = await app.inject({ method: "GET", url: "/" });
+  assert.equal(monday.statusCode, 200);
+  assert.match(monday.body, /#1 · \$20/);
+  assert.match(monday.body, /data-rolling-week="true"/);
+  assert.match(monday.body, /Rolling last 7 days\. Not Monday 00:00 UTC\./);
+  assert.doesNotMatch(monday.body, /Unranked — no paid bid yet/);
+
+  now = new Date("2026-08-23T12:00:01.000Z");
   const board = await app.inject({ method: "GET", url: "/" });
   assert.equal(board.statusCode, 200);
   assert.match(board.body, /Last Week Winner/);
@@ -368,7 +376,7 @@ test("SPEC 12: Monday 00:00 UTC drops last week's rank", async () => {
   });
   assert.equal(next.statusCode, 200);
   const nextBody = next.json() as { weekId: string; chargeUsd: number };
-  assert.equal(nextBody.weekId, NEXT_WEEK);
+  assert.equal(nextBody.weekId, WEEK);
   assert.equal(nextBody.chargeUsd, 5);
   assert.match(
     (await app.inject({ method: "GET", url: "/" })).body,
