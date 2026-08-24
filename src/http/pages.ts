@@ -58,7 +58,7 @@ function clickHref(listingId: string): string {
 
 function raiseAfterDeckHop(raiseOne: boolean): string {
   if (raiseOne) {
-    return `<a class="raise-after-deck raise-one raise-after-open-two raise-after-open-three" data-raise-after-deck="true" data-raise-one="true" data-raise-after-open-two="true" data-raise-after-open-three="true" href="#claim">
+    return `<a class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four" data-raise-after-deck="true" data-raise-one="true" data-raise-after-open-two="true" data-raise-after-open-three="true" data-raise-after-open-four="true" href="#claim">
           Then Outbid
           <span class="raise-after-note">Polar charges only the difference</span>
         </a>`;
@@ -155,7 +155,7 @@ function renderCueCard(input: {
   const attrs = later
     ? `${input.attrs} data-later-deck="true"`
     : openOne
-      ? `${input.attrs} data-open-one-first="true" data-raise-one-first="true" data-open-after-raise-one-first="true" data-raise-after-open-two-first="true" data-open-after-raise-two-first="true" data-raise-after-open-three-first="true" data-open-after-raise-three-first="true"`
+      ? `${input.attrs} data-open-one-first="true" data-raise-one-first="true" data-open-after-raise-one-first="true" data-raise-after-open-two-first="true" data-open-after-raise-two-first="true" data-raise-after-open-three-first="true" data-open-after-raise-three-first="true" data-raise-after-open-four-first="true"`
       : input.attrs;
   const body = later
     ? `<div class="cue later-cue">
