@@ -692,6 +692,35 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover prize before price on occupied #1"
   grep -q 'pitch title reads first and larger than $bid' "$test_log" \
     || fail "pages tests must cover prize before price on occupied #1"
+  grep -q 'function prizeLaterFact' src/http/pages.ts \
+    || fail "occupied #1 money must live in prizeLaterFact, not a Bid seat"
+  grep -q 'class="rank later-fact" data-later-fact="true"' src/http/pages.ts \
+    || fail "occupied #1 must stamp \$bid as a later fact after the pitch title"
+  grep -q 'rank.later-fact\[data-later-fact\]' src/views/skin.ts \
+    || fail "CSS must keep occupied #1 \$bid a later fact after the pitch title"
+  if awk '/^function prizeLaterFact/,/^function bidSeat/' src/http/pages.ts | grep -q 'class="seat"'; then
+    fail "occupied #1 later-fact money must not sit in a Bid seat"
+  fi
+  if awk '/^function prizeLaterFact/,/^function bidSeat/' src/http/pages.ts | grep -q 'cue-label">Bid'; then
+    fail "occupied #1 later-fact money must not use cue-label Bid"
+  fi
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'later-fact'; then
+    fail "unpaid cue must not stamp \$bid as a later fact"
+  fi
+  if awk '/^function prizeLaterFact/,/^function bidSeat/' src/http/pages.ts | grep -q 'open-deck'; then
+    fail "later-fact \$bid must stay money, not a second hop"
+  fi
+  if awk '/prizeFirst && openOne/,/: prizeFirst/' src/http/pages.ts | grep -q 'bidSeat'; then
+    fail "occupied #1 must not keep a Bid seat beside the pitch title"
+  fi
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -Eq 'data-later-fact|later-fact'; then
+    fail "HOUSE_CSS must not contain later-fact chrome"
+  fi
+  grep -q 'occupied #1 pitch title stays the prize — Bid seat is not beside the title' tests/pages.test.ts \
+    || fail "pages tests must keep occupied #1 money off the Bid seat"
+  grep -q 'Bid seat is not beside the title' "$test_log" \
+    || fail "pages tests must keep occupied #1 money off the Bid seat"
   grep -q 'data-off-board="true"' src/http/pages.ts \
     || fail "unpaid cue must stamp data-off-board"
   grep -q 'Not on the board' src/http/pages.ts \
@@ -737,7 +766,7 @@ if [[ -f package.json ]]; then
     fail "empty house must not ship occupied CSS"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -Eq 'data-prize-first|data-off-board|off-board-cue'; then
+    | grep -Eq 'data-prize-first|data-later-fact|later-fact|data-off-board|off-board-cue'; then
     fail "HOUSE_CSS must not contain occupied / unpaid chrome"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \

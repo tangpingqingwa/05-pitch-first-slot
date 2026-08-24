@@ -87,6 +87,20 @@ function raiseAfterOpenHop(): string {
         </a>`;
 }
 
+/** Occupied #1 money after the pitch title. Not a Bid .seat. */
+function prizeLaterFact(rankHtml: string, clicks: number): string {
+  return `<p class="rank later-fact" data-later-fact="true">${rankHtml}</p>
+      <p class="clicks">${clicks} clicks</p>`;
+}
+
+function bidSeat(rankHtml: string, clicks: number): string {
+  return `<div class="seat">
+      <span class="cue-label">Bid</span>
+      <p class="rank">${rankHtml}</p>
+      <p class="clicks">${clicks} clicks</p>
+    </div>`;
+}
+
 function deckHop(
   listing: Listing,
   paid: boolean,
@@ -164,46 +178,30 @@ function renderCueCard(input: {
       : prizeFirst
         ? `${input.attrs} data-prize-first="true"`
         : input.attrs;
+  const prizeTitle = `<div class="who">
+      <p class="company">${company}</p>
+      <p class="one-liner">${oneLiner}</p>
+    </div>`;
+  const laterMoney = prizeLaterFact(input.rankHtml, input.clicks);
   const body = later
     ? `<div class="cue later-cue">
-    <div class="who">
-      <p class="company">${company}</p>
-      <p class="one-liner">${oneLiner}</p>
-    </div>
+    ${prizeTitle}
     ${hop}
-    <div class="seat">
-      <span class="cue-label">Bid</span>
-      <p class="rank">${input.rankHtml}</p>
-      <p class="clicks">${input.clicks} clicks</p>
-    </div>
+    ${bidSeat(input.rankHtml, input.clicks)}
   </div>`
-    : openOne
+    : prizeFirst && openOne
       ? `<div class="cue open-one-cue">
-    <div class="who">
-      <p class="company">${company}</p>
-      <p class="one-liner">${oneLiner}</p>
-    </div>
+    ${prizeTitle}
     ${hop}
-    <div class="seat">
-      <span class="cue-label">Bid</span>
-      <p class="rank">${input.rankHtml}</p>
-      <p class="clicks">${input.clicks} clicks</p>
-    </div>
+    ${laterMoney}
   </div>`
-    : input.paid
-      ? `<div class="cue">
-    <div class="who">
-      <p class="company">${company}</p>
-      <p class="one-liner">${oneLiner}</p>
-    </div>
-    <div class="seat">
-      <span class="cue-label">Bid</span>
-      <p class="rank">${input.rankHtml}</p>
-      <p class="clicks">${input.clicks} clicks</p>
-    </div>
+      : prizeFirst
+        ? `<div class="cue">
+    ${prizeTitle}
+    ${laterMoney}
   </div>
   ${hop}`
-      : `<div class="cue off-board-cue">
+        : `<div class="cue off-board-cue">
     <div class="who">
       <p class="company">${company}</p>
       <p class="one-liner">${oneLiner}</p>
