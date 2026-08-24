@@ -785,8 +785,19 @@ if [[ -f package.json ]]; then
     || fail "empty / must wrap in house-empty"
   grep -q 'class="house house-occupied" data-occupied-house="true"' src/http/pages.ts \
     || fail "occupied / must wrap in house-occupied"
-  grep -q 'occupiedHouse: !emptyRoom' src/http/pages.ts \
-    || fail "occupied / must stamp occupiedHouse when the room is not empty"
+  grep -q 'occupiedHouse = ranked.length > 0' src/http/pages.ts \
+    || fail "occupied / must stamp occupiedHouse only after a paid rank"
+  if grep -q 'occupiedHouse: !emptyRoom' src/http/pages.ts; then
+    fail "occupied house must not wrap unpaid-only / as occupied"
+  fi
+  grep -q 'opening slot is paid only' tests/pages.test.ts \
+    || fail "pages tests must cover unpaid Polar checkout staying off the opening slot"
+  grep -q 'opening slot is paid only' "$test_log" \
+    || fail "pages tests must cover unpaid Polar checkout staying off the opening slot"
+  grep -q 'doesNotMatch(boardMarkup(html), /data-occupied-house/)' tests/pages.test.ts \
+    || fail "unpaid-only / must not wrap in occupied house"
+  grep -q "doesNotMatch(html, /<ul class=\"listings\" aria-label=\"This week's opening slot\"/" tests/pages.test.ts \
+    || fail "unpaid Polar checkout must not print as the opening slot"
   grep -F -q '.house-occupied[data-occupied-house] .listing[data-prize-first] .company' src/views/skin.ts \
     || fail "prize-first CSS must be scoped to the occupied house"
   grep -F -q '.house-occupied[data-occupied-house] .listing[data-prize-first] .rank.later-fact[data-later-fact]' src/views/skin.ts \
