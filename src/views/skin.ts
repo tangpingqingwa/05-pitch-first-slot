@@ -180,6 +180,11 @@ h1.headline {
 .program strong { color: var(--ink); }
 .program a { color: rgb(138, 75, 18); text-decoration: underline; }
 .program ol { padding-left: 1.2rem; }
+.house-empty[data-empty-house] [data-prize-first],
+.house-empty[data-empty-house] [data-later-fact],
+.house-empty[data-empty-house] .later-fact {
+  display: none;
+}
 `;
 
 /** Occupied / unpaid cue chrome. Empty house must not ship this. */
@@ -625,28 +630,28 @@ export const OCCUPIED_CSS = /* css */ `
 }
 .seat .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
 .listing.top .seat .rank { color: rgb(138, 75, 18); font-weight: 700; }
-.listing[data-prize-first] .cue {
+.house-occupied[data-occupied-house] .listing[data-prize-first] .cue {
   grid-template-columns: minmax(0, 1fr);
   gap: 0.45rem;
 }
-.listing[data-prize-first] .company {
+.house-occupied[data-occupied-house] .listing[data-prize-first] .company {
   font-size: 2.15rem;
   line-height: 1.05;
   letter-spacing: -0.03em;
 }
-.listing[data-prize-first] .one-liner {
+.house-occupied[data-occupied-house] .listing[data-prize-first] .one-liner {
   font-size: 1.05rem;
   line-height: 1.35;
 }
-.listing[data-prize-first] .rank.later-fact[data-later-fact],
-.listing.top[data-prize-first] .rank.later-fact[data-later-fact] {
+.house-occupied[data-occupied-house] .listing[data-prize-first] .rank.later-fact[data-later-fact],
+.house-occupied[data-occupied-house] .listing.top[data-prize-first] .rank.later-fact[data-later-fact] {
   margin: 0.2rem 0 0;
   font-size: 1.2rem;
   font-weight: 400;
   color: var(--ink-soft);
   max-width: none;
 }
-.listing[data-prize-first] .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
+.house-occupied[data-occupied-house] .listing[data-prize-first] .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
 .claim-note .raise-charge {
   display: block;
   margin: 0.4rem 0 0.2rem;

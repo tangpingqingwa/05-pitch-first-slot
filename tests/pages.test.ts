@@ -94,9 +94,15 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(html, /data-off-board-list/);
   assert.doesNotMatch(html, /class="off-board"/);
   assert.match(html, /data-empty-house="true"/);
-  assert.doesNotMatch(html, /data-prize-first/);
-  assert.doesNotMatch(html, /data-later-fact/);
-  assert.doesNotMatch(html, /later-fact/);
+  assert.match(html, /class="house house-empty" data-empty-house="true"/);
+  assert.match(html, /\.house-empty\[data-empty-house\] \[data-prize-first\]/);
+  assert.match(html, /\.house-empty\[data-empty-house\] \[data-later-fact\]/);
+  assert.match(html, /\.house-empty\[data-empty-house\] \.later-fact/);
+  assert.doesNotMatch(html, /data-occupied-house/);
+  assert.doesNotMatch(html, /house-occupied/);
+  assert.doesNotMatch(boardMarkup(html), /data-prize-first/);
+  assert.doesNotMatch(boardMarkup(html), /data-later-fact/);
+  assert.doesNotMatch(boardMarkup(html), /later-fact/);
   assert.doesNotMatch(html, /data-off-board/);
   assert.doesNotMatch(html, /off-board-cue/);
   assert.doesNotMatch(html, /Not on the board/);
@@ -140,7 +146,7 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open-six=/);
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-five=/);
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-four=/);
-  assert.doesNotMatch(html, /data-prize-first/);
+  assert.doesNotMatch(boardMarkup(html), /data-prize-first/);
   assert.doesNotMatch(html, /data-off-board/);
   assert.doesNotMatch(html, /off-board-cue/);
   assertNoFalsePositiveRank(html);
@@ -156,12 +162,15 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   const html = (await app.inject({ method: "GET", url: "/" })).body;
   assertPitchNightChrome(html);
   assert.match(html, /data-empty-house="true"/);
+  assert.match(html, /class="house house-empty" data-empty-house="true"/);
   assert.match(html, /class="claim-note" data-empty-room/);
   assert.match(html, /The room is empty\./);
   assert.match(html, /This week's first slot is still open\. Outbid takes it after Polar lands\./);
-  assert.doesNotMatch(html, /data-prize-first/);
-  assert.doesNotMatch(html, /data-later-fact/);
-  assert.doesNotMatch(html, /later-fact/);
+  assert.doesNotMatch(html, /data-occupied-house/);
+  assert.doesNotMatch(html, /house-occupied/);
+  assert.doesNotMatch(boardMarkup(html), /data-prize-first/);
+  assert.doesNotMatch(boardMarkup(html), /data-later-fact/);
+  assert.doesNotMatch(boardMarkup(html), /later-fact/);
   assert.doesNotMatch(html, /data-off-board/);
   assert.doesNotMatch(html, /off-board-cue/);
   assert.doesNotMatch(html, /Not on the board/);
@@ -207,12 +216,119 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   assert.match(occupied, /data-raise-difference="true"/);
   assert.match(occupied, /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/);
   assert.match(occupied, /Polar charges only the difference/);
+  assert.match(occupied, /data-occupied-house="true"/);
+  assert.match(occupied, /class="house house-occupied" data-occupied-house="true"/);
   assert.match(occupied, /data-prize-first="true"/);
   assert.match(occupied, /class="rank later-fact" data-later-fact="true"/);
   assert.doesNotMatch(listingCard(occupied, "Stage Co"), /class="seat"/);
   assert.doesNotMatch(listingCard(occupied, "Stage Co"), /cue-label">Bid</);
-  assert.doesNotMatch(occupied, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(occupied), /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(occupied), /house-empty/);
   assert.doesNotMatch(occupied, /The room is empty/);
+});
+
+test("empty house stays empty — prize-first / later-fact $bid cannot leak onto /", async () => {
+  const emptyApp = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => emptyApp.close());
+  const empty = (await emptyApp.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(empty);
+  assert.match(empty, /data-empty-house="true"/);
+  assert.match(empty, /class="house house-empty" data-empty-house="true"/);
+  assert.match(empty, /\.house-empty\[data-empty-house\] \[data-prize-first\]/);
+  assert.match(empty, /\.house-empty\[data-empty-house\] \[data-later-fact\]/);
+  assert.match(empty, /\.house-empty\[data-empty-house\] \.later-fact/);
+  assert.match(empty, /class="claim-note" data-empty-room/);
+  assert.match(empty, /The room is empty\./);
+  assert.match(empty, /This week's first slot is still open\. Outbid takes it after Polar lands\./);
+  assert.doesNotMatch(empty, /data-occupied-house/);
+  assert.doesNotMatch(empty, /house-occupied/);
+  assert.doesNotMatch(boardMarkup(empty), /data-prize-first/);
+  assert.doesNotMatch(boardMarkup(empty), /data-later-fact/);
+  assert.doesNotMatch(boardMarkup(empty), /later-fact/);
+  assert.doesNotMatch(empty, /Not on the board/);
+  assert.doesNotMatch(empty, /class="seat"/);
+  assert.doesNotMatch(empty, /cue-label">Bid</);
+  assert.doesNotMatch(empty, /data-occupied-raise/);
+  assert.doesNotMatch(empty, /Polar charges only the difference/);
+  assertNoFalsePositiveRank(empty);
+
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+  const later = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${later.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(second.statusCode, 200);
+  await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+
+  const occupied = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(occupied);
+  const paid = listingCard(occupied, "Stage Co");
+  const below = listingCard(occupied, "Helix Labs");
+  const unpaid = listingCard(occupied, "Cue Only");
+  assert.match(occupied, /data-occupied-house="true"/);
+  assert.match(occupied, /class="house house-occupied" data-occupied-house="true"/);
+  assert.match(
+    occupied,
+    /class="house house-occupied" data-occupied-house="true"[\s\S]*id="claim"/,
+  );
+  assert.match(occupied, /\.house-occupied\[data-occupied-house\] \.listing\[data-prize-first\] \.company \{[\s\S]*font-size: 2\.15rem/);
+  assert.match(
+    occupied,
+    /\.house-occupied\[data-occupied-house\] \.listing\[data-prize-first\] \.rank\.later-fact\[data-later-fact\][\s\S]*font-size: 1\.2rem/,
+  );
+  assert.doesNotMatch(occupied, /^\.listing\[data-prize-first\] \.company \{/m);
+  assert.doesNotMatch(boardMarkup(occupied), /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(occupied), /house-empty/);
+  assert.doesNotMatch(occupied, /The room is empty/);
+  assert.doesNotMatch(occupied, /first slot is still open/);
+
+  assert.match(paid, /data-prize-first="true"/);
+  assert.match(paid, /class="rank later-fact" data-later-fact="true"/);
+  assert.match(paid, /#1 · \$20/);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
+  const whoAt = paid.indexOf('class="who"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
+  const bidAt = paid.indexOf("#1 · $20");
+  assert.ok(whoAt > -1 && laterFactAt > whoAt && bidAt > laterFactAt);
+
+  assert.match(below, /data-rank="2"/);
+  assert.match(below, /class="seat"/);
+  assert.match(below, /cue-label">Bid</);
+  assert.doesNotMatch(below, /data-prize-first/);
+  assert.doesNotMatch(below, /data-later-fact/);
+  assert.doesNotMatch(below, /later-fact/);
+
+  assert.match(unpaid, /Not on the board/);
+  assert.match(unpaid, /Unranked — no paid bid yet/);
+  assert.doesNotMatch(unpaid, /data-prize-first/);
+  assert.doesNotMatch(unpaid, /data-later-fact/);
+  assert.doesNotMatch(unpaid, /later-fact/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.match(occupied, /data-off-board-list="true"/);
+  assert.doesNotMatch(rankedListMarkup(occupied), /Cue Only/);
 });
 
 test("unranked listing stays a cue card without #1 until Polar lands", async () => {
@@ -303,7 +419,7 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /data-empty-room/);
-  assert.doesNotMatch(html, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(html), /data-empty-house/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
@@ -347,7 +463,7 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.doesNotMatch(board.body, /Unranked — no paid bid yet/);
   assert.doesNotMatch(board.body, /The room is empty/);
   assert.doesNotMatch(board.body, /first slot is still open/);
-  assert.doesNotMatch(board.body, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(board.body), /data-empty-house/);
   assert.match(board.body, /class="claim-note" data-occupied-raise/);
   assert.match(board.body, /data-raise-difference="true"/);
   assert.match(board.body, /#1 is \$5\./);
@@ -600,7 +716,7 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-after-raise-five=/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-after-raise-four=/);
   assert.doesNotMatch(html, /data-empty-room/);
-  assert.doesNotMatch(html, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(html), /data-empty-house/);
   assert.doesNotMatch(html, /The room is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /claim this rank/i);
@@ -673,7 +789,7 @@ test("occupied raise is certain — Polar charges only the difference, not a new
   assert.match(html, /data-off-board-list="true"/);
   assert.match(html, /<ul class="listings">[\s\S]*Stage Co[\s\S]*<\/ul>[\s\S]*<aside class="off-board"/);
   assert.doesNotMatch(rankedListMarkup(html), /Cue Only/);
-  assert.doesNotMatch(html, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(html), /data-empty-house/);
   assert.doesNotMatch(html, /The room is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
 
@@ -707,7 +823,7 @@ test("occupied raise is certain — Polar charges only the difference, not a new
   assert.doesNotMatch(listingCard(raisedBoard, "Cue Only"), /class="seat"/);
   assert.match(raisedBoard, /data-off-board-list="true"/);
   assert.doesNotMatch(rankedListMarkup(raisedBoard), /Cue Only/);
-  assert.doesNotMatch(raisedBoard, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(raisedBoard), /data-empty-house/);
 });
 
 test("occupied paid cue names Open deck as the only outbound hop", async () => {
@@ -3850,9 +3966,9 @@ test("occupied #1 pitch title reads first and larger than $bid", async () => {
   assert.doesNotMatch(paid, /class="seat"/);
   assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.ok(clicksAt > bidAt);
-  assert.match(html, /data-prize-first[\s\S]*\.company \{[\s\S]*font-size: 2\.15rem/);
-  assert.match(html, /data-later-fact[\s\S]*font-size: 1\.2rem/);
-  assert.doesNotMatch(html, /data-prize-first[\s\S]*\.seat \.rank/);
+  assert.match(html, /\.house-occupied\[data-occupied-house\] \.listing\[data-prize-first\] \.company \{[\s\S]*font-size: 2\.15rem/);
+  assert.match(html, /\.house-occupied\[data-occupied-house\] \.listing\[data-prize-first\] \.rank\.later-fact\[data-later-fact\][\s\S]*font-size: 1\.2rem/);
+  assert.doesNotMatch(html, /\.house-occupied\[data-occupied-house\] \.listing\[data-prize-first\] \.seat/);
   assert.equal((html.match(/data-prize-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-later-fact="true"/g) ?? []).length, 1);
   assert.equal((html.match(/class="rank later-fact"/g) ?? []).length, 1);
@@ -3880,7 +3996,7 @@ test("occupied #1 pitch title reads first and larger than $bid", async () => {
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /Polar charges only the difference/);
   assert.match(html, /data-raise-difference="true"/);
-  assert.doesNotMatch(html, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(html), /data-empty-house/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
   assert.doesNotMatch(html, /claim this rank/i);
@@ -3967,10 +4083,10 @@ test("occupied #1 pitch title stays the prize — Bid seat is not beside the tit
     paid,
     /class="who"[\s\S]*Stage Co[\s\S]*Opens the room[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20[\s\S]*clicks/,
   );
-  assert.match(html, /\.listing\[data-prize-first\] \.company \{[\s\S]*font-size: 2\.15rem/);
+  assert.match(html, /\.house-occupied\[data-occupied-house\] \.listing\[data-prize-first\] \.company \{[\s\S]*font-size: 2\.15rem/);
   assert.match(
     html,
-    /\.listing\[data-prize-first\] \.rank\.later-fact\[data-later-fact\][\s\S]*font-size: 1\.2rem/,
+    /\.house-occupied\[data-occupied-house\] \.listing\[data-prize-first\] \.rank\.later-fact\[data-later-fact\][\s\S]*font-size: 1\.2rem/,
   );
   assert.doesNotMatch(html, /\.listing\[data-prize-first\] \.seat/);
   assert.doesNotMatch(
@@ -4000,9 +4116,12 @@ test("occupied #1 pitch title stays the prize — Bid seat is not beside the tit
   assert.match(html, /data-off-board-list="true"/);
   assert.doesNotMatch(rankedListMarkup(html), /Cue Only/);
   assert.match(empty, /data-empty-house="true"/);
-  assert.doesNotMatch(empty, /data-later-fact/);
-  assert.doesNotMatch(empty, /later-fact/);
-  assert.doesNotMatch(empty, /data-prize-first/);
+  assert.match(empty, /class="house house-empty" data-empty-house="true"/);
+  assert.doesNotMatch(empty, /data-occupied-house/);
+  assert.doesNotMatch(empty, /house-occupied/);
+  assert.doesNotMatch(boardMarkup(empty), /data-later-fact/);
+  assert.doesNotMatch(boardMarkup(empty), /later-fact/);
+  assert.doesNotMatch(boardMarkup(empty), /data-prize-first/);
   assert.doesNotMatch(empty, /Not on the board/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
@@ -4097,7 +4216,7 @@ test("unpaid cue stays off the board and does not take a seat", async () => {
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /Polar charges only the difference/);
   assert.match(html, /data-raise-difference="true"/);
-  assert.doesNotMatch(html, /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(html), /data-empty-house/);
   assert.doesNotMatch(html, /The room is empty/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);

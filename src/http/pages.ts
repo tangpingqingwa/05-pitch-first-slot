@@ -24,9 +24,25 @@ function renderLayout(input: {
   path: string;
   body: string;
   emptyHouse?: boolean;
+  occupiedHouse?: boolean;
 }): string {
   const css = input.emptyHouse === true ? HOUSE_CSS : BOARD_CSS;
-  const houseAttr = input.emptyHouse === true ? ' data-empty-house="true"' : "";
+  const houseAttr =
+    input.emptyHouse === true
+      ? ' data-empty-house="true"'
+      : input.occupiedHouse === true
+        ? ' data-occupied-house="true"'
+        : "";
+  const inner =
+    input.emptyHouse === true
+      ? `<div class="house house-empty" data-empty-house="true">
+    ${input.body}
+  </div>`
+      : input.occupiedHouse === true
+        ? `<div class="house house-occupied" data-occupied-house="true">
+    ${input.body}
+  </div>`
+        : input.body;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,7 +64,7 @@ function renderLayout(input: {
     </nav>
   </header>
   <main class="page">
-    ${input.body}
+    ${inner}
   </main>
 </body>
 </html>
@@ -369,6 +385,7 @@ ${offBoard.join("\n")}
     title: "Opening three minutes",
     path: "/",
     emptyHouse: emptyRoom,
+    occupiedHouse: !emptyRoom,
     body: `${claimChrome(defaultBid, emptyRoom, topUsd)}
   ${rows}`,
   });
