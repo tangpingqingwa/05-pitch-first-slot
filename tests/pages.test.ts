@@ -89,6 +89,10 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(html, /Not on the board/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
+  assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
+  assert.doesNotMatch(boardMarkup(html), /data-raise-charge/);
+  assert.doesNotMatch(boardMarkup(html), /not a new bid/);
+  assert.doesNotMatch(boardMarkup(html), /Same deck URL raises this row/);
   assert.doesNotMatch(boardMarkup(html), /data-open-deck/);
   assert.doesNotMatch(boardMarkup(html), /Open deck/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-deck/);
@@ -150,6 +154,10 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   assert.doesNotMatch(html, /<ul class="listings">/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
+  assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
+  assert.doesNotMatch(boardMarkup(html), /data-raise-charge/);
+  assert.doesNotMatch(boardMarkup(html), /not a new bid/);
+  assert.doesNotMatch(boardMarkup(html), /Same deck URL raises this row/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
   assert.doesNotMatch(html, /traction meter/i);
@@ -179,6 +187,8 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   const occupied = (await app.inject({ method: "GET", url: "/" })).body;
   assert.match(occupied, /#1 · \$12/);
   assert.match(occupied, /class="claim-note" data-occupied-raise/);
+  assert.match(occupied, /data-raise-difference="true"/);
+  assert.match(occupied, /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/);
   assert.match(occupied, /Polar charges only the difference/);
   assert.doesNotMatch(occupied, /data-empty-house/);
   assert.doesNotMatch(occupied, /The room is empty/);
@@ -268,6 +278,10 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(html, /data-empty-house/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
+  assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
+  assert.doesNotMatch(boardMarkup(html), /data-raise-charge/);
+  assert.doesNotMatch(boardMarkup(html), /not a new bid/);
+  assert.doesNotMatch(boardMarkup(html), /Same deck URL raises this row/);
   assert.doesNotMatch(html, /data-rank="/);
   assertNoFalsePositiveRank(html);
 });
@@ -307,7 +321,14 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.doesNotMatch(board.body, /first slot is still open/);
   assert.doesNotMatch(board.body, /data-empty-house/);
   assert.match(board.body, /class="claim-note" data-occupied-raise/);
+  assert.match(board.body, /data-raise-difference="true"/);
   assert.match(board.body, /#1 is \$5\./);
+  assert.match(board.body, /value="6"/);
+  assert.match(
+    board.body,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+  );
+  assert.match(board.body, /Same deck URL raises this row\. Polar charges only the difference/);
   assert.match(board.body, /Polar charges only the difference/);
   const lone = listingCard(board.body, "Stage Co");
   assert.match(lone, /data-prize-first="true"/);
@@ -411,6 +432,12 @@ test("same deck URL on the form raises the existing row by the difference", asyn
   assert.doesNotMatch(html, /#2/);
   assert.equal((html.match(/Stage Co/g) ?? []).length, 1);
   assert.match(html, /#1 is \$12\./);
+  assert.match(html, /data-raise-difference="true"/);
+  assert.match(html, /value="13"/);
+  assert.match(
+    html,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+  );
   assert.match(html, /Polar charges only the difference/);
 });
 
@@ -445,13 +472,21 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   const html = (await app.inject({ method: "GET", url: "/" })).body;
   assertPitchNightChrome(html);
   assert.match(html, /class="claim-note" data-occupied-raise/);
+  assert.match(html, /data-raise-difference="true"/);
   assert.match(html, /#1 is \$20\./);
   assert.match(html, /The \$ you type is the public bid/);
+  assert.match(html, /data-raise-charge="true"/);
+  assert.match(html, /data-current-usd="20"/);
+  assert.match(
+    html,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+  );
   assert.match(html, /New deck: Polar charges that full amount/);
   assert.match(
     html,
     /Same deck already ranked: Polar charges only the difference/,
   );
+  assert.match(html, /Same deck URL raises this row\. Polar charges only the difference/);
   assert.match(html, /value="21"/);
   assert.match(html, /#1 · \$20/);
   assert.match(html, /#2 · \$5/);
@@ -536,6 +571,101 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.doesNotMatch(html, /claim this rank/i);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
+});
+
+test("occupied raise is certain — Polar charges only the difference, not a new bid", async () => {
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 40 },
+  });
+  assert.equal(first.statusCode, 200);
+
+  await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const claimStart = html.indexOf('id="claim"');
+  const listingsStart = html.indexOf('<ul class="listings">');
+  assert.ok(claimStart > -1 && listingsStart > claimStart);
+  const claim = html.slice(claimStart, listingsStart);
+  const unpaid = listingCard(html, "Cue Only");
+
+  assert.match(claim, /class="claim-note" data-occupied-raise data-raise-difference="true"/);
+  assert.match(claim, /#1 is \$40\./);
+  assert.match(claim, /value="41"/);
+  assert.match(claim, /data-raise-charge="true"/);
+  assert.match(claim, /data-current-usd="40"/);
+  assert.match(
+    claim,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+  );
+  assert.match(claim, /The \$ you type is the public bid/);
+  assert.match(claim, /New deck: Polar charges that full amount/);
+  assert.match(
+    claim,
+    /Same deck already ranked: Polar charges only the difference/,
+  );
+  assert.match(
+    claim,
+    /Same deck URL raises this row\. Polar charges only the difference\. Unpaid checkout does not rank\./,
+  );
+  assert.match(claim, /function syncCharge/);
+  assert.match(claim, /next > current \? next - current : 0/);
+  assert.doesNotMatch(claim, /class="outbid">New bid/);
+  assert.doesNotMatch(claim, /typical raise/i);
+  assert.doesNotMatch(claim, /claim this rank/i);
+
+  assert.match(unpaid, /data-off-board="true"/);
+  assert.match(unpaid, /Not on the board/);
+  assert.match(unpaid, /Unranked — no paid bid yet/);
+  assert.doesNotMatch(unpaid, /data-raise-difference/);
+  assert.doesNotMatch(unpaid, /data-raise-charge/);
+  assert.doesNotMatch(unpaid, /not a new bid/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.doesNotMatch(html, /data-empty-house/);
+  assert.doesNotMatch(html, /The room is empty/);
+  assert.doesNotMatch(html, /first slot is still open/);
+
+  const raised = await app.inject({
+    method: "POST",
+    url: "/listings",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      accept: "text/html",
+    },
+    payload: new URLSearchParams({
+      company: "Stage Co",
+      oneLiner: "Opens the room",
+      url: "https://stage.example/deck",
+      amountUsd: "55",
+    }).toString(),
+  });
+  assert.equal(raised.statusCode, 303);
+  assert.equal(getBid(app.db, leader.id, WEEK)?.amountUsd, 55);
+  const raisedBoard = (await app.inject({ method: "GET", url: "/" })).body;
+  assert.match(raisedBoard, /#1 · \$55/);
+  assert.doesNotMatch(raisedBoard, /#2/);
+  assert.equal((raisedBoard.match(/Stage Co/g) ?? []).length, 1);
+  assert.match(raisedBoard, /value="56"/);
+  assert.match(
+    raisedBoard,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+  );
+  assert.match(listingCard(raisedBoard, "Cue Only"), /data-off-board="true"/);
+  assert.doesNotMatch(raisedBoard, /data-empty-house/);
 });
 
 test("occupied paid cue names Open deck as the only outbound hop", async () => {
@@ -3666,6 +3796,7 @@ test("occupied #1 pitch title reads first and larger than $bid", async () => {
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /Polar charges only the difference/);
+  assert.match(html, /data-raise-difference="true"/);
   assert.doesNotMatch(html, /data-empty-house/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
@@ -3729,6 +3860,8 @@ test("unpaid cue stays off the board and does not take a seat", async () => {
   assert.doesNotMatch(unpaid, /data-prize-first/);
   assert.doesNotMatch(unpaid, /data-later-deck/);
   assert.doesNotMatch(unpaid, /data-open-deck/);
+  assert.doesNotMatch(unpaid, /data-raise-difference/);
+  assert.doesNotMatch(unpaid, /data-raise-charge/);
   const whoAt = unpaid.indexOf('class="who"');
   const offAt = unpaid.indexOf("Not on the board");
   const unrankedAt = unpaid.indexOf("Unranked — no paid bid yet");
@@ -3747,6 +3880,7 @@ test("unpaid cue stays off the board and does not take a seat", async () => {
   assert.match(html, /data-off-board[\s\S]*\.off-board-cue/);
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /Polar charges only the difference/);
+  assert.match(html, /data-raise-difference="true"/);
   assert.doesNotMatch(html, /data-empty-house/);
   assert.doesNotMatch(html, /The room is empty/);
   assert.doesNotMatch(html, /typical raise/i);

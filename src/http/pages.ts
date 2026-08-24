@@ -253,19 +253,50 @@ function claimChrome(
   topUsd?: number,
 ): string {
   let note: string;
+  let hint: string;
   if (emptyRoom) {
     note = `<p class="claim-note" data-empty-room>
   <span class="room">The room is empty.</span>
   This week's first slot is still open. Outbid takes it after Polar lands.
 </p>`;
+    hint =
+      "Company, deck URL, and a one-liner. Unpaid checkout does not rank.";
   } else if (topUsd !== undefined) {
-    note = `<p class="claim-note" data-occupied-raise>
+    const raiseChargeUsd = Math.max(0, defaultBidUsd - topUsd);
+    note = `<p class="claim-note" data-occupied-raise data-raise-difference="true">
   <span class="room">#1 is $${topUsd}.</span>
-  The $ you type is the public bid. New deck: Polar charges that full amount. Same deck already ranked: Polar charges only the difference.
+  The $ you type is the public bid.
+  <span class="raise-charge" data-raise-charge="true" data-current-usd="${topUsd}">Polar charges $<span data-raise-charge-usd>${raiseChargeUsd}</span> to raise — only the difference, not a new bid.</span>
+  New deck: Polar charges that full amount. Same deck already ranked: Polar charges only the difference.
 </p>`;
+    hint =
+      "Same deck URL raises this row. Polar charges only the difference. Unpaid checkout does not rank.";
   } else {
     note = `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>`;
+    hint =
+      "Company, deck URL, and a one-liner. Unpaid checkout does not rank.";
   }
+  const raiseScript =
+    topUsd === undefined
+      ? `    document.querySelectorAll("[data-bid-step]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        input.value = String(parseBid(input.value) + Number(btn.getAttribute("data-bid-step")));
+      });
+    });`
+      : `    var current = ${topUsd};
+    var chargeUsd = document.querySelector("[data-raise-charge-usd]");
+    function syncCharge() {
+      if (!chargeUsd) return;
+      var next = parseBid(input.value);
+      chargeUsd.textContent = String(next > current ? next - current : 0);
+    }
+    document.querySelectorAll("[data-bid-step]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        input.value = String(parseBid(input.value) + Number(btn.getAttribute("data-bid-step")));
+        syncCharge();
+      });
+    });
+    input.addEventListener("input", syncCharge);`;
   return `<section id="claim">
   <div class="stage-head">
     <h1 class="headline">Opening three minutes</h1>
@@ -286,7 +317,7 @@ function claimChrome(
       <button type="submit" class="outbid">Outbid</button>
     </div>
     <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
-    <p class="form-hint">Company, deck URL, and a one-liner. Unpaid checkout does not rank.</p>
+    <p class="form-hint">${hint}</p>
   </form>
 </section>
 <script>
@@ -298,11 +329,7 @@ function claimChrome(
       var n = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
       return Number.isFinite(n) ? Math.max(min, n) : min;
     }
-    document.querySelectorAll("[data-bid-step]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        input.value = String(parseBid(input.value) + Number(btn.getAttribute("data-bid-step")));
-      });
-    });
+${raiseScript}
   })();
 </script>`;
 }

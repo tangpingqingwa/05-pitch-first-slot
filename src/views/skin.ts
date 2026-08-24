@@ -621,6 +621,13 @@ export const OCCUPIED_CSS = /* css */ `
   color: var(--ink-soft);
 }
 .listing[data-prize-first] .seat .clicks { font-size: 0.75rem; }
+.claim-note .raise-charge {
+  display: block;
+  margin: 0.4rem 0 0.2rem;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  color: var(--cream);
+}
 `;
 
 export const BOARD_CSS = `${HOUSE_CSS}
