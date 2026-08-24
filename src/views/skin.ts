@@ -399,6 +399,25 @@ h1.headline {
 .listing[data-open-after-raise-three-first] .open-after-raise-three .deck-url {
   margin-top: 0.32rem;
 }
+.listing[data-raise-after-open-four-first] .raise-after-open-four {
+  display: inline-block;
+  margin-top: 0.55rem;
+  padding-top: 0.2rem;
+  border-top: 0;
+  font-family: var(--serif);
+  font-size: 2.95rem;
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: rgb(138, 75, 18);
+  text-decoration: underline;
+  text-decoration-thickness: 6px;
+  text-underline-offset: 0.1em;
+}
+.listing[data-raise-after-open-four-first] .raise-after-open-four .raise-after-note {
+  margin-top: 0.26rem;
+  color: var(--ink-soft);
+}
 .listing[data-open-one-first] .open-after-raise,
 .listing[data-open-one-first] .raise-after-open {
   font-size: 1rem;
