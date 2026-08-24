@@ -135,6 +135,12 @@ h1.headline {
   font-size: 1.15rem;
   color: var(--cream);
 }
+.claim-note .week-window[data-rolling-week] {
+  display: block;
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: rgb(203, 183, 154);
+}
 .bid-form { margin-top: 1.25rem; display: grid; gap: 0.55rem; }
 .bid-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .field { flex: 1; min-width: 11rem; }
@@ -713,6 +719,12 @@ export const OCCUPIED_CSS = /* css */ `
   margin: 0.4rem 0 0.2rem;
   font-family: var(--serif);
   font-size: 1.2rem;
+  color: var(--cream);
+}
+.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week] {
+  margin-top: 0.45rem;
+  font-family: var(--serif);
+  font-size: 1.05rem;
   color: var(--cream);
 }
 `;

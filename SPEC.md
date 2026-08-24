@@ -52,7 +52,7 @@ One-line pitch: **This week's first three minutes are for sale. The rest of the 
 | Currency | USD, whole dollars |
 | Audience | Angels, scouts, micro-funds, and founders watching each other |
 | Prize | Opening 3-minute pitch **or** #1 line on the weekly deal list (same rank) |
-| Window | One UTC week. Reset **Monday 00:00 UTC** |
+| Window | Rolling **last 7 days** from `paidAt`. Not Monday 00:00 UTC |
 | Inventory | Exactly **one** auctioned prize per week |
 
 v1 is a single global board. Do not add city or sector lanes until ranking and reset are boring.
@@ -85,19 +85,19 @@ If the founder did not type a metric, the site must not invent one.
 
 ## 5. Auction rules (normative)
 
-Clone of outbid.lol economics, with a weekly reset and a single prize.
+Clone of outbid.lol economics, with a rolling last-7-days window and a single prize.
 
 1. **Currency.** USD. Integer dollars only. Store cents internally (`amount * 100`).
 2. **Minimum.** First paid bid on a listing in a week is **$5**.
-3. **Rank = bid.** Sort current-week bid descending. #1 is the opening slot.
+3. **Rank = bid.** Sort paid bids in the rolling last 7 days descending. #1 is the opening slot.
 4. **Ties.** Same bid amount: the **older** successful payment wins (earlier `paidAt`, then earlier `listing.createdAt`).
 5. **Raise = difference.** If a listing is at $40 and the founder bids $55, Polar charges **$15**, not $55. The public bid becomes $55.
 6. **Below #1 is allowed.** A $5 bid still lists, at the rank that amount buys.
-7. **Same listing, same week.** One current bid per listing. A raise updates that row; it does not create a second row.
-8. **New week.** All current bids expire. Ranked board starts empty. Listings may remain; they are unranked until a new paid bid in the new `weekId`.
+7. **Same listing, same week.** One current bid per listing in the rolling window. A raise updates that row; it does not create a second row.
+8. **New week.** Paid bids expire **7 days** after `paidAt`. Ranked board starts empty when the window is empty. Listings may remain; they are unranked until a new paid bid in the rolling last 7 days. Monday 00:00 UTC is **not** the expiry.
 9. **No retract.** A paid bid is not refundable because someone else raised.
 
-`weekId` is the UTC Monday date of the open week, `YYYY-MM-DD`. Example: any instant from `2026-08-17T00:00:00Z` through `2026-08-23T23:59:59Z` is `weekId=2026-08-17`.
+The house window is the **rolling last 7 days**, not a civil Monday midnight. `weekId` remains a UTC Monday date label for Polar/audit (`YYYY-MM-DD`). Example: a payment at `2026-08-17T00:00:00Z` stores `weekId=2026-08-17`, and it stays ranked until `2026-08-24T00:00:00Z` — seven days later, including across Monday midnight.
 
 ---
 
@@ -232,9 +232,9 @@ Rank key for the open week: `(-amountUsd, paidAt, listing.createdAt, listing.id)
 | 9 | Public click | `clicks` 0 → 1; redirect to canonical URL |
 | 10 | Field `arr` or `users` on create | ignored or 400; never rendered |
 | 11 | Checkout “all remaining slots” | 400 `cannot_buy_show` |
-| 12 | Monday 00:00 UTC | previous bids unranked; board empty until new pays |
+| 12 | Rolling last 7 days | a bid paid 7 days ago is unranked; Monday 00:00 UTC does not drop a bid still inside the window; board empty until a new pay in the window |
 | 13 | Polar fixture | rank updates with no live Polar |
-| 14 | `GET /about` and `GET /rules` | 200, state cannot-buy-the-show + weekly reset |
+| 14 | `GET /about` and `GET /rules` | 200, state cannot-buy-the-show + weekly reset (rolling last 7 days, not Monday 00:00 UTC) |
 
 ---
 

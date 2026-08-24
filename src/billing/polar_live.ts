@@ -10,7 +10,8 @@ import {
   type PolarEnv,
 } from "../config.js";
 import { getListingById } from "../core/listing.js";
-import { applyPaidBid, BidError, getBid, quoteBid } from "../core/rank.js";
+import { applyPaidBid, BidError, getBidInRollingWeek, quoteBid } from "../core/rank.js";
+import { nowUtc } from "../core/week.js";
 import type { AppDb } from "../db.js";
 import type {
   CheckoutStart,
@@ -35,6 +36,7 @@ export type LiveCheckoutRecord = {
 export type PolarLiveOptions = {
   env?: PolarEnv;
   fetch?: typeof fetch;
+  now?: () => Date;
 };
 
 /** Live Polar Checkout. Constructor refuses unless `POLAR_LIVE=1` and fixture-only is off. */
@@ -42,6 +44,7 @@ export class PolarLive implements PolarPort {
   readonly kind = "live" as const;
   private readonly env: PolarEnv;
   private readonly fetchFn: typeof fetch;
+  private readonly now: () => Date;
   private readonly sessions = new Map<string, LiveCheckoutRecord>();
 
   constructor(
@@ -50,6 +53,7 @@ export class PolarLive implements PolarPort {
   ) {
     this.env = options.env ?? process.env;
     this.fetchFn = options.fetch ?? fetch;
+    this.now = options.now ?? nowUtc;
     if (polarFixtureOnly(this.env)) {
       throw new Error("PolarLive is disabled when POLAR_FIXTURE_ONLY=1");
     }
@@ -72,7 +76,7 @@ export class PolarLive implements PolarPort {
     if (getListingById(this.db, input.listingId) === undefined) {
       throw new BidError("listing_not_found", "listing not found", 404);
     }
-    const current = getBid(this.db, input.listingId, input.weekId);
+    const current = getBidInRollingWeek(this.db, input.listingId, this.now());
     const quote = quoteBid(current, input.nextUsd);
     if (quote.chargeUsd !== input.chargeUsd) {
       throw new PolarError(
@@ -107,7 +111,7 @@ export class PolarLive implements PolarPort {
     this.sessions.set(checkoutId, {
       checkoutId,
       listingId: input.listingId,
-      weekId: input.weekId,
+      weekId: current?.weekId ?? input.weekId,
       chargeUsd: quote.chargeUsd,
       nextUsd: quote.nextUsd,
       url,
@@ -139,6 +143,7 @@ export class PolarLive implements PolarPort {
       session.weekId,
       session.nextUsd,
       paidAt,
+      this.now(),
     );
     session.status = "paid";
   }

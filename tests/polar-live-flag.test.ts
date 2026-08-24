@@ -187,7 +187,7 @@ test("live Polar missing webhook secret fails closed", async () => {
 test("webhook applies payment; unpaid checkout does not rank", async () => {
   const db = openDatabase(":memory:");
   after(() => db.close());
-  const polar = new PolarFixture(db, { autoSettle: false });
+  const polar = new PolarFixture(db, { autoSettle: false, now: () => NOW });
   const app = await buildApp({
     db,
     polar,
@@ -216,7 +216,7 @@ test("webhook applies payment; unpaid checkout does not rank", async () => {
   });
   assert.equal(missing.statusCode, 404);
   assert.deepEqual(missing.json(), { error: "unknown_checkout" });
-  assert.deepEqual(rankedBoard(db, WEEK), []);
+  assert.deepEqual(rankedBoard(db, NOW), []);
 
   const paid = await app.inject({
     method: "POST",
@@ -230,7 +230,7 @@ test("webhook applies payment; unpaid checkout does not rank", async () => {
     checkoutId: started.checkoutId,
   });
   assert.equal(getBid(db, listing.id, WEEK)?.amountUsd, 5);
-  assert.equal(rankedBoard(db, WEEK)[0]?.rank, 1);
+  assert.equal(rankedBoard(db, NOW)[0]?.rank, 1);
 
   const again = await app.inject({
     method: "POST",
@@ -238,7 +238,7 @@ test("webhook applies payment; unpaid checkout does not rank", async () => {
     payload: { checkoutId: started.checkoutId },
   });
   assert.equal(again.statusCode, 200);
-  assert.equal(rankedBoard(db, WEEK).length, 1);
+  assert.equal(rankedBoard(db, NOW).length, 1);
 });
 
 test("signed live webhook applies payment without Polar HTTP", async () => {

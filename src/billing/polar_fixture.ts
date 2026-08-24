@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getListingById } from "../core/listing.js";
-import { applyPaidBid, BidError, getBid, quoteBid } from "../core/rank.js";
+import { applyPaidBid, BidError, getBidInRollingWeek, quoteBid } from "../core/rank.js";
 import type { AppDb } from "../db.js";
 import type {
   CheckoutStart,
@@ -62,7 +62,7 @@ export class PolarFixture implements PolarPort {
     if (getListingById(this.db, input.listingId) === undefined) {
       throw new BidError("listing_not_found", "listing not found", 404);
     }
-    const current = getBid(this.db, input.listingId, input.weekId);
+    const current = getBidInRollingWeek(this.db, input.listingId, this.now());
     const quote = quoteBid(current, input.nextUsd);
     if (quote.chargeUsd !== input.chargeUsd) {
       throw new PolarError(
@@ -76,7 +76,7 @@ export class PolarFixture implements PolarPort {
     this.sessions.set(checkoutId, {
       checkoutId,
       listingId: input.listingId,
-      weekId: input.weekId,
+      weekId: current?.weekId ?? input.weekId,
       chargeUsd: quote.chargeUsd,
       nextUsd: quote.nextUsd,
       url,
@@ -113,6 +113,7 @@ export class PolarFixture implements PolarPort {
       session.weekId,
       session.nextUsd,
       paidAt,
+      this.now(),
     );
     session.status = "paid";
   }

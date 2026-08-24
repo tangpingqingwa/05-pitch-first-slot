@@ -36,6 +36,7 @@ test("GET /about and GET /rules are 200 with cannot-buy-the-show + weekly reset"
   assert.match(about.headers["content-type"] ?? "", /text\/html/);
   assert.match(about.body, /cannot buy the show/i);
   assert.match(about.body, /opening 3-minute pitch/i);
+  assert.match(about.body, /rolling last 7 days/i);
   assert.match(about.body, /Monday 00:00 UTC/);
   assert.match(about.body, /The board is new/);
   assert.doesNotMatch(about.body, /\$[0-9]/);
@@ -45,6 +46,7 @@ test("GET /about and GET /rules are 200 with cannot-buy-the-show + weekly reset"
   assert.equal(rules.statusCode, 200);
   assert.match(rules.headers["content-type"] ?? "", /text\/html/);
   assert.match(rules.body, /cannot buy the show/i);
+  assert.match(rules.body, /rolling last 7 days/i);
   assert.match(rules.body, /Monday 00:00 UTC/);
   assert.match(rules.body, /\$5/);
   assert.match(rules.body, /older/);
@@ -96,6 +98,7 @@ test("Polar fixture: rank updates with no live Polar", async () => {
 
   const polar = createPolarPort(app.db, {
     env: { POLAR_FIXTURE_ONLY: "1", POLAR_LIVE: "1" },
+    now: () => NOW,
   });
   assert.ok(polar instanceof PolarFixture);
   const started = await polar.createCheckout({
@@ -114,7 +117,7 @@ test("Polar fixture: rank updates with no live Polar", async () => {
   assert.equal(bid.amountUsd, 5);
   assert.equal(bid.weekId, WEEK);
 
-  const ranked = rankedBoard(app.db, WEEK);
+  const ranked = rankedBoard(app.db, NOW);
   assert.equal(ranked.length, 1);
   assert.equal(ranked[0]?.id, listing.id);
   assert.equal(ranked[0]?.rank, 1);
@@ -139,7 +142,7 @@ test("Polar fixture raise $5 → $12 charges $7 then rank updates", async () => 
     oneLiner: "Invoice tools for wholesalers",
     url: "https://northwind.example",
   });
-  const polar = new PolarFixture(app.db);
+  const polar = new PolarFixture(app.db, { now: () => NOW });
 
   const first = await polar.createCheckout({
     listingId: listing.id,
@@ -210,7 +213,7 @@ test("unpaid Polar fixture checkout does not change rank", async () => {
     oneLiner: "Unpaid checkout stays unranked",
     url: "https://open-bid.example",
   });
-  const polar = new PolarFixture(app.db, { autoSettle: false });
+  const polar = new PolarFixture(app.db, { autoSettle: false, now: () => NOW });
   const started = await polar.createCheckout({
     listingId: listing.id,
     weekId: WEEK,
@@ -219,7 +222,7 @@ test("unpaid Polar fixture checkout does not change rank", async () => {
   });
   assert.equal(polar.getCheckout(started.checkoutId)?.status, "pending");
   assert.equal(getBid(app.db, listing.id, WEEK), undefined);
-  assert.deepEqual(rankedBoard(app.db, WEEK), []);
+  assert.deepEqual(rankedBoard(app.db, NOW), []);
   assert.match(
     (await app.inject({ method: "GET", url: "/" })).body,
     /Unranked — no paid bid yet/,

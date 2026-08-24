@@ -1,9 +1,8 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { PolarError } from "../billing/polar.js";
 import { createListing, ListingError } from "../core/listing.js";
-import { BidError, getBid, parseBidUsd, quoteBid } from "../core/rank.js";
+import { BidError, checkoutWeekId, parseBidUsd, quoteBid } from "../core/rank.js";
 import { ShowError, assertOpeningSlotOnly } from "../core/show.js";
-import { currentWeekId } from "../core/week.js";
 
 function isHtmlForm(request: FastifyRequest): boolean {
   const type = String(request.headers["content-type"] ?? "");
@@ -49,9 +48,9 @@ export const listingRoutes: FastifyPluginAsync = async (app) => {
       const hasFormBid =
         body.amountUsd !== undefined || body.nextUsd !== undefined;
       if (isHtmlForm(request) && hasFormBid) {
-        const weekId = currentWeekId(app.now());
+        const { current, weekId } = checkoutWeekId(app.db, listing.id, app.now());
         const nextUsd = parseBidUsd(body.amountUsd ?? body.nextUsd);
-        const quote = quoteBid(getBid(app.db, listing.id, weekId), nextUsd);
+        const quote = quoteBid(current, nextUsd);
         assertOpeningSlotOnly(body);
         const started = await app.polar.createCheckout({
           listingId: listing.id,

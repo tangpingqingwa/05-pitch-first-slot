@@ -1,8 +1,11 @@
-/** UTC Monday date of the open week (`YYYY-MM-DD`). Tests may set `WEEK_NOW`. */
+/** Rolling last-7-days house window. Tests may set `WEEK_NOW`. */
 
 export type WeekId = string;
 
 const WEEK_ID_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Inclusive length of the public week window. Not a Monday midnight bucket. */
+export const ROLLING_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function nowUtc(env: NodeJS.ProcessEnv = process.env): Date {
   const raw = env.WEEK_NOW;
@@ -16,7 +19,27 @@ export function nowUtc(env: NodeJS.ProcessEnv = process.env): Date {
   return parsed;
 }
 
-/** Monday 00:00 UTC calendar date that owns `now`. */
+/** Inclusive start of the rolling last-7-days window. Not civil midnight. */
+export function rollingWeekStart(now: Date = nowUtc()): Date {
+  return new Date(now.getTime() - ROLLING_WEEK_MS);
+}
+
+export function bidInRollingWeek(
+  paidAt: string,
+  now: Date = nowUtc(),
+): boolean {
+  const paid = Date.parse(paidAt);
+  if (Number.isNaN(paid)) {
+    return false;
+  }
+  const t = now.getTime();
+  return paid >= t - ROLLING_WEEK_MS && paid <= t;
+}
+
+/**
+ * Monday 00:00 UTC calendar date label for checkout/audit (`YYYY-MM-DD`).
+ * Rank does not use this as the house window.
+ */
 export function weekIdFor(now: Date): WeekId {
   const day = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
@@ -38,7 +61,7 @@ export function isWeekId(value: string): value is WeekId {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
-/** Next Monday 00:00 UTC. A Monday midnight instant already opened this week. */
+/** Next Monday 00:00 UTC. Not the public rank expiry. */
 export function nextMondayUtc(now: Date = nowUtc()): Date {
   const startOfToday = Date.UTC(
     now.getUTCFullYear(),

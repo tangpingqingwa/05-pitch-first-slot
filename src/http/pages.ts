@@ -2,7 +2,6 @@ import type { FastifyPluginAsync } from "fastify";
 import { clickCountsByListing } from "../core/clicks.js";
 import { listListings, type Listing } from "../core/listing.js";
 import { MIN_BID_USD, rankedBoard, type RankedListing } from "../core/rank.js";
-import { currentWeekId } from "../core/week.js";
 import { BOARD_CSS, HOUSE_CSS } from "../views/skin.js";
 
 function escapeHtml(value: string): string {
@@ -280,6 +279,7 @@ function claimChrome(
     note = `<p class="claim-note" data-empty-room>
   <span class="room">The room is empty.</span>
   This week's first slot is still open. Outbid takes it after Polar lands.
+  <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
 </p>`;
     hint =
       "Company, deck URL, and a one-liner. Unpaid checkout does not rank.";
@@ -288,13 +288,16 @@ function claimChrome(
     note = `<p class="claim-note" data-occupied-raise data-raise-difference="true">
   <span class="room">#1 is $${topUsd}.</span>
   The $ you type is the public bid.
+  <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
   <span class="raise-charge" data-raise-charge="true" data-current-usd="${topUsd}">Polar charges $<span data-raise-charge-usd>${raiseChargeUsd}</span> to raise — only the difference, not a new bid.</span>
   New deck: Polar charges that full amount. Same deck already ranked: Polar charges only the difference.
 </p>`;
     hint =
       "Same deck URL raises this row. Polar charges only the difference. Unpaid checkout does not rank.";
   } else {
-    note = `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.</p>`;
+    note = `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.
+  <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
+</p>`;
     hint =
       "Company, deck URL, and a one-liner. Unpaid checkout does not rank.";
   }
@@ -380,7 +383,7 @@ export function renderBoard(
   const rankedRows =
     board.length === 0
       ? ""
-      : `<ul class="listings" aria-label="This week's opening slot">
+      : `<ul class="listings" aria-label="This week's opening slot" data-rolling-week="true">
 ${board.join("\n")}
 </ul>`;
   const laterRows =
@@ -420,7 +423,7 @@ export function renderAbout(): string {
 <p>This week's first three minutes are for sale. The rest of the room is not.</p>
 <p>Pitch First Slot is a public weekly auction for <strong>one</strong> scarce slot in front of angels and scouts: the <strong>opening 3-minute pitch</strong>, or <strong>#1 on that week's deal list</strong>. Rank is the bid. The room watches the price.</p>
 <p>You <strong>cannot buy the show</strong>. You cannot buy the rest of the show, the remaining agenda, remaining pitch slots, a private lock on every pitch, hosting the whole show, pinning #1 for multiple weeks, or hiding other listings.</p>
-<p>The window is one UTC week. Rank is a <strong>weekly reset</strong> at <strong>Monday 00:00 UTC</strong>. Last week's #1 does not carry rank into the new week.</p>
+<p>The window is the <strong>rolling last 7 days</strong>. Rank is a <strong>weekly reset</strong> as paid bids age out of that window. Not <strong>Monday 00:00 UTC</strong> — a founder outside that civil midnight does not lose the opening slot on a timezone tax. Last week's #1 does not carry rank after seven days.</p>
 <p>The board is new. We do not invent companies, bids, clicks, or traction.</p>
 </article>`,
   });
@@ -432,16 +435,16 @@ export function renderRules(): string {
     path: "/rules",
     body: `<article class="program">
 <h1>Rules</h1>
-<p>Clone of outbid.lol economics, with a weekly reset and a single prize: this week's opening slot.</p>
+<p>Clone of outbid.lol economics, with a rolling last-7-days window and a single prize: this week's opening slot.</p>
 <ol>
   <li><strong>Currency.</strong> USD. Integer dollars only. Store cents internally.</li>
   <li><strong>Minimum.</strong> First paid bid on a listing in a week is <strong>$5</strong>.</li>
-  <li><strong>Rank = bid.</strong> Sort current-week bid descending. #1 is the opening slot.</li>
+  <li><strong>Rank = bid.</strong> Sort paid bids in the rolling last 7 days descending. #1 is the opening slot.</li>
   <li><strong>Ties.</strong> Same bid amount: the <strong>older</strong> successful payment wins (earlier paidAt, then earlier listing.createdAt).</li>
   <li><strong>Raise = difference.</strong> If a listing is at $40 and the founder bids $55, Polar charges <strong>$15</strong>, not $55. The public bid becomes $55.</li>
   <li><strong>Below #1 is allowed.</strong> A $5 bid still lists, at the rank that amount buys.</li>
-  <li><strong>Same listing, same week.</strong> One current bid per listing. A raise updates that row; it does not create a second row.</li>
-  <li><strong>New week / weekly reset.</strong> All current bids expire at <strong>Monday 00:00 UTC</strong>. The ranked board starts empty. Listings may remain; they are unranked until a new paid bid in the new weekId.</li>
+  <li><strong>Same listing, same week.</strong> One current bid per listing in the rolling window. A raise updates that row; it does not create a second row.</li>
+  <li><strong>New week / weekly reset.</strong> Paid bids expire after <strong>7 days</strong> from <code>paidAt</code>. Not Monday 00:00 UTC. The ranked board starts empty when the window is empty. Listings may remain; they are unranked until a new paid bid in the rolling last 7 days.</li>
   <li><strong>No retract.</strong> A paid bid is not refundable because someone else raised.</li>
 </ol>
 <p>You <strong>cannot buy the show</strong>. You cannot buy the rest of the show. There is no product for the remaining pitch slots, hosting the whole show, pinning #1 for multiple weeks, or hiding other listings. A request to buy more than the opening slot is 400 <code>cannot_buy_show</code>.</p>
@@ -452,9 +455,8 @@ export function renderRules(): string {
 
 export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get("/", async (_request, reply) => {
-    const weekId = currentWeekId(app.now());
     const listings = listListings(app.db);
-    const ranked = rankedBoard(app.db, weekId);
+    const ranked = rankedBoard(app.db, app.now());
     const clicks = clickCountsByListing(app.db);
     return reply
       .type("text/html; charset=utf-8")

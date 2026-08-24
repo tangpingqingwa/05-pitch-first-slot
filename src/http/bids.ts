@@ -3,12 +3,12 @@ import { PolarError } from "../billing/polar.js";
 import { getListingById } from "../core/listing.js";
 import {
   BidError,
-  getBid,
+  checkoutWeekId,
+  getBidInRollingWeek,
   parseBidUsd,
   quoteBid,
 } from "../core/rank.js";
 import { ShowError, assertOpeningSlotOnly } from "../core/show.js";
-import { currentWeekId } from "../core/week.js";
 
 type BidBody = {
   amountUsd?: unknown;
@@ -26,18 +26,18 @@ export const bidRoutes: FastifyPluginAsync = async (app) => {
         if (listing === undefined) {
           throw new BidError("listing_not_found", "listing not found", 404);
         }
-        const weekId = currentWeekId(app.now());
+        const { current, weekId } = checkoutWeekId(app.db, listing.id, app.now());
         const nextUsd = parseBidUsd(
           body.amountUsd !== undefined ? body.amountUsd : body.nextUsd,
         );
-        const quote = quoteBid(getBid(app.db, listing.id, weekId), nextUsd);
+        const quote = quoteBid(current, nextUsd);
         const started = await app.polar.createCheckout({
           listingId: listing.id,
           weekId,
           chargeUsd: quote.chargeUsd,
           nextUsd: quote.nextUsd,
         });
-        const paid = getBid(app.db, listing.id, weekId);
+        const paid = getBidInRollingWeek(app.db, listing.id, app.now());
         if (app.polar.kind === "live" || paid === undefined) {
           return reply.code(303).header("location", started.url).send({
             listingId: listing.id,

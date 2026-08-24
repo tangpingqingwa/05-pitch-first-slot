@@ -18,7 +18,7 @@ Pay-to-rank clone of outbid.lol. USD. Polar + fixture. No chat, no NSFW, no inve
 | Money | Integer USD cents | No float dollars |
 | Payments | `PolarPort` — fixture default; live Polar when `POLAR_LIVE=1` | Merchant of record; CI stays offline |
 | Tests | `node:test` + `tsx` | No Jest |
-| Time | UTC only; `weekId` = Monday 00:00 UTC date | SPEC cadence |
+| Time | UTC only; public window = rolling last 7 days; `weekId` = Monday date label | SPEC cadence |
 | Host | One VPS, Caddy TLS | No AWS required for v1 |
 
 **Out of stack:** Prisma, Nest, Redis, Next.js, Vercel, Supabase, Stripe (Polar is the rail).
@@ -43,7 +43,7 @@ Browser
                 │
                 ▼
               core/
-                week.ts           weekId from UTC clock
+                week.ts           rolling last-7-days window; weekId label
                 listing.ts        validate company / one-liner / url
                 rank.ts           bid desc, older wins ties
                 url.ts            strip tracking, reject chat/NSFW
@@ -107,7 +107,7 @@ function rankKey(b: Bid, listing: Listing): [number, string, string, string] {
 }
 ```
 
-- Compare only bids with `weekId === currentWeekId()`.
+- Compare only bids whose `paidAt` falls in the rolling last 7 days (`now - 7d` inclusive). Not Monday 00:00 UTC.
 - Raise: `chargeUsd = nextUsd - currentUsd`. Reject if `nextUsd <= currentUsd` or `nextUsd < 5`.
 - First bid: `chargeUsd = nextUsd`, `nextUsd >= 5`.
 - Do not store a `traction` column.
@@ -146,7 +146,7 @@ Fixture `createCheckout` immediately `applyPaid` (or exposes a test hook). Live 
 | chat | telegram / discord / wa.me → `no_chat` |
 | clicks | 0 then 1; never seeded |
 | show | extra-slot SKU → `cannot_buy_show` |
-| week | clock at Monday 00:00 UTC drops last week's rank |
+| week | clock 7 days after `paidAt` drops last week's rank; Monday 00:00 UTC does not |
 | traction | create body with `arr` does not render |
 | polar fixture | rank moves with no network |
 | live flag | unset / `0` does not call Polar |
@@ -175,7 +175,7 @@ Each PR is independently mergeable. Dependencies are hard.
 
 ### PR 3: Ranking, raise, weekly window
 
-- **Description:** Bids, `weekId`, rank = bid, older wins ties, raise = difference, Monday UTC reset.
+- **Description:** Bids, `weekId` label, rank = bid, older wins ties, raise = difference, rolling last-7-days window.
 - **Files:** `src/core/rank.ts`, `src/core/week.ts`, `src/http/bids.ts`, `tests/rank.test.ts`, `tests/week.test.ts`
 - **Dependencies:** PR 2
 - **Acceptance:** SPEC rows 3–6, 12.
