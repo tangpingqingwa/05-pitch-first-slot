@@ -282,6 +282,25 @@ if [[ -f package.json ]]; then
     || fail "occupied raise cue must say Polar charges only the difference"
   grep -q 'The $ you type is the public bid' src/http/pages.ts \
     || fail "occupied raise cue must say the typed \$ is the public bid"
+  grep -q 'data-raise-difference="true"' src/http/pages.ts \
+    || fail "occupied raise must stamp data-raise-difference on the claim"
+  grep -q 'data-raise-charge="true"' src/http/pages.ts \
+    || fail "occupied raise must stamp Polar's difference charge"
+  grep -q 'data-raise-charge-usd' src/http/pages.ts \
+    || fail "occupied raise must show Polar's difference dollars"
+  grep -q 'only the difference, not a new bid' src/http/pages.ts \
+    || fail "occupied raise must not look like a full new bid"
+  grep -q 'Same deck URL raises this row' src/http/pages.ts \
+    || fail "occupied form hint must say a same-deck raise updates the row"
+  if grep -n 'data-empty-room' -A 4 src/http/pages.ts | grep -q 'data-raise-difference'; then
+    fail "empty house must not stamp a raise-difference charge"
+  fi
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'raise-difference|raise-charge'; then
+    fail "unpaid cue must not stamp a raise-difference charge"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 8 src/http/pages.ts | grep -q 'raise-difference'; then
+    fail "raise-difference must stay on the claim form, not a new hop"
+  fi
   if grep -Eqi 'claim this rank' src/http/pages.ts src/views/skin.ts; then
     fail "occupied raise cue must not hide behind claim-this-rank copy"
   fi
@@ -300,6 +319,10 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover unranked until paid"
   grep -q 'occupied raise cue' "$test_log" \
     || fail "pages tests must cover occupied raise cue"
+  grep -q 'raise is certain' tests/pages.test.ts \
+    || fail "pages tests must cover occupied raise as Polar difference"
+  grep -q 'raise is certain' "$test_log" \
+    || fail "pages tests must cover occupied raise as Polar difference"
   grep -q 'data-open-deck="true"' src/http/pages.ts \
     || fail "paid cue must name Open deck with data-open-deck"
   grep -q 'class="open-deck"' src/http/pages.ts \
@@ -705,6 +728,12 @@ if [[ -f package.json ]]; then
     | grep -Eq 'data-prize-first|data-off-board|off-board-cue'; then
     fail "HOUSE_CSS must not contain occupied / unpaid chrome"
   fi
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -Eq 'data-raise-difference|data-raise-charge|raise-charge'; then
+    fail "HOUSE_CSS must not stamp raise-difference chrome"
+  fi
+  grep -q '.claim-note .raise-charge' src/views/skin.ts \
+    || fail "occupied raise charge must be styled on the claim"
   grep -q 'empty house stays empty' tests/pages.test.ts \
     || fail "pages tests must cover empty house stays empty"
   grep -q 'empty house stays empty' "$test_log" \
