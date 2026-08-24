@@ -109,7 +109,9 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open-three=/);
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-three=/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open-four-first/);
+  assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-four-first/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open-four=/);
+  assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-four=/);
   assertNoFalsePositiveRank(html);
   for (const name of SAMPLE_COMPANIES) {
     assert.doesNotMatch(html, new RegExp(name, "i"));
@@ -162,7 +164,9 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(boardMarkup(html), /data-open-deck/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-deck/);
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise/);
@@ -176,6 +180,7 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open-three-first/);
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-three-first/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-after-open-four-first/);
+  assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-four-first/);
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /data-empty-room/);
@@ -230,18 +235,20 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.doesNotMatch(lone, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.doesNotMatch(lone, /data-open-after-raise-one-first/);
   assert.doesNotMatch(lone, /data-open-after-raise-one=/);
-  assert.doesNotMatch(lone, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.doesNotMatch(lone, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.doesNotMatch(lone, /data-raise-after-open-two-first/);
   assert.doesNotMatch(lone, /data-raise-after-open-two=/);
   assert.doesNotMatch(lone, /data-open-after-raise-two-first/);
   assert.doesNotMatch(lone, /data-open-after-raise-two=/);
-  assert.doesNotMatch(lone, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.doesNotMatch(lone, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.doesNotMatch(lone, /data-raise-after-open-three-first/);
   assert.doesNotMatch(lone, /data-open-after-raise-three-first/);
   assert.doesNotMatch(lone, /data-raise-after-open-three=/);
   assert.doesNotMatch(lone, /data-open-after-raise-three=/);
   assert.doesNotMatch(lone, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(lone, /data-open-after-raise-four-first/);
   assert.doesNotMatch(lone, /data-raise-after-open-four=/);
+  assert.doesNotMatch(lone, /data-open-after-raise-four=/);
   assert.doesNotMatch(boardMarkup(board.body), /data-open-one-first/);
   assert.doesNotMatch(boardMarkup(board.body), /data-open-one=/);
   assert.doesNotMatch(boardMarkup(board.body), /data-raise-one-first/);
@@ -257,7 +264,9 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.doesNotMatch(boardMarkup(board.body), /data-raise-after-open-three=/);
   assert.doesNotMatch(boardMarkup(board.body), /data-open-after-raise-three=/);
   assert.doesNotMatch(boardMarkup(board.body), /data-raise-after-open-four-first/);
+  assert.doesNotMatch(boardMarkup(board.body), /data-open-after-raise-four-first/);
   assert.doesNotMatch(boardMarkup(board.body), /data-raise-after-open-four=/);
+  assert.doesNotMatch(boardMarkup(board.body), /data-open-after-raise-four=/);
 });
 
 test("same deck URL on the form raises the existing row by the difference", async () => {
@@ -351,7 +360,7 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
     /class="cue later-cue"[\s\S]*class="who"[\s\S]*Helix Labs[\s\S]*data-open-later="true"[\s\S]*Open deck[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#2 · \$5/,
   );
   assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 2);
-  assert.equal((listingCard(html, "Stage Co").match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/g) ?? []).length, 1);
+  assert.equal((listingCard(html, "Stage Co").match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/g) ?? []).length, 1);
   assert.equal((listingCard(html, "Helix Labs").match(/class="open-deck open-later"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-deck="true"/g) ?? []).length, 1);
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-deck="true"/);
@@ -370,7 +379,7 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.match(listingCard(html, "Stage Co"), /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(listingCard(html, "Stage Co"), /data-open-after-raise-one-first="true"/);
   assert.match(listingCard(html, "Stage Co"), /data-open-after-raise-one="true"/);
-  assert.match(listingCard(html, "Stage Co"), /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(listingCard(html, "Stage Co"), /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-open-two-first="true"/);
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-open-two="true"/);
   assert.match(listingCard(html, "Stage Co"), /data-open-after-raise-two-first="true"/);
@@ -380,7 +389,9 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-open-three="true"/);
   assert.match(listingCard(html, "Stage Co"), /data-open-after-raise-three="true"/);
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-open-four-first="true"/);
+  assert.match(listingCard(html, "Stage Co"), /data-open-after-raise-four-first="true"/);
   assert.match(listingCard(html, "Stage Co"), /data-raise-after-open-four="true"/);
+  assert.match(listingCard(html, "Stage Co"), /data-open-after-raise-four="true"/);
   assert.match(listingCard(html, "Helix Labs"), /data-later-deck="true"/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-one-first/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-one=/);
@@ -397,7 +408,9 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-raise-after-open-three=/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-after-raise-three=/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-raise-after-open-four-first/);
+  assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-after-raise-four-first/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-raise-after-open-four=/);
+  assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-after-raise-four=/);
   assert.doesNotMatch(html, /data-empty-room/);
   assert.doesNotMatch(html, /The room is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
@@ -462,18 +475,20 @@ test("occupied paid cue names Open deck as the only outbound hop", async () => {
   assert.doesNotMatch(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.doesNotMatch(paid, /data-open-after-raise-one-first/);
   assert.doesNotMatch(paid, /data-open-after-raise-one=/);
-  assert.doesNotMatch(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.doesNotMatch(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.doesNotMatch(paid, /data-raise-after-open-two-first/);
   assert.doesNotMatch(paid, /data-raise-after-open-two=/);
   assert.doesNotMatch(paid, /data-open-after-raise-two-first/);
   assert.doesNotMatch(paid, /data-open-after-raise-two=/);
-  assert.doesNotMatch(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.doesNotMatch(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.doesNotMatch(paid, /data-raise-after-open-three-first/);
   assert.doesNotMatch(paid, /data-open-after-raise-three-first/);
   assert.doesNotMatch(paid, /data-raise-after-open-three=/);
   assert.doesNotMatch(paid, /data-open-after-raise-three=/);
   assert.doesNotMatch(paid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(paid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(paid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(paid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-open-deck/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.doesNotMatch(unpaid, /data-raise-after-deck/);
@@ -575,7 +590,7 @@ test("occupied #1 cue hops Then Outbid after Open deck", async () => {
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-open-after-raise-one-first="true"/);
   assert.match(paid, /data-open-after-raise-one="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /data-raise-after-open-two-first="true"/);
   assert.match(paid, /data-raise-after-open-two="true"/);
   assert.match(paid, /data-open-after-raise-two-first="true"/);
@@ -585,7 +600,9 @@ test("occupied #1 cue hops Then Outbid after Open deck", async () => {
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
   assert.doesNotMatch(below, /data-raise-one-first/);
   assert.doesNotMatch(below, /data-raise-one=/);
   assert.doesNotMatch(below, /data-open-after-raise-one-first/);
@@ -599,7 +616,9 @@ test("occupied #1 cue hops Then Outbid after Open deck", async () => {
   assert.doesNotMatch(below, /data-raise-after-open-three=/);
   assert.doesNotMatch(below, /data-open-after-raise-three=/);
   assert.doesNotMatch(below, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(below, /data-open-after-raise-four-first/);
   assert.doesNotMatch(below, /data-raise-after-open-four=/);
+  assert.doesNotMatch(below, /data-open-after-raise-four=/);
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /The \$ you type is the public bid/);
   assert.doesNotMatch(html, /typical raise/i);
@@ -679,7 +698,9 @@ test("occupied #1 cue hops Open deck after Then Outbid", async () => {
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
   assert.doesNotMatch(below, /data-raise-one-first/);
   assert.doesNotMatch(below, /data-raise-one=/);
   assert.doesNotMatch(below, /data-open-after-raise-one-first/);
@@ -693,7 +714,9 @@ test("occupied #1 cue hops Open deck after Then Outbid", async () => {
   assert.doesNotMatch(below, /data-raise-after-open-three=/);
   assert.doesNotMatch(below, /data-open-after-raise-three=/);
   assert.doesNotMatch(below, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(below, /data-open-after-raise-four-first/);
   assert.doesNotMatch(below, /data-raise-after-open-four=/);
+  assert.doesNotMatch(below, /data-open-after-raise-four=/);
   assert.match(below, /data-rank="2"/);
   assert.match(below, /data-open-deck="true"/);
   assert.match(below, /data-later-deck="true"/);
@@ -801,7 +824,9 @@ test("occupied #1 cue hops Then Outbid after the after-raise Open deck", async (
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
   assert.doesNotMatch(below, /data-raise-one-first/);
   assert.doesNotMatch(below, /data-raise-one=/);
   assert.doesNotMatch(below, /data-open-after-raise-one-first/);
@@ -815,7 +840,9 @@ test("occupied #1 cue hops Then Outbid after the after-raise Open deck", async (
   assert.doesNotMatch(below, /data-raise-after-open-three=/);
   assert.doesNotMatch(below, /data-open-after-raise-three=/);
   assert.doesNotMatch(below, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(below, /data-open-after-raise-four-first/);
   assert.doesNotMatch(below, /data-raise-after-open-four=/);
+  assert.doesNotMatch(below, /data-open-after-raise-four=/);
   assert.match(below, /data-rank="2"/);
   assert.match(below, /data-open-deck="true"/);
   assert.match(below, /data-later-deck="true"/);
@@ -923,7 +950,9 @@ test("occupied later ranks stamp Open deck as the certain hop, not a second #1 t
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
   assert.doesNotMatch(later, /href="#claim"/);
   assert.doesNotMatch(later, /class="listing top"/);
   assert.doesNotMatch(later, /data-rank="1"/);
@@ -945,19 +974,21 @@ test("occupied later ranks stamp Open deck as the certain hop, not a second #1 t
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
 
   assert.match(paid, /data-rank="1"/);
   assert.match(paid, /data-open-deck="true"/);
   assert.match(paid, /data-open-one-first="true"/);
   assert.match(paid, /data-open-one="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /data-raise-one-first="true"/);
   assert.match(paid, /data-raise-one="true"/);
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-open-after-raise-one-first="true"/);
   assert.match(paid, /data-open-after-raise-one="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /data-raise-after-open-two-first="true"/);
   assert.match(paid, /data-raise-after-open-two="true"/);
   assert.match(paid, /data-open-after-raise-two-first="true"/);
@@ -967,7 +998,9 @@ test("occupied later ranks stamp Open deck as the certain hop, not a second #1 t
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
   assert.match(paid, /data-raise-after-deck="true"/);
   assert.match(paid, /Then Outbid/);
   assert.match(paid, /data-open-after-raise="true"/);
@@ -995,7 +1028,9 @@ test("occupied later ranks stamp Open deck as the certain hop, not a second #1 t
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -1079,7 +1114,7 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   assert.match(paid, /data-rank="1"/);
   assert.match(paid, /data-open-one-first="true"/);
   assert.match(paid, /data-open-one="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /data-open-deck="true"/);
   assert.match(paid, /Open deck/);
   assert.match(
@@ -1109,7 +1144,7 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-open-after-raise-one-first="true"/);
   assert.match(paid, /data-open-after-raise-one="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /data-raise-after-open-two-first="true"/);
   assert.match(paid, /data-raise-after-open-two="true"/);
   assert.match(paid, /data-open-after-raise-two-first="true"/);
@@ -1119,8 +1154,10 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
-  assert.equal((paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/g) ?? []).length, 1);
+  assert.match(paid, /data-open-after-raise-four="true"/);
+  assert.equal((paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-open-one="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-one-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-one="true"/g) ?? []).length, 1);
@@ -1137,7 +1174,9 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.doesNotMatch(paid, /data-later-deck/);
   assert.doesNotMatch(paid, /data-open-later/);
   assert.doesNotMatch(paid, /open-later/);
@@ -1161,7 +1200,9 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
   assert.doesNotMatch(later, /Then Outbid/);
 
   assert.match(last, /data-rank="3"/);
@@ -1181,7 +1222,9 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
 
   assert.doesNotMatch(unpaid, /data-open-one-first/);
   assert.doesNotMatch(unpaid, /data-open-one=/);
@@ -1198,7 +1241,9 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -1279,7 +1324,7 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-open-after-raise-one-first="true"/);
   assert.match(paid, /data-open-after-raise-one="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /data-raise-after-open-two-first="true"/);
   assert.match(paid, /data-raise-after-open-two="true"/);
   assert.match(paid, /data-open-after-raise-two-first="true"/);
@@ -1289,7 +1334,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
   assert.match(paid, /data-raise-after-deck="true"/);
   assert.match(paid, /Then Outbid/);
   assert.match(paid, /Polar charges only the difference/);
@@ -1299,6 +1346,7 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   assert.equal((paid.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((paid.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-one-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-one="true"/g) ?? []).length, 1);
@@ -1311,7 +1359,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-deck="true"/g) ?? []).length, 1);
   assert.equal((html.match(/>\s*Then Outbid\s*</g) ?? []).length, 2);
 
@@ -1347,7 +1397,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
   assert.doesNotMatch(later, /Then Outbid/);
   assert.doesNotMatch(last, /data-raise-one-first/);
   assert.doesNotMatch(last, /data-raise-one=/);
@@ -1362,7 +1414,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-raise-one-first/);
   assert.doesNotMatch(unpaid, /data-raise-one=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-one-first/);
@@ -1376,7 +1430,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Then Outbid/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -1444,7 +1500,7 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   assert.match(paid, /data-open-one="true"/);
   assert.match(paid, /data-raise-one="true"/);
   assert.match(paid, /data-open-after-raise-one="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-raise-after-open-two-first="true"/);
   assert.match(paid, /data-raise-after-open-two="true"/);
@@ -1455,7 +1511,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
   assert.match(paid, /data-open-deck="true"/);
   assert.match(paid, /Open deck/);
   assert.match(
@@ -1466,7 +1524,7 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   );
   assert.equal((paid.match(/data-open-after-raise-one="true"/g) ?? []).length, 1);
   assert.equal(
-    (paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/g) ?? []).length,
+    (paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/g) ?? []).length,
     1,
   );
   assert.equal((html.match(/data-open-after-raise-one-first="true"/g) ?? []).length, 1);
@@ -1482,7 +1540,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise="true"/g) ?? []).length, 1);
   assert.equal((html.match(/>\s*Then Outbid\s*</g) ?? []).length, 2);
 
@@ -1511,7 +1571,7 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   assert.match(later, /data-later-deck="true"/);
   assert.doesNotMatch(later, /data-open-after-raise-one-first/);
   assert.doesNotMatch(later, /data-open-after-raise-one=/);
-  assert.doesNotMatch(later, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.doesNotMatch(later, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.doesNotMatch(later, /data-raise-after-open-two-first/);
   assert.doesNotMatch(later, /data-raise-after-open-two=/);
   assert.doesNotMatch(later, /data-open-after-raise-two-first/);
@@ -1521,7 +1581,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
   assert.doesNotMatch(later, /Then Outbid/);
   assert.doesNotMatch(last, /data-open-after-raise-one-first/);
   assert.doesNotMatch(last, /data-open-after-raise-one=/);
@@ -1534,7 +1596,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-one-first/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-one=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-two-first/);
@@ -1546,7 +1610,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -1634,8 +1700,10 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-raise-after-deck="true"/);
   assert.match(paid, /Then Outbid/);
@@ -1645,6 +1713,7 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.equal((paid.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((paid.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-one="true"/g) ?? []).length, 1);
   assert.equal(
     (paid.match(/class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/g) ?? []).length,
@@ -1659,7 +1728,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-one="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-one="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-deck="true"/g) ?? []).length, 1);
@@ -1694,7 +1765,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
   assert.doesNotMatch(later, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.doesNotMatch(later, /Then Outbid/);
   assert.doesNotMatch(last, /data-raise-after-open-two-first/);
@@ -1706,7 +1779,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-two-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-two=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-two-first/);
@@ -1716,7 +1791,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Then Outbid/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -1793,8 +1870,10 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-open-deck="true"/);
   assert.match(paid, /Open deck/);
@@ -1810,7 +1889,7 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.equal((paid.match(/data-open-after-raise-two="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-open-after-raise-one="true"/g) ?? []).length, 1);
   assert.equal(
-    (paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/g) ?? [])
+    (paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/g) ?? [])
       .length,
     1,
   );
@@ -1822,7 +1901,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 3);
   assert.equal((html.match(/>\s*Then Outbid\s*</g) ?? []).length, 2);
@@ -1856,8 +1937,10 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
-  assert.doesNotMatch(later, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
+  assert.doesNotMatch(later, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.doesNotMatch(later, /Then Outbid/);
   assert.doesNotMatch(last, /data-open-after-raise-two-first/);
   assert.doesNotMatch(last, /data-open-after-raise-two=/);
@@ -1866,7 +1949,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-two-first/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-two=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-three-first/);
@@ -1874,7 +1959,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -1962,8 +2049,10 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-raise-after-deck="true"/);
   assert.match(paid, /Then Outbid/);
@@ -1972,6 +2061,7 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.equal((paid.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((paid.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-after-open-two="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-one="true"/g) ?? []).length, 1);
   assert.equal(
@@ -1983,7 +2073,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-two="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-two="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-one="true"/g) ?? []).length, 1);
@@ -2016,7 +2108,9 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
   assert.doesNotMatch(later, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.doesNotMatch(later, /Then Outbid/);
   assert.doesNotMatch(last, /data-raise-after-open-three-first/);
@@ -2024,13 +2118,17 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-three-first/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Then Outbid/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -2107,8 +2205,10 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-open-deck="true"/);
   assert.match(paid, /Open deck/);
@@ -2125,7 +2225,7 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.equal((paid.match(/data-open-after-raise-two="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal(
-    (paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/g) ?? [])
+    (paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/g) ?? [])
       .length,
     1,
   );
@@ -2134,7 +2234,9 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.equal((html.match(/data-raise-after-open-three-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-two="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 3);
@@ -2167,21 +2269,27 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   assert.doesNotMatch(later, /data-raise-after-open-three-first/);
   assert.doesNotMatch(later, /data-raise-after-open-three=/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
-  assert.doesNotMatch(later, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
+  assert.doesNotMatch(later, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.doesNotMatch(later, /Then Outbid/);
   assert.doesNotMatch(last, /data-open-after-raise-three-first/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-three-first/);
   assert.doesNotMatch(last, /data-raise-after-open-three=/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three-first/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-three-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
@@ -2262,6 +2370,7 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.match(paid, /data-raise-after-open-three-first="true"/);
   assert.match(paid, /data-open-after-raise-three-first="true"/);
   assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
   assert.match(paid, /data-open-one="true"/);
   assert.match(paid, /data-raise-one="true"/);
   assert.match(paid, /data-open-after-raise-one="true"/);
@@ -2270,13 +2379,15 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.match(paid, /data-raise-after-open-three="true"/);
   assert.match(paid, /data-open-after-raise-three="true"/);
   assert.match(paid, /data-raise-after-open-four="true"/);
-  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
   assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.match(paid, /data-raise-after-deck="true"/);
   assert.match(paid, /Then Outbid/);
   assert.match(paid, /Polar charges only the difference/);
   assert.match(paid, /href="#claim"/);
   assert.equal((paid.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((paid.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((paid.match(/data-raise-one="true"/g) ?? []).length, 1);
@@ -2285,8 +2396,10 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
     1,
   );
   assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three-first="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-raise-after-open-three="true"/g) ?? []).length, 1);
   assert.equal((html.match(/data-open-after-raise-two="true"/g) ?? []).length, 1);
@@ -2316,18 +2429,24 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.match(later, /data-rank="2"/);
   assert.match(later, /data-later-deck="true"/);
   assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
   assert.doesNotMatch(later, /data-open-after-raise-three-first/);
   assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
   assert.doesNotMatch(later, /data-open-after-raise-three=/);
   assert.doesNotMatch(later, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
   assert.doesNotMatch(later, /Then Outbid/);
   assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
   assert.doesNotMatch(last, /data-open-after-raise-three-first/);
   assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
   assert.doesNotMatch(last, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three-first/);
   assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
   assert.doesNotMatch(unpaid, /data-open-after-raise-three=/);
   assert.doesNotMatch(unpaid, /Then Outbid/);
   assert.match(unpaid, /Deck or site/);
@@ -2335,6 +2454,162 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
   assert.doesNotMatch(html, /claim this rank/i);
+});
+
+test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated four", async () => {
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+
+  const challenger = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${challenger.id}/bids`,
+    payload: { amountUsd: 8 },
+  });
+  assert.equal(second.statusCode, 200);
+
+  const rival = await createListing(app, {
+    company: "Rival Pitch",
+    oneLiner: "Lists below at five",
+    url: "https://rival.example/deck",
+  });
+  const third = await app.inject({
+    method: "POST",
+    url: `/listings/${rival.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(third.statusCode, 200);
+  await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const paid = listingCard(html, "Stage Co");
+  const later = listingCard(html, "Helix Labs");
+  const last = listingCard(html, "Rival Pitch");
+  const unpaid = listingCard(html, "Cue Only");
+
+  assert.match(paid, /data-rank="1"/);
+  assert.match(paid, /data-open-one-first="true"/);
+  assert.match(paid, /data-raise-one-first="true"/);
+  assert.match(paid, /data-open-after-raise-one-first="true"/);
+  assert.match(paid, /data-raise-after-open-two-first="true"/);
+  assert.match(paid, /data-open-after-raise-two-first="true"/);
+  assert.match(paid, /data-raise-after-open-three-first="true"/);
+  assert.match(paid, /data-open-after-raise-three-first="true"/);
+  assert.match(paid, /data-raise-after-open-four-first="true"/);
+  assert.match(paid, /data-open-after-raise-four-first="true"/);
+  assert.match(paid, /data-open-one="true"/);
+  assert.match(paid, /data-raise-one="true"/);
+  assert.match(paid, /data-open-after-raise-one="true"/);
+  assert.match(paid, /data-raise-after-open-two="true"/);
+  assert.match(paid, /data-open-after-raise-two="true"/);
+  assert.match(paid, /data-raise-after-open-three="true"/);
+  assert.match(paid, /data-open-after-raise-three="true"/);
+  assert.match(paid, /data-raise-after-open-four="true"/);
+  assert.match(paid, /data-open-after-raise-four="true"/);
+  assert.match(paid, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
+  assert.match(paid, /class="raise-after-deck raise-one raise-after-open-two raise-after-open-three raise-after-open-four"/);
+  assert.match(paid, /data-open-deck="true"/);
+  assert.match(paid, /Open deck/);
+  assert.match(paid, /Then Outbid/);
+  assert.match(paid, /Polar charges only the difference/);
+  assert.match(paid, /href="#claim"/);
+  assert.match(
+    paid,
+    new RegExp(
+      `href="/listings/${leader.id}/clicks"[\\s\\S]*Open deck[\\s\\S]*https://stage\\.example/deck`,
+    ),
+  );
+  assert.equal((paid.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
+  assert.equal((paid.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
+  assert.equal((paid.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal(
+    (paid.match(/class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/g) ?? [])
+      .length,
+    1,
+  );
+  assert.equal((html.match(/data-open-after-raise-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-raise-after-open-four-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-raise-after-open-four="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise-three="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-after-raise="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 3);
+  assert.equal((html.match(/>\s*Then Outbid\s*</g) ?? []).length, 2);
+
+  const stampAt = paid.indexOf('data-open-after-raise-four-first="true"');
+  const whoAt = paid.indexOf('class="who"');
+  const openAt = paid.indexOf('data-open-after-raise-four="true"');
+  const openCopy = paid.indexOf("Open deck");
+  const raiseAt = paid.indexOf('data-raise-after-open-four="true"');
+  const raiseCopy = paid.indexOf("Then Outbid");
+  const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
+  const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
+  const seatAt = paid.indexOf('class="seat"');
+  const bidAt = paid.indexOf("#1 · $20");
+  assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
+  assert.ok(openAt < openCopy && raiseAt > openCopy && raiseCopy > raiseAt);
+  assert.ok(laterOpenAt > raiseCopy && raiseOpenAt > laterOpenAt);
+  assert.ok(seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.match(
+    paid,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-four="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-four="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+  );
+
+  assert.match(later, /data-rank="2"/);
+  assert.match(later, /data-later-deck="true"/);
+  assert.match(later, /data-open-later="true"/);
+  assert.doesNotMatch(later, /data-open-after-raise-four-first/);
+  assert.doesNotMatch(later, /data-open-after-raise-four=/);
+  assert.doesNotMatch(later, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(later, /data-raise-after-open-four=/);
+  assert.doesNotMatch(later, /class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"/);
+  assert.doesNotMatch(later, /Then Outbid/);
+  assert.doesNotMatch(last, /data-open-after-raise-four-first/);
+  assert.doesNotMatch(last, /data-open-after-raise-four=/);
+  assert.doesNotMatch(last, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(last, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four-first/);
+  assert.doesNotMatch(unpaid, /data-open-after-raise-four=/);
+  assert.doesNotMatch(unpaid, /data-raise-after-open-four-first/);
+  assert.doesNotMatch(unpaid, /data-raise-after-open-four=/);
+  assert.doesNotMatch(unpaid, /Open deck/);
+  assert.match(unpaid, /Deck or site/);
+  assert.match(unpaid, /Unranked — no paid bid yet/);
+  assert.doesNotMatch(html, /typical raise/i);
+  assert.doesNotMatch(html, /hot deal/i);
+  assert.doesNotMatch(html, /claim this rank/i);
+
+  const opened = await app.inject({
+    method: "GET",
+    url: `/listings/${leader.id}/clicks`,
+  });
+  assert.equal(opened.statusCode, 302);
+  assert.equal(opened.headers.location, "https://stage.example/deck");
+  const boardAfter = (await app.inject({ method: "GET", url: "/" })).body;
+  assert.match(listingCard(boardAfter, "Stage Co"), /data-clicks="1"/);
+  assert.match(listingCard(boardAfter, "Stage Co"), /1 clicks/);
+  assert.match(listingCard(boardAfter, "Helix Labs"), /data-clicks="0"/);
 });
 
 test("GET /checkout/complete returns to the room", async () => {
