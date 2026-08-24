@@ -117,6 +117,14 @@ function bidSeat(rankHtml: string, clicks: number): string {
     </div>`;
 }
 
+/** Later Bid .seat after occupied #1 Open. Same Bid DNA, quieter than the prize hop. */
+function laterBidSeat(rankHtml: string, clicks: number): string {
+  return bidSeat(rankHtml, clicks).replace(
+    'class="seat"',
+    'class="seat later-seat" data-later-seat="true"',
+  );
+}
+
 function deckHop(
   listing: Listing,
   paid: boolean,
@@ -139,7 +147,7 @@ function deckHop(
       ? `\n        ${raiseAfterDeckHop(true)}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
       : "";
     return `<p class="deck">
-        <a class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five" data-open-deck="true" data-open-one="true" data-open-after-raise-one="true" data-open-after-raise-two="true" data-open-after-raise-three="true" data-open-after-raise-four="true" data-open-after-raise-five="true" href="${href}" rel="noopener noreferrer">
+        <a class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five" data-open-deck="true" data-open-one="true" data-open-after-raise-one="true" data-open-after-raise-two="true" data-open-after-raise-three="true" data-open-after-raise-four="true" data-open-after-raise-five="true" data-first-click="open" href="${href}" rel="noopener noreferrer">
           Open deck
           <span class="deck-url">${url}</span>
         </a>${next}
@@ -203,7 +211,7 @@ function renderCueCard(input: {
     ? `<div class="cue later-cue">
     ${prizeTitle}
     ${hop}
-    ${bidSeat(input.rankHtml, input.clicks)}
+    ${laterBidSeat(input.rankHtml, input.clicks)}
   </div>`
     : prizeFirst && openOne
       ? `<div class="cue open-one-cue">
@@ -357,7 +365,12 @@ export function renderBoard(
   const unranked = listings.filter((listing) => !rankedIds.has(listing.id));
   const clicksOf = (id: string): number => clicksById.get(id) ?? 0;
   const laterDecksExist = ranked.some((row) => row.rank > 1);
-  const board = ranked.map((row) =>
+  const lead = ranked.filter((row) => row.rank === 1);
+  const laterSeats = ranked.filter((row) => row.rank > 1);
+  const board = lead.map((row) =>
+    renderRanked(row, clicksOf(row.id), laterDecksExist),
+  );
+  const laterBoard = laterSeats.map((row) =>
     renderRanked(row, clicksOf(row.id), laterDecksExist),
   );
   const offBoard = unranked.map((row) => renderUnranked(row, clicksOf(row.id)));
@@ -367,8 +380,14 @@ export function renderBoard(
   const rankedRows =
     board.length === 0
       ? ""
-      : `<ul class="listings">
+      : `<ul class="listings" aria-label="This week's opening slot">
 ${board.join("\n")}
+</ul>`;
+  const laterRows =
+    laterBoard.length === 0
+      ? ""
+      : `<ul class="listings listings-later" data-later-seats="true" aria-label="Later seats this week">
+${laterBoard.join("\n")}
 </ul>`;
   const unpaidRows =
     offBoard.length === 0
@@ -379,6 +398,7 @@ ${offBoard.join("\n")}
 </ul>
 </aside>`;
   const rows = emptyRoom ? "" : `${rankedRows}
+  ${laterRows}
   ${unpaidRows}`;
 
   return renderLayout({
