@@ -732,9 +732,9 @@ if [[ -f package.json ]]; then
     fail "HOUSE_CSS must not style later-fact chrome — only hide a leak"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -E 'data-later-seat|listings-later|data-first-click="open"' \
+    | grep -E 'data-later-seat|listings-later|data-first-click="open"|data-claim-after-slot' \
     | grep -v 'house-empty\[data-empty-house\]'; then
-    fail "HOUSE_CSS must not style later Bid seats / occupied Open — only hide a leak"
+    fail "HOUSE_CSS must not style later Bid seats / occupied Open / Claim-after-slot — only hide a leak"
   fi
   grep -q 'occupied #1 pitch title stays the prize — Bid seat is not beside the title' tests/pages.test.ts \
     || fail "pages tests must keep occupied #1 money off the Bid seat"
@@ -816,6 +816,8 @@ if [[ -f package.json ]]; then
     || fail "empty house must hide leaked listings-later"
   grep -F -q '.house-empty[data-empty-house] [data-first-click="open"]' src/views/skin.ts \
     || fail "empty house must hide leaked occupied Open first click"
+  grep -F -q '.house-empty[data-empty-house] [data-claim-after-slot]' src/views/skin.ts \
+    || fail "empty house must hide leaked occupied Claim-after-slot chrome"
   if grep -E '^\.listing\[data-prize-first\] \.company' src/views/skin.ts; then
     fail "prize-first CSS must not apply outside house-occupied"
   fi
@@ -886,9 +888,9 @@ if [[ -f package.json ]]; then
     fail "later Bid seat must stay money, not a second hop"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -E 'data-later-seat|listings-later|data-first-click="open"' \
+    | grep -E 'data-later-seat|listings-later|data-first-click="open"|data-claim-after-slot' \
     | grep -v 'house-empty\[data-empty-house\]'; then
-    fail "HOUSE_CSS must not style later Bid seats / occupied Open — only hide a leak"
+    fail "HOUSE_CSS must not style later Bid seats / occupied Open / Claim-after-slot — only hide a leak"
   fi
   if grep -E '^\.listings-later' src/views/skin.ts; then
     fail "later Bid seat CSS must stay scoped to house-occupied"
@@ -911,6 +913,36 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover occupied rolling last-7-days window"
   grep -q 'rolling last-7-days — not Monday 00:00 UTC' "$test_log" \
     || fail "pages tests must cover occupied rolling last-7-days window"
+  grep -q 'data-claim-after-slot="true"' src/http/pages.ts \
+    || fail "occupied Claim #1 must stamp data-claim-after-slot after the slot"
+  grep -q 'class="claim-after-slot" data-claim-after-slot="true"' src/http/pages.ts \
+    || fail "occupied Claim #1 must wrap as claim-after-slot, not a same-weight rail"
+  grep -q 'occupiedHouse === true' src/http/pages.ts \
+    || fail "Claim-after-slot composition must apply only on the occupied house"
+  if grep -n 'body: `${claimChrome' src/http/pages.ts; then
+    fail "occupied / must not always mount Claim chrome above the listings"
+  fi
+  grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot]' src/views/skin.ts \
+    || fail "occupied Claim after the slot must be quieter than Open #1"
+  if grep -E '^\.claim-after-slot' src/views/skin.ts; then
+    fail "Claim-after-slot CSS must stay scoped to house-occupied"
+  fi
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'claim-after-slot'; then
+    fail "unpaid cue must not stamp Claim-after-slot"
+  fi
+  if grep -Eq 'raise-after-open-seven|open-after-raise-six' src/http/pages.ts src/views/skin.ts; then
+    fail "must not stamp raise-after-open-N / another named hop"
+  fi
+  grep -q 'occupied house keeps one first click' tests/pages.test.ts \
+    || fail "pages tests must cover occupied Open #1 before Claim"
+  grep -q 'Claim stays after the slot' tests/pages.test.ts \
+    || fail "pages tests must keep Claim #1 after the occupied slot"
+  grep -q 'Claim stays after the slot' "$test_log" \
+    || fail "pages tests must keep Claim #1 after the occupied slot"
+  grep -q 'doesNotMatch(boardMarkup(empty), /data-claim-after-slot/)' tests/pages.test.ts \
+    || fail "empty / must not wrap Claim after the slot"
+  grep -q 'claimWrapAt > offAt && claimAt > claimWrapAt' tests/pages.test.ts \
+    || fail "pages tests must put occupied Claim after Open #1 and the listings"
   if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'data-rolling-week'; then
     fail "unpaid cue must not stamp the rolling week window"
   fi
