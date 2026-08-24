@@ -669,6 +669,27 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover prize before price on occupied #1"
   grep -q 'pitch title reads first and larger than $bid' "$test_log" \
     || fail "pages tests must cover prize before price on occupied #1"
+  grep -q 'data-off-board="true"' src/http/pages.ts \
+    || fail "unpaid cue must stamp data-off-board"
+  grep -q 'Not on the board' src/http/pages.ts \
+    || fail "unpaid cue must say Not on the board"
+  grep -q 'class="cue off-board-cue"' src/http/pages.ts \
+    || fail "unpaid cue must use the off-board cue"
+  grep -q 'data-off-board' src/views/skin.ts \
+    || fail "unpaid off-board cue must be styled off the seat"
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'class="seat"'; then
+    fail "unpaid cue must not take a ranked seat"
+  fi
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'cue-label">Bid'; then
+    fail "unpaid cue must not label a Bid seat"
+  fi
+  if grep -n 'function renderRanked' -A 18 src/http/pages.ts | grep -q 'off-board'; then
+    fail "paid ranks must not stamp off-board"
+  fi
+  grep -q 'unpaid cue stays off the board and does not take a seat' tests/pages.test.ts \
+    || fail "pages tests must cover unpaid off-board"
+  grep -q 'unpaid cue stays off the board' "$test_log" \
+    || fail "pages tests must cover unpaid off-board"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi

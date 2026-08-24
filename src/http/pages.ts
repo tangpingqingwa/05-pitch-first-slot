@@ -200,14 +200,12 @@ function renderCueCard(input: {
     </div>
   </div>
   ${hop}`
-      : `<div class="cue">
+      : `<div class="cue off-board-cue">
     <div class="who">
       <p class="company">${company}</p>
       <p class="one-liner">${oneLiner}</p>
       ${hop}
-    </div>
-    <div class="seat">
-      <span class="cue-label">Bid</span>
+      <span class="cue-label">Not on the board</span>
       <p class="rank">${input.rankHtml}</p>
       <p class="clicks">${input.clicks} clicks</p>
     </div>
@@ -222,7 +220,7 @@ function renderUnranked(listing: Listing, clicks: number): string {
     listing,
     clicks,
     rankHtml: "Unranked — no paid bid yet",
-    attrs: ' data-unranked="true"',
+    attrs: ' data-unranked="true" data-off-board="true"',
     paid: false,
   });
 }

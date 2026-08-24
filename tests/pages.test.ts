@@ -142,10 +142,14 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.match(html, /https:\/\/helix\.example\/deck/);
   assert.match(html, /Unranked — no paid bid yet/);
   assert.match(html, /data-unranked="true"/);
+  assert.match(html, /data-off-board="true"/);
   assert.match(html, /class="who"[\s\S]*Helix Labs[\s\S]*Benchtop instruments for small labs[\s\S]*Deck or site[\s\S]*https:\/\/helix\.example\/deck/);
-  assert.match(html, /class="seat"[\s\S]*Bid[\s\S]*Unranked — no paid bid yet/);
+  assert.match(html, /Not on the board[\s\S]*Unranked — no paid bid yet/);
   const unpaid = listingCard(html, "Helix Labs");
   assert.match(unpaid, /Deck or site/);
+  assert.match(unpaid, /Not on the board/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.doesNotMatch(unpaid, /cue-label">Bid</);
   assert.doesNotMatch(unpaid, /data-open-deck/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.doesNotMatch(unpaid, /data-raise-after-deck/);
@@ -564,6 +568,11 @@ test("occupied paid cue names Open deck as the only outbound hop", async () => {
   assert.doesNotMatch(unpaid, /data-open-later/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
+  assert.match(unpaid, /data-off-board="true"/);
+  assert.match(unpaid, /Not on the board/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.doesNotMatch(unpaid, /cue-label">Bid</);
+  assert.doesNotMatch(paid, /data-off-board/);
   assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 1);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
@@ -3585,6 +3594,13 @@ test("occupied #1 pitch title reads first and larger than $bid", async () => {
   assert.doesNotMatch(unpaid, /data-prize-first/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
   assert.match(unpaid, /Deck or site/);
+  assert.match(unpaid, /data-off-board="true"/);
+  assert.match(unpaid, /Not on the board/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.doesNotMatch(unpaid, /cue-label">Bid</);
+  assert.doesNotMatch(paid, /data-off-board/);
+  assert.doesNotMatch(later, /data-off-board/);
+  assert.doesNotMatch(last, /data-off-board/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /Polar charges only the difference/);
@@ -3592,6 +3608,86 @@ test("occupied #1 pitch title reads first and larger than $bid", async () => {
   assert.doesNotMatch(html, /hot deal/i);
   assert.doesNotMatch(html, /claim this rank/i);
   assert.doesNotMatch(html, /The room is empty/);
+});
+
+test("unpaid cue stays off the board and does not take a seat", async () => {
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+
+  const later = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${later.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(second.statusCode, 200);
+
+  await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const paid = listingCard(html, "Stage Co");
+  const below = listingCard(html, "Helix Labs");
+  const unpaid = listingCard(html, "Cue Only");
+
+  assert.match(unpaid, /data-unranked="true"/);
+  assert.match(unpaid, /data-off-board="true"/);
+  assert.match(unpaid, /class="cue off-board-cue"/);
+  assert.match(unpaid, /Not on the board/);
+  assert.match(unpaid, /Unranked — no paid bid yet/);
+  assert.match(unpaid, /Deck or site/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.doesNotMatch(unpaid, /cue-label">Bid</);
+  assert.doesNotMatch(unpaid, /data-rank="/);
+  assert.doesNotMatch(unpaid, /#1/);
+  assert.doesNotMatch(unpaid, /#2/);
+  assert.doesNotMatch(unpaid, /Open deck/);
+  assert.doesNotMatch(unpaid, /Then Outbid/);
+  assert.doesNotMatch(unpaid, /data-prize-first/);
+  assert.doesNotMatch(unpaid, /data-later-deck/);
+  assert.doesNotMatch(unpaid, /data-open-deck/);
+  const whoAt = unpaid.indexOf('class="who"');
+  const offAt = unpaid.indexOf("Not on the board");
+  const unrankedAt = unpaid.indexOf("Unranked — no paid bid yet");
+  assert.ok(whoAt > -1 && offAt > whoAt && unrankedAt > offAt);
+
+  assert.match(paid, /data-rank="1"/);
+  assert.match(paid, /class="seat"/);
+  assert.match(paid, /cue-label">Bid</);
+  assert.doesNotMatch(paid, /data-off-board/);
+  assert.doesNotMatch(paid, /Not on the board/);
+  assert.match(below, /data-rank="2"/);
+  assert.match(below, /class="seat"/);
+  assert.doesNotMatch(below, /data-off-board/);
+  assert.doesNotMatch(below, /Not on the board/);
+  assert.equal((html.match(/data-off-board="true"/g) ?? []).length, 1);
+  assert.match(html, /data-off-board[\s\S]*\.off-board-cue/);
+  assert.match(html, /class="claim-note" data-occupied-raise/);
+  assert.match(html, /Polar charges only the difference/);
+  assert.doesNotMatch(html, /The room is empty/);
+  assert.doesNotMatch(html, /typical raise/i);
+  assert.doesNotMatch(html, /hot deal/i);
+  assert.doesNotMatch(html, /claim this rank/i);
 });
 
 test("GET /checkout/complete returns to the room", async () => {

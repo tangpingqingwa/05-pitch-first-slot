@@ -559,12 +559,19 @@ h1.headline {
   color: var(--ink);
   max-width: 10rem;
 }
-.listing[data-unranked] .seat .rank {
+.listing[data-off-board] .off-board-cue {
+  grid-template-columns: minmax(0, 1fr);
+}
+.listing[data-off-board] .rank {
+  margin: 0.2rem 0 0;
   font-family: var(--sans);
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink-soft);
-  max-width: 8.5rem;
+  max-width: none;
+}
+.listing[data-off-board] .cue-label {
+  margin-top: 0.45rem;
 }
 .seat .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
 .listing.top .seat .rank { color: rgb(138, 75, 18); font-weight: 700; }
