@@ -365,6 +365,25 @@ h1.headline {
 .listing[data-open-after-raise-two-first] .open-after-raise-two .deck-url {
   margin-top: 0.3rem;
 }
+.listing[data-raise-after-open-three-first] .raise-after-open-three {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding-top: 0.2rem;
+  border-top: 0;
+  font-family: var(--serif);
+  font-size: 2.55rem;
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: rgb(138, 75, 18);
+  text-decoration: underline;
+  text-decoration-thickness: 4px;
+  text-underline-offset: 0.1em;
+}
+.listing[data-raise-after-open-three-first] .raise-after-open-three .raise-after-note {
+  margin-top: 0.24rem;
+  color: var(--ink-soft);
+}
 .listing[data-open-one-first] .open-after-raise,
 .listing[data-open-one-first] .raise-after-open {
   font-size: 1rem;
