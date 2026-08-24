@@ -698,8 +698,18 @@ if [[ -f package.json ]]; then
     || fail "unpaid cue must say Not on the board"
   grep -q 'class="cue off-board-cue"' src/http/pages.ts \
     || fail "unpaid cue must use the off-board cue"
+  grep -q 'data-off-board-list="true"' src/http/pages.ts \
+    || fail "unpaid decks must sit in the off-board list, not the ranked board"
+  grep -q 'aside class="off-board"' src/http/pages.ts \
+    || fail "unpaid decks must render as an off-board aside"
+  grep -q 'class="off-board-list"' src/http/pages.ts \
+    || fail "unpaid decks must not sit in the ranked listings list"
   grep -q 'data-off-board' src/views/skin.ts \
     || fail "unpaid off-board cue must be styled off the seat"
+  grep -q '.off-board {' src/views/skin.ts \
+    || fail "off-board list must be styled off the ranked listings"
+  grep -q '.off-board-list' src/views/skin.ts \
+    || fail "off-board list must not reuse ranked listings chrome"
   if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'class="seat"'; then
     fail "unpaid cue must not take a ranked seat"
   fi
@@ -713,6 +723,8 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover unpaid off-board"
   grep -q 'unpaid cue stays off the board' "$test_log" \
     || fail "pages tests must cover unpaid off-board"
+  grep -q 'data-off-board-list' tests/pages.test.ts \
+    || fail "pages tests must keep unpaid decks off the ranked listings"
   grep -q 'export const HOUSE_CSS' src/views/skin.ts \
     || fail "empty house must export HOUSE_CSS"
   grep -q 'export const OCCUPIED_CSS' src/views/skin.ts \
