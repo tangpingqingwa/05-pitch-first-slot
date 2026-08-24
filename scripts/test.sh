@@ -680,7 +680,7 @@ if [[ -f package.json ]]; then
     || fail "occupied #1 must stamp data-prize-first"
   grep -q 'data-prize-first' src/views/skin.ts \
     || fail "occupied #1 prize must be styled ahead of \$bid"
-  grep -q 'listing\[data-prize-first\] .company' src/views/skin.ts \
+  grep -q 'house-occupied\[data-occupied-house\] .listing\[data-prize-first\] .company' src/views/skin.ts \
     || fail "occupied #1 pitch title must read larger than \$bid"
   if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -q 'prize-first'; then
     fail "unpaid cue must not stamp prize-first"
@@ -696,7 +696,7 @@ if [[ -f package.json ]]; then
     || fail "occupied #1 money must live in prizeLaterFact, not a Bid seat"
   grep -q 'class="rank later-fact" data-later-fact="true"' src/http/pages.ts \
     || fail "occupied #1 must stamp \$bid as a later fact after the pitch title"
-  grep -q 'rank.later-fact\[data-later-fact\]' src/views/skin.ts \
+  grep -q 'house-occupied\[data-occupied-house\] .listing\[data-prize-first\] .rank.later-fact\[data-later-fact\]' src/views/skin.ts \
     || fail "CSS must keep occupied #1 \$bid a later fact after the pitch title"
   if awk '/^function prizeLaterFact/,/^function bidSeat/' src/http/pages.ts | grep -q 'class="seat"'; then
     fail "occupied #1 later-fact money must not sit in a Bid seat"
@@ -714,8 +714,8 @@ if [[ -f package.json ]]; then
     fail "occupied #1 must not keep a Bid seat beside the pitch title"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -Eq 'data-later-fact|later-fact'; then
-    fail "HOUSE_CSS must not contain later-fact chrome"
+    | grep -E 'data-later-fact|later-fact' | grep -v 'house-empty\[data-empty-house\]'; then
+    fail "HOUSE_CSS must not style later-fact chrome — only hide a leak"
   fi
   grep -q 'occupied #1 pitch title stays the prize — Bid seat is not beside the title' tests/pages.test.ts \
     || fail "pages tests must keep occupied #1 money off the Bid seat"
@@ -762,12 +762,39 @@ if [[ -f package.json ]]; then
     || fail "empty / must choose the house sheet"
   grep -q 'data-empty-house="true"' src/http/pages.ts \
     || fail "empty / must stamp data-empty-house"
+  grep -q 'class="house house-empty" data-empty-house="true"' src/http/pages.ts \
+    || fail "empty / must wrap in house-empty"
+  grep -q 'class="house house-occupied" data-occupied-house="true"' src/http/pages.ts \
+    || fail "occupied / must wrap in house-occupied"
+  grep -q 'occupiedHouse: !emptyRoom' src/http/pages.ts \
+    || fail "occupied / must stamp occupiedHouse when the room is not empty"
+  grep -F -q '.house-occupied[data-occupied-house] .listing[data-prize-first] .company' src/views/skin.ts \
+    || fail "prize-first CSS must be scoped to the occupied house"
+  grep -F -q '.house-occupied[data-occupied-house] .listing[data-prize-first] .rank.later-fact[data-later-fact]' src/views/skin.ts \
+    || fail "later-fact CSS must be scoped to the occupied house"
+  grep -F -q '.house-empty[data-empty-house] [data-prize-first]' src/views/skin.ts \
+    || fail "empty house must hide leaked prize-first chrome"
+  grep -F -q '.house-empty[data-empty-house] [data-later-fact]' src/views/skin.ts \
+    || fail "empty house must hide leaked later-fact chrome"
+  grep -F -q '.house-empty[data-empty-house] .later-fact' src/views/skin.ts \
+    || fail "empty house must hide leaked later-fact class"
+  if grep -E '^\.listing\[data-prize-first\] \.company' src/views/skin.ts; then
+    fail "prize-first CSS must not apply outside house-occupied"
+  fi
+  if grep -E '^\.listing\[data-prize-first\] \.rank\.later-fact' src/views/skin.ts; then
+    fail "later-fact CSS must not apply outside house-occupied"
+  fi
   if grep -n 'emptyHouse === true ? HOUSE_CSS' -A 0 src/http/pages.ts | grep -q 'OCCUPIED_CSS'; then
     fail "empty house must not ship occupied CSS"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
-    | grep -Eq 'data-prize-first|data-later-fact|later-fact|data-off-board|off-board-cue'; then
+    | grep -Eq 'data-off-board|off-board-cue'; then
     fail "HOUSE_CSS must not contain occupied / unpaid chrome"
+  fi
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -E 'data-prize-first|data-later-fact|later-fact' \
+    | grep -v 'house-empty\[data-empty-house\]'; then
+    fail "HOUSE_CSS must not style prize-first / later-fact — only hide a leak"
   fi
   if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
     | grep -Eq 'data-raise-difference|data-raise-charge|raise-charge'; then
@@ -779,6 +806,14 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover empty house stays empty"
   grep -q 'empty house stays empty' "$test_log" \
     || fail "pages tests must cover empty house stays empty"
+  grep -q 'prize-first / later-fact \$bid cannot leak' tests/pages.test.ts \
+    || fail "pages tests must cover prize-first / later-fact cannot leak onto empty /"
+  grep -q 'prize-first / later-fact \$bid cannot leak' "$test_log" \
+    || fail "pages tests must cover prize-first / later-fact cannot leak onto empty /"
+  grep -q 'doesNotMatch(empty, /data-occupied-house/)' tests/pages.test.ts \
+    || fail "empty / must not wrap in occupied house"
+  grep -q 'doesNotMatch(boardMarkup(occupied), /data-empty-house/)' tests/pages.test.ts \
+    || fail "occupied / must not wrap in empty house"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
