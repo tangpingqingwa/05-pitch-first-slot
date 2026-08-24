@@ -629,11 +629,6 @@ export const OCCUPIED_CSS = /* css */ `
   grid-template-columns: minmax(0, 1fr);
   gap: 0.45rem;
 }
-.listing[data-prize-first] .seat {
-  justify-items: start;
-  text-align: left;
-  min-width: 0;
-}
 .listing[data-prize-first] .company {
   font-size: 2.15rem;
   line-height: 1.05;
@@ -643,13 +638,15 @@ export const OCCUPIED_CSS = /* css */ `
   font-size: 1.05rem;
   line-height: 1.35;
 }
-.listing[data-prize-first] .seat .rank,
-.listing.top[data-prize-first] .seat .rank {
-  font-size: 1rem;
+.listing[data-prize-first] .rank.later-fact[data-later-fact],
+.listing.top[data-prize-first] .rank.later-fact[data-later-fact] {
+  margin: 0.2rem 0 0;
+  font-size: 1.2rem;
   font-weight: 400;
   color: var(--ink-soft);
+  max-width: none;
 }
-.listing[data-prize-first] .seat .clicks { font-size: 0.75rem; }
+.listing[data-prize-first] .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
 .claim-note .raise-charge {
   display: block;
   margin: 0.4rem 0 0.2rem;

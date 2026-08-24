@@ -95,6 +95,8 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(html, /class="off-board"/);
   assert.match(html, /data-empty-house="true"/);
   assert.doesNotMatch(html, /data-prize-first/);
+  assert.doesNotMatch(html, /data-later-fact/);
+  assert.doesNotMatch(html, /later-fact/);
   assert.doesNotMatch(html, /data-off-board/);
   assert.doesNotMatch(html, /off-board-cue/);
   assert.doesNotMatch(html, /Not on the board/);
@@ -158,6 +160,8 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   assert.match(html, /The room is empty\./);
   assert.match(html, /This week's first slot is still open\. Outbid takes it after Polar lands\./);
   assert.doesNotMatch(html, /data-prize-first/);
+  assert.doesNotMatch(html, /data-later-fact/);
+  assert.doesNotMatch(html, /later-fact/);
   assert.doesNotMatch(html, /data-off-board/);
   assert.doesNotMatch(html, /off-board-cue/);
   assert.doesNotMatch(html, /Not on the board/);
@@ -203,6 +207,10 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   assert.match(occupied, /data-raise-difference="true"/);
   assert.match(occupied, /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/);
   assert.match(occupied, /Polar charges only the difference/);
+  assert.match(occupied, /data-prize-first="true"/);
+  assert.match(occupied, /class="rank later-fact" data-later-fact="true"/);
+  assert.doesNotMatch(listingCard(occupied, "Stage Co"), /class="seat"/);
+  assert.doesNotMatch(listingCard(occupied, "Stage Co"), /cue-label">Bid</);
   assert.doesNotMatch(occupied, /data-empty-house/);
   assert.doesNotMatch(occupied, /The room is empty/);
 });
@@ -288,7 +296,10 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-five-first/);
   assert.doesNotMatch(boardMarkup(html), /data-open-after-raise-four-first/);
   assert.doesNotMatch(unpaid, /data-prize-first/);
+  assert.doesNotMatch(unpaid, /data-later-fact/);
+  assert.doesNotMatch(unpaid, /later-fact/);
   assert.doesNotMatch(boardMarkup(html), /data-prize-first/);
+  assert.doesNotMatch(boardMarkup(html), /data-later-fact/);
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /data-empty-room/);
@@ -331,7 +342,7 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.match(board.body, /https:\/\/stage\.example\/deck/);
   assert.match(
     board.body,
-    /class="cue"[\s\S]*class="who"[\s\S]*Stage Co[\s\S]*Opens the room[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#1 · \$5[\s\S]*class="open-deck"[\s\S]*data-open-deck="true"[\s\S]*Open deck[\s\S]*https:\/\/stage\.example\/deck/,
+    /class="cue"[\s\S]*class="who"[\s\S]*Stage Co[\s\S]*Opens the room[\s\S]*data-later-fact="true"[\s\S]*#1 · \$5[\s\S]*class="open-deck"[\s\S]*data-open-deck="true"[\s\S]*Open deck[\s\S]*https:\/\/stage\.example\/deck/,
   );
   assert.doesNotMatch(board.body, /Unranked — no paid bid yet/);
   assert.doesNotMatch(board.body, /The room is empty/);
@@ -352,11 +363,13 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   const prizeAt = lone.indexOf('class="who"');
   const companyAt = lone.indexOf("Stage Co");
   const oneLinerAt = lone.indexOf("Opens the room");
-  const seatAt = lone.indexOf('class="seat"');
+  const laterFactAt = lone.indexOf('data-later-fact="true"');
   const bidAt = lone.indexOf("#1 · $5");
   const clicksAt = lone.indexOf("0 clicks");
   assert.ok(prizeAt > -1 && companyAt > prizeAt && oneLinerAt > companyAt);
-  assert.ok(seatAt > oneLinerAt && bidAt > seatAt && clicksAt > bidAt);
+  assert.ok(laterFactAt > oneLinerAt && bidAt > laterFactAt && clicksAt > bidAt);
+  assert.doesNotMatch(lone, /class="seat"/);
+  assert.doesNotMatch(lone, /cue-label">Bid</);
   assert.doesNotMatch(lone, /data-open-one-first/);
   assert.doesNotMatch(lone, /data-open-one=/);
   assert.doesNotMatch(lone, /class="open-deck open-one"/);
@@ -509,7 +522,7 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.match(html, /#2 · \$5/);
   assert.match(
     html,
-    /class="cue open-one-cue"[\s\S]*class="who"[\s\S]*Stage Co[\s\S]*data-open-one="true"[\s\S]*Open deck[\s\S]*data-raise-after-deck="true"[\s\S]*Then Outbid[\s\S]*class="seat"[\s\S]*Bid[\s\S]*#1 · \$20/,
+    /class="cue open-one-cue"[\s\S]*class="who"[\s\S]*Stage Co[\s\S]*data-open-one="true"[\s\S]*Open deck[\s\S]*data-raise-after-deck="true"[\s\S]*Then Outbid[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
   assert.match(
     html,
@@ -556,7 +569,12 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.match(listingCard(html, "Stage Co"), /data-open-after-raise-four="true"/);
   assert.match(listingCard(html, "Helix Labs"), /data-later-deck="true"/);
   assert.match(listingCard(html, "Stage Co"), /data-prize-first="true"/);
+  assert.match(listingCard(html, "Stage Co"), /class="rank later-fact" data-later-fact="true"/);
+  assert.doesNotMatch(listingCard(html, "Stage Co"), /class="seat"/);
+  assert.doesNotMatch(listingCard(html, "Stage Co"), /cue-label">Bid</);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-prize-first/);
+  assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-later-fact/);
+  assert.doesNotMatch(listingCard(html, "Helix Labs"), /later-fact/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-one-first/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-open-one=/);
   assert.doesNotMatch(listingCard(html, "Helix Labs"), /data-raise-one-first/);
@@ -737,9 +755,11 @@ test("occupied paid cue names Open deck as the only outbound hop", async () => {
     ),
   );
   const whoAt = paid.indexOf('class="who"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const hopAt = paid.indexOf('data-open-deck="true"');
-  assert.ok(whoAt > -1 && seatAt > whoAt && hopAt > seatAt);
+  assert.ok(whoAt > -1 && laterFactAt > whoAt && hopAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(paid, /data-prize-first="true"/);
   assert.doesNotMatch(unpaid, /data-prize-first/);
   assert.doesNotMatch(paid, /data-open-one-first/);
@@ -1353,8 +1373,10 @@ test("occupied later ranks stamp Open deck as the certain hop, not a second #1 t
   assert.doesNotMatch(paid, /open-later/);
   const whoAt = paid.indexOf('class="who"');
   const hopAt = paid.indexOf('data-open-one="true"');
-  const seatAt = paid.indexOf('class="seat"');
-  assert.ok(whoAt > -1 && hopAt > whoAt && seatAt > hopAt);
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
+  assert.ok(whoAt > -1 && hopAt > whoAt && laterFactAt > hopAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
 
   assert.doesNotMatch(unpaid, /data-later-deck/);
   assert.doesNotMatch(unpaid, /data-open-later/);
@@ -1483,14 +1505,16 @@ test("occupied #1 Open deck is the first hop after later decks exist", async () 
   const raiseAt = paid.indexOf('data-raise-after-deck="true"');
   const afterAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && hopAt > whoAt);
   assert.ok(openAt > hopAt && raiseAt > openAt && afterAt > raiseAt);
-  assert.ok(raiseOpenAt > afterAt && seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(raiseOpenAt > afterAt && laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-one="true"[\s\S]*Open deck[\s\S]*data-raise-after-deck="true"[\s\S]*Then Outbid[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-one="true"[\s\S]*Open deck[\s\S]*data-raise-after-deck="true"[\s\S]*Then Outbid[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
   assert.match(paid, /data-raise-one-first="true"/);
   assert.match(paid, /data-raise-one="true"/);
@@ -1770,14 +1794,16 @@ test("occupied #1 Then Outbid is concentrated after Open deck when later decks e
   const raiseCopy = paid.indexOf("Then Outbid");
   const afterAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(raiseAt > openAt && raiseCopy > raiseAt && afterAt > raiseCopy);
-  assert.ok(raiseOpenAt > afterAt && seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(raiseOpenAt > afterAt && laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-one="true"[\s\S]*Open deck[\s\S]*data-raise-one="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-one="true"[\s\S]*Open deck[\s\S]*data-raise-one="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -1983,16 +2009,18 @@ test("occupied #1 Open deck is concentrated after Then Outbid when later decks e
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(afterRaiseAt > openAt && afterRaiseAt < openCopy);
   assert.ok(openCopy > openAt && raiseAt > openCopy && raiseCopy > raiseAt);
   assert.ok(laterOpenAt > raiseCopy && raiseOpenAt > laterOpenAt);
-  assert.ok(seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-one="true"[\s\S]*Open deck[\s\S]*data-raise-one="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-one="true"[\s\S]*Open deck[\s\S]*data-raise-one="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -2205,14 +2233,16 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(raiseAt > openAt && raiseCopy > raiseAt && laterOpenAt > raiseCopy);
-  assert.ok(raiseOpenAt > laterOpenAt && seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(raiseOpenAt > laterOpenAt && laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-one="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-two="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-one="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-two="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -2407,15 +2437,17 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(openAt < openCopy && raiseAt > openCopy && raiseCopy > raiseAt);
   assert.ok(laterOpenAt > raiseCopy && raiseOpenAt > laterOpenAt);
-  assert.ok(seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-two="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-two="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-two="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-two="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -2615,14 +2647,16 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(raiseAt > openAt && raiseCopy > raiseAt && laterOpenAt > raiseCopy);
-  assert.ok(raiseOpenAt > laterOpenAt && seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(raiseOpenAt > laterOpenAt && laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-two="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-three="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-two="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-three="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -2804,15 +2838,17 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(openAt < openCopy && raiseAt > openCopy && raiseCopy > raiseAt);
   assert.ok(laterOpenAt > raiseCopy && raiseOpenAt > laterOpenAt);
-  assert.ok(seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-three="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-three="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-three="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-three="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -3003,14 +3039,16 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(raiseAt > openAt && raiseCopy > raiseAt && laterOpenAt > raiseCopy);
-  assert.ok(raiseOpenAt > laterOpenAt && seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(raiseOpenAt > laterOpenAt && laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-three="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-four="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-three="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-four="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -3180,14 +3218,16 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(raiseAt > openAt && raiseCopy > raiseAt && laterOpenAt > raiseCopy);
-  assert.ok(raiseOpenAt > laterOpenAt && seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(raiseOpenAt > laterOpenAt && laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-four="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-five="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-four="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-five="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -3337,14 +3377,16 @@ test("occupied #1 Then Outbid is concentrated after Open deck is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(raiseAt > openAt && raiseCopy > raiseAt && laterOpenAt > raiseCopy);
-  assert.ok(raiseOpenAt > laterOpenAt && seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(raiseOpenAt > laterOpenAt && laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-five="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-six="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-five="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-six="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -3501,15 +3543,17 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(openAt < openCopy && raiseAt > openCopy && raiseCopy > raiseAt);
   assert.ok(laterOpenAt > raiseCopy && raiseOpenAt > laterOpenAt);
-  assert.ok(seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-four="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-four="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-four="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-four="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -3684,15 +3728,17 @@ test("occupied #1 Open deck is concentrated after Then Outbid is re-concentrated
   const raiseCopy = paid.indexOf("Then Outbid");
   const laterOpenAt = paid.indexOf('data-open-after-raise="true"');
   const raiseOpenAt = paid.indexOf('data-raise-after-open="true"');
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   assert.ok(stampAt > -1 && whoAt > stampAt && openAt > whoAt);
   assert.ok(openAt < openCopy && raiseAt > openCopy && raiseCopy > raiseAt);
   assert.ok(laterOpenAt > raiseCopy && raiseOpenAt > laterOpenAt);
-  assert.ok(seatAt > raiseOpenAt && bidAt > seatAt);
+  assert.ok(laterFactAt > raiseOpenAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.match(
     paid,
-    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-five="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-five="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*class="seat"[\s\S]*#1 · \$20/,
+    /class="who"[\s\S]*Stage Co[\s\S]*data-open-after-raise-five="true"[\s\S]*Open deck[\s\S]*data-raise-after-open-five="true"[\s\S]*Then Outbid[\s\S]*Polar charges only the difference[\s\S]*data-open-after-raise="true"[\s\S]*Open deck[\s\S]*after Then Outbid[\s\S]*data-raise-after-open="true"[\s\S]*Then Outbid[\s\S]*after Open deck[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20/,
   );
 
   assert.match(later, /data-rank="2"/);
@@ -3791,26 +3837,36 @@ test("occupied #1 pitch title reads first and larger than $bid", async () => {
 
   assert.match(paid, /data-rank="1"/);
   assert.match(paid, /data-prize-first="true"/);
-  assert.match(paid, /class="who"[\s\S]*Stage Co[\s\S]*Opens the room[\s\S]*class="seat"[\s\S]*#1 · \$20[\s\S]*clicks/);
+  assert.match(paid, /class="who"[\s\S]*Stage Co[\s\S]*Opens the room[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20[\s\S]*clicks/);
   const stampAt = paid.indexOf('data-prize-first="true"');
   const whoAt = paid.indexOf('class="who"');
   const companyAt = paid.indexOf("Stage Co");
   const oneLinerAt = paid.indexOf("Opens the room");
-  const seatAt = paid.indexOf('class="seat"');
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
   const bidAt = paid.indexOf("#1 · $20");
   const clicksAt = paid.indexOf("0 clicks");
   assert.ok(stampAt > -1 && whoAt > stampAt && companyAt > whoAt);
-  assert.ok(oneLinerAt > companyAt && seatAt > oneLinerAt && bidAt > seatAt);
+  assert.ok(oneLinerAt > companyAt && laterFactAt > oneLinerAt && bidAt > laterFactAt);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.ok(clicksAt > bidAt);
   assert.match(html, /data-prize-first[\s\S]*\.company \{[\s\S]*font-size: 2\.15rem/);
-  assert.match(html, /data-prize-first[\s\S]*\.seat \.rank[\s\S]*font-size: 1rem/);
+  assert.match(html, /data-later-fact[\s\S]*font-size: 1\.2rem/);
+  assert.doesNotMatch(html, /data-prize-first[\s\S]*\.seat \.rank/);
   assert.equal((html.match(/data-prize-first="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-later-fact="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="rank later-fact"/g) ?? []).length, 1);
 
   assert.match(later, /data-rank="2"/);
   assert.match(later, /data-later-deck="true"/);
   assert.doesNotMatch(later, /data-prize-first/);
+  assert.doesNotMatch(later, /data-later-fact/);
+  assert.doesNotMatch(later, /later-fact/);
   assert.doesNotMatch(last, /data-prize-first/);
+  assert.doesNotMatch(last, /data-later-fact/);
   assert.doesNotMatch(unpaid, /data-prize-first/);
+  assert.doesNotMatch(unpaid, /data-later-fact/);
+  assert.doesNotMatch(unpaid, /later-fact/);
   assert.match(unpaid, /Unranked — no paid bid yet/);
   assert.match(unpaid, /Deck or site/);
   assert.match(unpaid, /data-off-board="true"/);
@@ -3829,6 +3885,128 @@ test("occupied #1 pitch title reads first and larger than $bid", async () => {
   assert.doesNotMatch(html, /hot deal/i);
   assert.doesNotMatch(html, /claim this rank/i);
   assert.doesNotMatch(html, /The room is empty/);
+});
+
+test("occupied #1 pitch title stays the prize — Bid seat is not beside the title", async () => {
+  const emptyApp = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => emptyApp.close());
+  const empty = (await emptyApp.inject({ method: "GET", url: "/" })).body;
+
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+
+  const challenger = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${challenger.id}/bids`,
+    payload: { amountUsd: 8 },
+  });
+  assert.equal(second.statusCode, 200);
+
+  const rival = await createListing(app, {
+    company: "Rival Pitch",
+    oneLiner: "Lists below at five",
+    url: "https://rival.example/deck",
+  });
+  const third = await app.inject({
+    method: "POST",
+    url: `/listings/${rival.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(third.statusCode, 200);
+  await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const paid = listingCard(html, "Stage Co");
+  const later = listingCard(html, "Helix Labs");
+  const last = listingCard(html, "Rival Pitch");
+  const unpaid = listingCard(html, "Cue Only");
+
+  assert.match(paid, /data-rank="1"/);
+  assert.match(paid, /data-prize-first="true"/);
+  assert.match(paid, /class="rank later-fact" data-later-fact="true"/);
+  assert.match(paid, /#1 · \$20/);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
+  const prizeAt = paid.indexOf('data-prize-first="true"');
+  const whoAt = paid.indexOf('class="who"');
+  const companyAt = paid.indexOf("Stage Co");
+  const oneLinerAt = paid.indexOf("Opens the room");
+  const laterFactAt = paid.indexOf('data-later-fact="true"');
+  const bidAt = paid.indexOf("#1 · $20");
+  const clicksAt = paid.indexOf("0 clicks");
+  const seatAt = paid.indexOf('class="seat"');
+  const bidLabelAt = paid.indexOf('cue-label">Bid');
+  assert.ok(prizeAt > -1 && whoAt > prizeAt && companyAt > whoAt);
+  assert.ok(oneLinerAt > companyAt && laterFactAt > oneLinerAt);
+  assert.ok(bidAt > laterFactAt && clicksAt > bidAt);
+  assert.equal(seatAt, -1);
+  assert.equal(bidLabelAt, -1);
+  assert.match(
+    paid,
+    /class="who"[\s\S]*Stage Co[\s\S]*Opens the room[\s\S]*data-later-fact="true"[\s\S]*#1 · \$20[\s\S]*clicks/,
+  );
+  assert.match(html, /\.listing\[data-prize-first\] \.company \{[\s\S]*font-size: 2\.15rem/);
+  assert.match(
+    html,
+    /\.listing\[data-prize-first\] \.rank\.later-fact\[data-later-fact\][\s\S]*font-size: 1\.2rem/,
+  );
+  assert.doesNotMatch(html, /\.listing\[data-prize-first\] \.seat/);
+  assert.doesNotMatch(
+    html,
+    /\.listing\.top\[data-prize-first\] \.rank\.later-fact\[data-later-fact\][\s\S]*color: rgb\(138, 75, 18\)/,
+  );
+  assert.equal((html.match(/data-later-fact="true"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="rank later-fact"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-prize-first="true"/g) ?? []).length, 1);
+
+  assert.match(later, /data-rank="2"/);
+  assert.match(later, /#2 · \$8/);
+  assert.match(later, /class="seat"/);
+  assert.match(later, /cue-label">Bid</);
+  assert.doesNotMatch(later, /data-prize-first/);
+  assert.doesNotMatch(later, /data-later-fact/);
+  assert.doesNotMatch(later, /later-fact/);
+  assert.doesNotMatch(last, /data-prize-first/);
+  assert.doesNotMatch(last, /data-later-fact/);
+  assert.match(unpaid, /Not on the board/);
+  assert.match(unpaid, /Unranked — no paid bid yet/);
+  assert.doesNotMatch(unpaid, /data-later-fact/);
+  assert.doesNotMatch(unpaid, /later-fact/);
+  assert.doesNotMatch(unpaid, /data-prize-first/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.doesNotMatch(unpaid, /cue-label">Bid</);
+  assert.match(html, /data-off-board-list="true"/);
+  assert.doesNotMatch(rankedListMarkup(html), /Cue Only/);
+  assert.match(empty, /data-empty-house="true"/);
+  assert.doesNotMatch(empty, /data-later-fact/);
+  assert.doesNotMatch(empty, /later-fact/);
+  assert.doesNotMatch(empty, /data-prize-first/);
+  assert.doesNotMatch(empty, /Not on the board/);
+  assert.doesNotMatch(html, /typical raise/i);
+  assert.doesNotMatch(html, /hot deal/i);
+  assert.doesNotMatch(html, /claim this rank/i);
 });
 
 test("unpaid cue stays off the board and does not take a seat", async () => {
@@ -3885,6 +4063,8 @@ test("unpaid cue stays off the board and does not take a seat", async () => {
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.doesNotMatch(unpaid, /Then Outbid/);
   assert.doesNotMatch(unpaid, /data-prize-first/);
+  assert.doesNotMatch(unpaid, /data-later-fact/);
+  assert.doesNotMatch(unpaid, /later-fact/);
   assert.doesNotMatch(unpaid, /data-later-deck/);
   assert.doesNotMatch(unpaid, /data-open-deck/);
   assert.doesNotMatch(unpaid, /data-raise-difference/);
@@ -3895,12 +4075,16 @@ test("unpaid cue stays off the board and does not take a seat", async () => {
   assert.ok(whoAt > -1 && offAt > whoAt && unrankedAt > offAt);
 
   assert.match(paid, /data-rank="1"/);
-  assert.match(paid, /class="seat"/);
-  assert.match(paid, /cue-label">Bid</);
+  assert.match(paid, /class="rank later-fact" data-later-fact="true"/);
+  assert.doesNotMatch(paid, /class="seat"/);
+  assert.doesNotMatch(paid, /cue-label">Bid</);
   assert.doesNotMatch(paid, /data-off-board/);
   assert.doesNotMatch(paid, /Not on the board/);
   assert.match(below, /data-rank="2"/);
   assert.match(below, /class="seat"/);
+  assert.match(below, /cue-label">Bid</);
+  assert.doesNotMatch(below, /data-later-fact/);
+  assert.doesNotMatch(below, /later-fact/);
   assert.doesNotMatch(below, /data-off-board/);
   assert.doesNotMatch(below, /Not on the board/);
   assert.equal((html.match(/data-off-board="true"/g) ?? []).length, 1);
