@@ -404,14 +404,23 @@ ${offBoard.join("\n")}
   const rows = emptyRoom ? "" : `${rankedRows}
   ${laterRows}
   ${unpaidRows}`;
+  const claim = claimChrome(defaultBid, emptyRoom, topUsd);
+  // Occupied house: Open #1 is the first click. Claim #1 is a later write after the slot.
+  const body =
+    occupiedHouse === true
+      ? `${rows}
+  <div class="claim-after-slot" data-claim-after-slot="true">
+  ${claim}
+  </div>`
+      : `${claim}
+  ${rows}`;
 
   return renderLayout({
     title: "Opening three minutes",
     path: "/",
     emptyHouse: emptyRoom,
     occupiedHouse,
-    body: `${claimChrome(defaultBid, emptyRoom, topUsd)}
-  ${rows}`,
+    body,
   });
 }
 

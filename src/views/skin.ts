@@ -192,7 +192,8 @@ h1.headline {
 .house-empty[data-empty-house] [data-later-seat],
 .house-empty[data-empty-house] [data-later-seats],
 .house-empty[data-empty-house] .listings-later,
-.house-empty[data-empty-house] [data-first-click="open"] {
+.house-empty[data-empty-house] [data-first-click="open"],
+.house-empty[data-empty-house] [data-claim-after-slot] {
   display: none;
 }
 `;
@@ -726,6 +727,30 @@ export const OCCUPIED_CSS = /* css */ `
   font-family: var(--serif);
   font-size: 1.05rem;
   color: var(--cream);
+}
+.house-occupied[data-occupied-house] .listings {
+  margin-top: 0;
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] {
+  margin-top: 1.6rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed rgb(232 177 90 / 0.22);
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .headline {
+  font-size: clamp(1.35rem, 4.2vw, 1.85rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: rgb(203, 183, 154);
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim {
+  margin-top: 0.7rem;
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-field {
+  font-size: 1.45rem;
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .outbid {
+  height: 2.4rem;
+  font-weight: 600;
 }
 `;
 
