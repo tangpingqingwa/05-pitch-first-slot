@@ -192,6 +192,8 @@ h1.headline {
 .house-empty[data-empty-house] [data-later-seat],
 .house-empty[data-empty-house] [data-later-seats],
 .house-empty[data-empty-house] .listings-later,
+.house-empty[data-empty-house] [data-later-open-foot],
+.house-empty[data-empty-house] .later-open-foot,
 .house-empty[data-empty-house] [data-first-click="open"],
 .house-empty[data-empty-house] [data-claim-after-slot] {
   display: none;
@@ -284,17 +286,31 @@ export const OCCUPIED_CSS = /* css */ `
   grid-template-columns: minmax(0, 1fr);
   gap: 0.35rem;
 }
-.listing[data-later-deck] .deck {
-  margin: 0.2rem 0 0;
-  padding-top: 0;
-  border-top: 0;
+.listing[data-later-deck] .later-open-foot {
+  margin: 0.35rem 0 0;
+  padding-top: 0.35rem;
+  border-top: 1px dashed rgb(26 18 12 / 0.14);
 }
 .listing[data-later-deck] .open-later {
   display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid rgb(26 18 12 / 0.28);
+  border-radius: 0.15rem;
+  background: transparent;
+  color: var(--ink-soft);
   font-family: var(--sans);
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+.listing[data-later-deck] .open-later .deck-url {
+  display: block;
+  margin: 0.12rem 0 0;
+  color: rgb(143, 122, 98);
+  font-size: 0.68rem;
+  font-weight: 600;
+  word-break: break-all;
 }
 .listing[data-later-deck] .seat {
   justify-items: start;
@@ -691,10 +707,21 @@ export const OCCUPIED_CSS = /* css */ `
 .house-occupied[data-occupied-house] .listings-later[data-later-seats] .one-liner {
   font-size: 0.88rem;
 }
-.house-occupied[data-occupied-house] .listings-later[data-later-seats] .open-later {
-  font-size: 0.88rem;
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .later-open-foot[data-later-open-foot] {
+  margin-top: 0.3rem;
+  padding-top: 0.28rem;
+  border-top: 1px dashed rgb(26 18 12 / 0.12);
+}
+.house-occupied[data-occupied-house] .listings-later[data-later-seats] .later-open-foot[data-later-open-foot] .open-later {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid rgb(26 18 12 / 0.22);
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--ink-soft);
+  text-decoration: none;
 }
 .house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat] {
   justify-items: start;

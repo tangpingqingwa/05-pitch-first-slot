@@ -124,6 +124,18 @@ function laterBidSeat(rankHtml: string, clicks: number): string {
   );
 }
 
+/** Later-rank Open as a foot hop. Not the filled #1 hop. */
+function laterOpenFoot(listing: Listing): string {
+  const url = escapeHtml(listing.url);
+  const href = clickHref(listing.id);
+  return `<footer class="later-open-foot" data-later-open-foot="true">
+        <a class="open-later" data-open-later="true" href="${href}" rel="noopener noreferrer">
+          Open deck
+          <span class="deck-url">${url}</span>
+        </a>
+      </footer>`;
+}
+
 function deckHop(
   listing: Listing,
   paid: boolean,
@@ -134,12 +146,7 @@ function deckHop(
   const url = escapeHtml(listing.url);
   const href = clickHref(listing.id);
   if (paid && later) {
-    return `<p class="deck">
-        <a class="open-deck open-later" data-open-deck="true" data-open-later="true" href="${href}" rel="noopener noreferrer">
-          Open deck
-          <span class="deck-url">${url}</span>
-        </a>
-      </p>`;
+    return laterOpenFoot(listing);
   }
   if (paid && openOne) {
     const next = raiseAfter
@@ -209,8 +216,8 @@ function renderCueCard(input: {
   const body = later
     ? `<div class="cue later-cue">
     ${prizeTitle}
-    ${hop}
     ${laterBidSeat(input.rankHtml, input.clicks)}
+    ${hop}
   </div>`
     : prizeFirst && openOne
       ? `<div class="cue open-one-cue">
