@@ -384,7 +384,7 @@ if [[ -f package.json ]]; then
     || fail "#1 cue must stamp data-open-one-first when later decks exist"
   grep -q 'data-open-one="true"' src/http/pages.ts \
     || fail "#1 Open deck must stamp data-open-one when later decks exist"
-  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"' src/http/pages.ts \
+  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five"' src/http/pages.ts \
     || fail "#1 Open deck must use the concentrated hop class"
   grep -q 'data-open-one-first' src/views/skin.ts \
     || fail "#1 Open deck must be styled ahead of \$bid when later decks exist"
@@ -420,7 +420,7 @@ if [[ -f package.json ]]; then
     || fail "#1 cue must stamp data-open-after-raise-one-first when later decks exist"
   grep -q 'data-open-after-raise-one="true"' src/http/pages.ts \
     || fail "#1 Open deck must stamp data-open-after-raise-one after Then Outbid is concentrated"
-  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"' src/http/pages.ts \
+  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five"' src/http/pages.ts \
     || fail "#1 Open deck must use the after-raise concentrate class"
   grep -q 'data-open-after-raise-one-first' src/views/skin.ts \
     || fail "#1 Open deck must be styled after concentrated Then Outbid"
@@ -465,7 +465,7 @@ if [[ -f package.json ]]; then
     || fail "#1 cue must stamp data-open-after-raise-two-first when later decks exist"
   grep -q 'data-open-after-raise-two="true"' src/http/pages.ts \
     || fail "#1 Open deck must stamp data-open-after-raise-two after Then Outbid is re-concentrated"
-  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"' src/http/pages.ts \
+  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five"' src/http/pages.ts \
     || fail "#1 Open deck must use the re-concentrated hop class"
   grep -q 'data-open-after-raise-two-first' src/views/skin.ts \
     || fail "#1 Open deck must be styled after Then Outbid is re-concentrated"
@@ -513,7 +513,7 @@ if [[ -f package.json ]]; then
     || fail "#1 cue must stamp data-open-after-raise-three-first when later decks exist"
   grep -q 'data-open-after-raise-three="true"' src/http/pages.ts \
     || fail "#1 Open deck must stamp data-open-after-raise-three after Then Outbid is re-concentrated again"
-  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"' src/http/pages.ts \
+  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five"' src/http/pages.ts \
     || fail "#1 Open deck must use the open-after-raise-three hop class"
   grep -q 'data-open-after-raise-three-first' src/views/skin.ts \
     || fail "#1 Open deck must be styled after Then Outbid is re-concentrated again"
@@ -561,7 +561,7 @@ if [[ -f package.json ]]; then
     || fail "#1 cue must stamp data-open-after-raise-four-first when later decks exist"
   grep -q 'data-open-after-raise-four="true"' src/http/pages.ts \
     || fail "#1 Open deck must stamp data-open-after-raise-four after Then Outbid is re-concentrated four"
-  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four"' src/http/pages.ts \
+  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five"' src/http/pages.ts \
     || fail "#1 Open deck must use the open-after-raise-four hop class"
   grep -q 'data-open-after-raise-four-first' src/views/skin.ts \
     || fail "#1 Open deck must be styled after Then Outbid is re-concentrated four"
@@ -605,6 +605,30 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover Then Outbid after Open deck is re-concentrated five"
   grep -q 'Then Outbid is concentrated after Open deck is re-concentrated five' "$test_log" \
     || fail "pages tests must cover Then Outbid after Open deck is re-concentrated five"
+  grep -q 'data-open-after-raise-five-first="true"' src/http/pages.ts \
+    || fail "#1 cue must stamp data-open-after-raise-five-first when later decks exist"
+  grep -q 'data-open-after-raise-five="true"' src/http/pages.ts \
+    || fail "#1 Open deck must stamp data-open-after-raise-five after Then Outbid is re-concentrated five"
+  grep -q 'class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four open-after-raise-five"' src/http/pages.ts \
+    || fail "#1 Open deck must use the open-after-raise-five hop class"
+  grep -q 'data-open-after-raise-five-first' src/views/skin.ts \
+    || fail "#1 Open deck must be styled after Then Outbid is re-concentrated five"
+  if grep -n 'function renderUnranked' -A 12 src/http/pages.ts | grep -Eq 'open-after-raise-five|open-after-raise-five-first'; then
+    fail "unpaid cue must not stamp Open deck after Then Outbid is re-concentrated five"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 8 src/http/pages.ts | grep -q 'open-after-raise-five'; then
+    fail "Then Outbid hop must stay a raise hop, not Open deck"
+  fi
+  if grep -n 'function openAfterRaiseHop' -A 8 src/http/pages.ts | grep -q 'open-after-raise-five'; then
+    fail "later Open deck after Then Outbid must stay the later hop, not the first Open deck"
+  fi
+  if grep -n 'function raiseAfterOpenHop' -A 8 src/http/pages.ts | grep -q 'open-after-raise-five'; then
+    fail "later Then Outbid after Open deck must stay a raise hop, not Open deck"
+  fi
+  grep -q 'occupied #1 Open deck is concentrated after Then Outbid is re-concentrated five' tests/pages.test.ts \
+    || fail "pages tests must cover Open deck after Then Outbid is re-concentrated five"
+  grep -q 'Open deck is concentrated after Then Outbid is re-concentrated five' "$test_log" \
+    || fail "pages tests must cover Open deck after Then Outbid is re-concentrated five"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
