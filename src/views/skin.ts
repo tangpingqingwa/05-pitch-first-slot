@@ -568,6 +568,31 @@ h1.headline {
 }
 .seat .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
 .listing.top .seat .rank { color: rgb(138, 75, 18); font-weight: 700; }
+.listing[data-prize-first] .cue {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+}
+.listing[data-prize-first] .seat {
+  justify-items: start;
+  text-align: left;
+  min-width: 0;
+}
+.listing[data-prize-first] .company {
+  font-size: 2.15rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+.listing[data-prize-first] .one-liner {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+.listing[data-prize-first] .seat .rank,
+.listing.top[data-prize-first] .seat .rank {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.listing[data-prize-first] .seat .clicks { font-size: 0.75rem; }
 .program {
   background: var(--card);
   color: var(--ink);
