@@ -87,6 +87,13 @@ function raiseAfterOpenHop(): string {
         </a>`;
 }
 
+function paidBidHtml(rankHtml: string, laterFact: boolean): string {
+  if (laterFact) {
+    return `<p class="rank later-fact" data-later-fact="true">${rankHtml}</p>`;
+  }
+  return `<p class="rank">${rankHtml}</p>`;
+}
+
 function deckHop(
   listing: Listing,
   paid: boolean,
@@ -150,6 +157,7 @@ function renderCueCard(input: {
   const openOne = input.openOne === true;
   const prizeFirst = input.prizeFirst === true;
   const klass = input.extraClass ? `listing ${input.extraClass}` : "listing";
+  const bidHtml = paidBidHtml(input.rankHtml, prizeFirst);
   const hop = deckHop(
     input.listing,
     input.paid,
@@ -173,7 +181,7 @@ function renderCueCard(input: {
     ${hop}
     <div class="seat">
       <span class="cue-label">Bid</span>
-      <p class="rank">${input.rankHtml}</p>
+      ${bidHtml}
       <p class="clicks">${input.clicks} clicks</p>
     </div>
   </div>`
@@ -186,7 +194,7 @@ function renderCueCard(input: {
     ${hop}
     <div class="seat">
       <span class="cue-label">Bid</span>
-      <p class="rank">${input.rankHtml}</p>
+      ${bidHtml}
       <p class="clicks">${input.clicks} clicks</p>
     </div>
   </div>`
@@ -198,7 +206,7 @@ function renderCueCard(input: {
     </div>
     <div class="seat">
       <span class="cue-label">Bid</span>
-      <p class="rank">${input.rankHtml}</p>
+      ${bidHtml}
       <p class="clicks">${input.clicks} clicks</p>
     </div>
   </div>

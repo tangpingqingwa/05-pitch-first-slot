@@ -649,6 +649,12 @@ export const OCCUPIED_CSS = /* css */ `
   font-weight: 400;
   color: var(--ink-soft);
 }
+.listing[data-prize-first] .seat .rank.later-fact[data-later-fact],
+.listing.top[data-prize-first] .seat .rank.later-fact[data-later-fact] {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
 .listing[data-prize-first] .seat .clicks { font-size: 0.75rem; }
 .claim-note .raise-charge {
   display: block;
