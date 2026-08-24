@@ -106,7 +106,7 @@ function deckHop(
       ? `\n        ${raiseAfterDeckHop(true)}\n        ${openAfterRaiseHop(listing)}\n        ${raiseAfterOpenHop()}`
       : "";
     return `<p class="deck">
-        <a class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three" data-open-deck="true" data-open-one="true" data-open-after-raise-one="true" data-open-after-raise-two="true" data-open-after-raise-three="true" href="${href}" rel="noopener noreferrer">
+        <a class="open-deck open-one open-after-raise-one open-after-raise-two open-after-raise-three open-after-raise-four" data-open-deck="true" data-open-one="true" data-open-after-raise-one="true" data-open-after-raise-two="true" data-open-after-raise-three="true" data-open-after-raise-four="true" href="${href}" rel="noopener noreferrer">
           Open deck
           <span class="deck-url">${url}</span>
         </a>${next}
@@ -155,7 +155,7 @@ function renderCueCard(input: {
   const attrs = later
     ? `${input.attrs} data-later-deck="true"`
     : openOne
-      ? `${input.attrs} data-open-one-first="true" data-raise-one-first="true" data-open-after-raise-one-first="true" data-raise-after-open-two-first="true" data-open-after-raise-two-first="true" data-raise-after-open-three-first="true" data-open-after-raise-three-first="true" data-raise-after-open-four-first="true"`
+      ? `${input.attrs} data-open-one-first="true" data-raise-one-first="true" data-open-after-raise-one-first="true" data-raise-after-open-two-first="true" data-open-after-raise-two-first="true" data-raise-after-open-three-first="true" data-open-after-raise-three-first="true" data-raise-after-open-four-first="true" data-open-after-raise-four-first="true"`
       : input.attrs;
   const body = later
     ? `<div class="cue later-cue">
