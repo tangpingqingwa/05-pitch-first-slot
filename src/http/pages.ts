@@ -258,7 +258,7 @@ function claimChrome(
   This week's first slot is still open. Outbid takes it after Polar lands.
 </p>`;
     hint =
-      "Company, deck URL, and a one-liner. Unpaid checkout does not rank.";
+      "Then the deck: company, URL, and a one-liner. Unpaid checkout does not rank.";
   } else if (topUsd !== undefined) {
     const raiseChargeUsd = Math.max(0, defaultBidUsd - topUsd);
     note = `<p class="claim-note" data-occupied-raise data-raise-difference="true">
@@ -295,20 +295,39 @@ function claimChrome(
       });
     });
     input.addEventListener("input", syncCharge);`;
-  return `<section id="claim">
-  <div class="stage-head">
-    <h1 class="headline">Opening three minutes</h1>
-  </div>
-  <div class="claim">
+  const claimAttrs = emptyRoom
+    ? ' class="empty-claim-first" data-empty-claim-first="true" aria-label="Claim #1"'
+    : "";
+  const claimRow = emptyRoom
+    ? `<div class="claim" data-claim-first="true">
+    <span class="claim-copy">Claim #1</span>
     <button type="button" class="step" data-bid-step="-1" aria-label="Decrease bid by one">−</button>
     <label class="bid-field">
       <span class="sr-only">Amount in dollars</span>
       <span class="currency">$</span><input id="bid" name="amountUsd" form="bid-form" inputmode="numeric" pattern="[0-9]*" value="${defaultBidUsd}"/>
     </label>
     <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
-  </div>
-  ${note}
-  <form id="bid-form" class="bid-form" method="post" action="/listings">
+    <button type="submit" form="bid-form" data-first-click="claim" class="outbid">Outbid</button>
+  </div>`
+    : `<div class="claim">
+    <button type="button" class="step" data-bid-step="-1" aria-label="Decrease bid by one">−</button>
+    <label class="bid-field">
+      <span class="sr-only">Amount in dollars</span>
+      <span class="currency">$</span><input id="bid" name="amountUsd" form="bid-form" inputmode="numeric" pattern="[0-9]*" value="${defaultBidUsd}"/>
+    </label>
+    <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
+  </div>`;
+  const form = emptyRoom
+    ? `<form id="bid-form" class="bid-form" method="post" action="/listings">
+    <div class="deck-identity" data-deck-identity="true" data-later-write="true">
+      <p class="later-write-label">Then the deck</p>
+      <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
+      <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
+      <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
+    </div>
+    <p class="form-hint">${hint}</p>
+  </form>`
+    : `<form id="bid-form" class="bid-form" method="post" action="/listings">
     <div class="bid-row">
       <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
       <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
@@ -316,7 +335,14 @@ function claimChrome(
     </div>
     <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
     <p class="form-hint">${hint}</p>
-  </form>
+  </form>`;
+  return `<section id="claim"${claimAttrs}>
+  <div class="stage-head">
+    <h1 class="headline">Opening three minutes</h1>
+  </div>
+  ${claimRow}
+  ${note}
+  ${form}
 </section>
 <script>
   (function () {

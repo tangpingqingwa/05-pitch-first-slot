@@ -157,6 +157,47 @@ h1.headline {
   font-weight: 700;
   padding: 0 1.25rem;
 }
+#claim.empty-claim-first[data-empty-claim-first] {
+  display: grid;
+  justify-items: center;
+}
+#claim.empty-claim-first[data-empty-claim-first] .claim[data-claim-first] {
+  gap: 0.65rem 0.75rem;
+}
+#claim.empty-claim-first[data-empty-claim-first] .claim-copy {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--cream);
+}
+#claim.empty-claim-first[data-empty-claim-first] .deck-identity[data-later-write] {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 26rem;
+  margin: 0.85rem auto 0;
+  padding-top: 0.7rem;
+  border-top: 1px dashed rgb(232 177 90 / 0.22);
+}
+#claim.empty-claim-first[data-empty-claim-first] .later-write-label {
+  margin: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(143, 122, 98);
+}
+#claim.empty-claim-first[data-empty-claim-first] .deck-identity .field {
+  flex: none;
+  min-width: 0;
+}
+#claim.empty-claim-first[data-empty-claim-first] .deck-identity input {
+  height: 2.2rem;
+  font-size: 0.88rem;
+  color: rgb(203, 183, 154);
+  border-color: rgb(232 177 90 / 0.16);
+  background: rgb(11 7 5 / 0.28);
+}
 .form-hint {
   margin: 0.15rem 0 0;
   text-align: center;

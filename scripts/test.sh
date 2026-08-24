@@ -261,6 +261,8 @@ if [[ -f package.json ]]; then
     || fail "board headline must be Opening three minutes"
   grep -q 'class="outbid">Outbid' src/http/pages.ts \
     || fail "board must clone Outbid claim chrome"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "empty house Outbid must be the Claim #1 first click"
   grep -q 'data-bid-step' src/http/pages.ts \
     || fail "board must clone ± bid stepper"
   grep -q 'bid-field' src/http/pages.ts \
@@ -309,6 +311,12 @@ if [[ -f package.json ]]; then
   fi
   grep -q 'doesNotMatch(html, /#1/)' tests/pages.test.ts \
     || fail "pages tests must keep false-positive #1 forbidden on empty/unranked"
+  grep -q 'empty house first click is Claim #1' tests/pages.test.ts \
+    || fail "pages tests must cover empty-house Claim #1 first click"
+  grep -q 'data-first-click="claim"' tests/pages.test.ts \
+    || fail "pages tests must stamp Claim #1 as the first click"
+  grep -q 'data-later-write' tests/pages.test.ts \
+    || fail "pages tests must keep deck identity a later write"
   grep -q 'opening three minutes' "$test_log" \
     || fail "pages tests must cover opening three minutes"
   grep -q 'empty room' "$test_log" \
@@ -779,6 +787,40 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover empty house stays empty"
   grep -q 'empty house stays empty' "$test_log" \
     || fail "pages tests must cover empty house stays empty"
+  grep -q 'data-empty-claim-first="true"' src/http/pages.ts \
+    || fail "empty house must stamp data-empty-claim-first"
+  grep -q 'class="empty-claim-first"' src/http/pages.ts \
+    || fail "empty house must use the empty-claim-first class"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "empty house must stamp Claim #1 as the first click"
+  grep -q 'Claim #1' src/http/pages.ts \
+    || fail "empty house must name Claim #1"
+  grep -q 'data-later-write="true"' src/http/pages.ts \
+    || fail "empty house must stamp deck identity as a later write"
+  grep -q 'data-deck-identity="true"' src/http/pages.ts \
+    || fail "empty house must stamp deck identity"
+  grep -q 'Then the deck' src/http/pages.ts \
+    || fail "empty house must write the deck after Claim #1"
+  grep -q 'data-empty-claim-first' src/views/skin.ts \
+    || fail "empty Claim #1 must be composed in HOUSE_CSS"
+  grep -q 'data-later-write' src/views/skin.ts \
+    || fail "later deck write must be composed in HOUSE_CSS"
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -Eq 'empty-claim-first|data-first-click="claim"|later-write|deck-identity'; then
+    fail "unpaid cue must not stamp empty Claim #1"
+  fi
+  if awk '/const form = emptyRoom/,/: `<form id="bid-form"/' src/http/pages.ts | grep -q 'class="bid-row"'; then
+    fail "empty house must not keep Company/URL in the same claim row as Outbid"
+  fi
+  if awk '/const claimRow = emptyRoom/,/const form = emptyRoom/' src/http/pages.ts | grep -Eq 'name="company"|name="url"|name="oneLiner"'; then
+    fail "empty Claim #1 row must not include deck identity fields"
+  fi
+  if grep -n 'class="bid-row"' -A 6 src/http/pages.ts | grep -Eq 'data-first-click="claim"|later-write|Claim #1'; then
+    fail "occupied bid-row must not stamp empty Claim #1"
+  fi
+  grep -q 'empty house first click is Claim #1' "$test_log" \
+    || fail "pages tests must cover empty-house Claim #1 first click"
+  grep -q 'deck identity is a later write' "$test_log" \
+    || fail "pages tests must cover deck identity as a later write"
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
