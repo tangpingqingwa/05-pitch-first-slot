@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { buildApp } from "../src/app.js";
+import { PolarFixture } from "../src/billing/polar_fixture.js";
 import { getBid } from "../src/core/rank.js";
+import { openDatabase } from "../src/db.js";
 
 const NOW = new Date("2026-08-19T12:00:00.000Z");
 const WEEK = "2026-08-17";
@@ -463,6 +465,8 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(html, /first slot is still open/);
   assert.doesNotMatch(html, /data-empty-room/);
   assert.doesNotMatch(boardMarkup(html), /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(html), /data-occupied-house/);
+  assert.doesNotMatch(boardMarkup(html), /house-occupied/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
@@ -470,6 +474,8 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.doesNotMatch(boardMarkup(html), /not a new bid/);
   assert.doesNotMatch(boardMarkup(html), /Same deck URL raises this row/);
   assert.doesNotMatch(html, /data-rank="/);
+  assert.doesNotMatch(html, /<ul class="listings" aria-label="This week's opening slot"/);
+  assert.doesNotMatch(rankedListMarkup(html), /Helix Labs/);
   assertNoFalsePositiveRank(html);
 });
 
@@ -4279,6 +4285,78 @@ test("unpaid cue stays off the board and does not take a seat", async () => {
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
   assert.doesNotMatch(html, /claim this rank/i);
+});
+
+test("unpaid Polar checkout stays Not on the board — opening slot is paid only", async () => {
+  const db = openDatabase(":memory:");
+  after(() => db.close());
+  const polar = new PolarFixture(db, { autoSettle: false, now: () => NOW });
+  const app = await buildApp({
+    db,
+    polar,
+    now: () => NOW,
+  });
+  after(() => app.close());
+
+  const listing = await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+  const started = await polar.createCheckout({
+    listingId: listing.id,
+    weekId: WEEK,
+    chargeUsd: 5,
+    nextUsd: 5,
+  });
+  assert.equal(polar.getCheckout(started.checkoutId)?.status, "pending");
+  assert.equal(getBid(app.db, listing.id, WEEK), undefined);
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const unpaid = listingCard(html, "Cue Only");
+  assert.match(unpaid, /data-unranked="true"/);
+  assert.match(unpaid, /data-off-board="true"/);
+  assert.match(unpaid, /class="cue off-board-cue"/);
+  assert.match(unpaid, /Not on the board/);
+  assert.match(unpaid, /Unranked — no paid bid yet/);
+  assert.match(unpaid, /Deck or site/);
+  assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.doesNotMatch(unpaid, /cue-label">Bid</);
+  assert.doesNotMatch(unpaid, /data-rank="/);
+  assert.doesNotMatch(unpaid, /#1/);
+  assert.doesNotMatch(unpaid, /Open deck/);
+  assert.doesNotMatch(unpaid, /data-prize-first/);
+  assert.doesNotMatch(unpaid, /data-later-fact/);
+  assert.doesNotMatch(unpaid, /data-first-click="open"/);
+  assert.match(html, /data-off-board-list="true"/);
+  assert.match(html, /<aside class="off-board" data-off-board-list="true"/);
+  assert.doesNotMatch(boardMarkup(html), /data-occupied-house/);
+  assert.doesNotMatch(boardMarkup(html), /house-occupied/);
+  assert.doesNotMatch(html, /data-occupied-raise/);
+  assert.doesNotMatch(html, /Polar charges only the difference/);
+  assert.doesNotMatch(html, /<ul class="listings" aria-label="This week's opening slot"/);
+  assert.doesNotMatch(rankedListMarkup(html), /Cue Only/);
+  assert.doesNotMatch(laterListMarkup(html), /Cue Only/);
+  assert.doesNotMatch(boardMarkup(html), /data-empty-house/);
+  assert.doesNotMatch(html, /The room is empty/);
+  assert.doesNotMatch(html, /first slot is still open/);
+  assertNoFalsePositiveRank(html);
+
+  await polar.applyPaid(started.checkoutId, NOW.toISOString());
+  const paidBoard = (await app.inject({ method: "GET", url: "/" })).body;
+  const paid = listingCard(paidBoard, "Cue Only");
+  assert.match(paidBoard, /class="house house-occupied" data-occupied-house="true"/);
+  assert.match(paid, /data-rank="1"/);
+  assert.match(paid, /#1 · \$5/);
+  assert.match(paid, /data-prize-first="true"/);
+  assert.match(paid, /class="rank later-fact" data-later-fact="true"/);
+  assert.match(paid, /Open deck/);
+  assert.doesNotMatch(paid, /data-off-board/);
+  assert.doesNotMatch(paid, /Not on the board/);
+  assert.doesNotMatch(paidBoard, /Unranked — no paid bid yet/);
+  assert.doesNotMatch(rankedListMarkup(paidBoard), /Not on the board/);
+  assert.match(paidBoard, /<ul class="listings" aria-label="This week's opening slot" data-rolling-week="true">/);
 });
 
 test("occupied #1 Open is the first founder click — later Bid seats stay quieter", async () => {

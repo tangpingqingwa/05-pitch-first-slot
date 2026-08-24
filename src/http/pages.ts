@@ -380,6 +380,7 @@ export function renderBoard(
   const topUsd = ranked[0]?.bid.amountUsd;
   const defaultBid = topUsd === undefined ? MIN_BID_USD : topUsd + 1;
   const emptyRoom = listings.length === 0;
+  const occupiedHouse = ranked.length > 0;
   const rankedRows =
     board.length === 0
       ? ""
@@ -408,7 +409,7 @@ ${offBoard.join("\n")}
     title: "Opening three minutes",
     path: "/",
     emptyHouse: emptyRoom,
-    occupiedHouse: !emptyRoom,
+    occupiedHouse,
     body: `${claimChrome(defaultBid, emptyRoom, topUsd)}
   ${rows}`,
   });
