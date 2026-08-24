@@ -343,18 +343,29 @@ export function renderBoard(
   const unranked = listings.filter((listing) => !rankedIds.has(listing.id));
   const clicksOf = (id: string): number => clicksById.get(id) ?? 0;
   const laterDecksExist = ranked.some((row) => row.rank > 1);
-  const items = [
-    ...ranked.map((row) => renderRanked(row, clicksOf(row.id), laterDecksExist)),
-    ...unranked.map((row) => renderUnranked(row, clicksOf(row.id))),
-  ];
+  const board = ranked.map((row) =>
+    renderRanked(row, clicksOf(row.id), laterDecksExist),
+  );
+  const offBoard = unranked.map((row) => renderUnranked(row, clicksOf(row.id)));
   const topUsd = ranked[0]?.bid.amountUsd;
   const defaultBid = topUsd === undefined ? MIN_BID_USD : topUsd + 1;
   const emptyRoom = listings.length === 0;
-  const rows = emptyRoom
-    ? ""
-    : `<ul class="listings">
-${items.join("\n")}
+  const rankedRows =
+    board.length === 0
+      ? ""
+      : `<ul class="listings">
+${board.join("\n")}
 </ul>`;
+  const unpaidRows =
+    offBoard.length === 0
+      ? ""
+      : `<aside class="off-board" data-off-board-list="true" aria-label="Not on the board">
+<ul class="off-board-list">
+${offBoard.join("\n")}
+</ul>
+</aside>`;
+  const rows = emptyRoom ? "" : `${rankedRows}
+  ${unpaidRows}`;
 
   return renderLayout({
     title: "Opening three minutes",

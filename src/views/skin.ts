@@ -580,19 +580,48 @@ export const OCCUPIED_CSS = /* css */ `
   color: var(--ink);
   max-width: 10rem;
 }
+.off-board {
+  margin: 1.1rem 0 0;
+}
+.off-board-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+.listing[data-off-board] {
+  padding: 0.85rem 1.05rem 0.8rem;
+  background: transparent;
+  color: var(--cream);
+  box-shadow: none;
+  outline: 1px dashed rgb(232 177 90 / 0.35);
+  outline-offset: 0;
+  border-radius: 0.2rem;
+}
 .listing[data-off-board] .off-board-cue {
   grid-template-columns: minmax(0, 1fr);
+}
+.listing[data-off-board] .company,
+.listing[data-off-board] .one-liner,
+.listing[data-off-board] .listing-url,
+.listing[data-off-board] .rank,
+.listing[data-off-board] .clicks {
+  color: rgb(203, 183, 154);
+}
+.listing[data-off-board] .company {
+  font-size: 1.15rem;
 }
 .listing[data-off-board] .rank {
   margin: 0.2rem 0 0;
   font-family: var(--sans);
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--ink-soft);
   max-width: none;
 }
 .listing[data-off-board] .cue-label {
   margin-top: 0.45rem;
+  color: rgb(143, 122, 98);
 }
 .seat .clicks { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
 .listing.top .seat .rank { color: rgb(138, 75, 18); font-weight: 700; }

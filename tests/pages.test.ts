@@ -65,6 +65,15 @@ function listingCard(html: string, company: string): string {
   return card;
 }
 
+function rankedListMarkup(html: string): string {
+  const start = html.indexOf('<ul class="listings">');
+  if (start === -1) {
+    return "";
+  }
+  const end = html.indexOf("</ul>", start);
+  return end === -1 ? html.slice(start) : html.slice(start, end + 5);
+}
+
 test("GET / opening three minutes is a pitch-night stage with honest empty room — first slot is still open", async () => {
   const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
   after(() => app.close());
@@ -82,6 +91,8 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(html, /class="empty-board"/);
   assert.doesNotMatch(html, /class="listing"/);
   assert.doesNotMatch(html, /<ul class="listings">/);
+  assert.doesNotMatch(html, /data-off-board-list/);
+  assert.doesNotMatch(html, /class="off-board"/);
   assert.match(html, /data-empty-house="true"/);
   assert.doesNotMatch(html, /data-prize-first/);
   assert.doesNotMatch(html, /data-off-board/);
@@ -152,6 +163,8 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   assert.doesNotMatch(html, /Not on the board/);
   assert.doesNotMatch(html, /class="listing"/);
   assert.doesNotMatch(html, /<ul class="listings">/);
+  assert.doesNotMatch(html, /data-off-board-list/);
+  assert.doesNotMatch(html, /class="off-board"/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
@@ -212,6 +225,8 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.match(html, /Unranked — no paid bid yet/);
   assert.match(html, /data-unranked="true"/);
   assert.match(html, /data-off-board="true"/);
+  assert.match(html, /data-off-board-list="true"/);
+  assert.match(html, /<aside class="off-board" data-off-board-list="true"/);
   assert.match(html, /class="who"[\s\S]*Helix Labs[\s\S]*Benchtop instruments for small labs[\s\S]*Deck or site[\s\S]*https:\/\/helix\.example\/deck/);
   assert.match(html, /Not on the board[\s\S]*Unranked — no paid bid yet/);
   const unpaid = listingCard(html, "Helix Labs");
@@ -219,6 +234,8 @@ test("unranked listing stays a cue card without #1 until Polar lands", async () 
   assert.match(unpaid, /Not on the board/);
   assert.doesNotMatch(unpaid, /class="seat"/);
   assert.doesNotMatch(unpaid, /cue-label">Bid</);
+  assert.doesNotMatch(html, /<ul class="listings">/);
+  assert.match(html, /<ul class="off-board-list">/);
   assert.doesNotMatch(unpaid, /data-open-deck/);
   assert.doesNotMatch(unpaid, /Open deck/);
   assert.doesNotMatch(unpaid, /data-raise-after-deck/);
@@ -635,6 +652,9 @@ test("occupied raise is certain — Polar charges only the difference, not a new
   assert.doesNotMatch(unpaid, /data-raise-charge/);
   assert.doesNotMatch(unpaid, /not a new bid/);
   assert.doesNotMatch(unpaid, /class="seat"/);
+  assert.match(html, /data-off-board-list="true"/);
+  assert.match(html, /<ul class="listings">[\s\S]*Stage Co[\s\S]*<\/ul>[\s\S]*<aside class="off-board"/);
+  assert.doesNotMatch(rankedListMarkup(html), /Cue Only/);
   assert.doesNotMatch(html, /data-empty-house/);
   assert.doesNotMatch(html, /The room is empty/);
   assert.doesNotMatch(html, /first slot is still open/);
@@ -665,6 +685,10 @@ test("occupied raise is certain — Polar charges only the difference, not a new
     /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
   );
   assert.match(listingCard(raisedBoard, "Cue Only"), /data-off-board="true"/);
+  assert.match(listingCard(raisedBoard, "Cue Only"), /Not on the board/);
+  assert.doesNotMatch(listingCard(raisedBoard, "Cue Only"), /class="seat"/);
+  assert.match(raisedBoard, /data-off-board-list="true"/);
+  assert.doesNotMatch(rankedListMarkup(raisedBoard), /Cue Only/);
   assert.doesNotMatch(raisedBoard, /data-empty-house/);
 });
 
@@ -765,6 +789,9 @@ test("occupied paid cue names Open deck as the only outbound hop", async () => {
   assert.doesNotMatch(unpaid, /class="seat"/);
   assert.doesNotMatch(unpaid, /cue-label">Bid</);
   assert.doesNotMatch(paid, /data-off-board/);
+  assert.match(html, /data-off-board-list="true"/);
+  assert.match(html, /<ul class="listings">[\s\S]*Stage Co[\s\S]*<\/ul>[\s\S]*<aside class="off-board"/);
+  assert.doesNotMatch(rankedListMarkup(html), /Helix Labs/);
   assert.equal((html.match(/data-open-deck="true"/g) ?? []).length, 1);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /hot deal/i);
@@ -3877,7 +3904,12 @@ test("unpaid cue stays off the board and does not take a seat", async () => {
   assert.doesNotMatch(below, /data-off-board/);
   assert.doesNotMatch(below, /Not on the board/);
   assert.equal((html.match(/data-off-board="true"/g) ?? []).length, 1);
+  assert.match(html, /data-off-board-list="true"/);
+  assert.match(html, /<aside class="off-board" data-off-board-list="true"/);
+  assert.match(html, /<ul class="listings">[\s\S]*Stage Co[\s\S]*Helix Labs[\s\S]*<\/ul>[\s\S]*<aside class="off-board"/);
+  assert.doesNotMatch(rankedListMarkup(html), /Cue Only/);
   assert.match(html, /data-off-board[\s\S]*\.off-board-cue/);
+  assert.match(html, /\.off-board \{/);
   assert.match(html, /class="claim-note" data-occupied-raise/);
   assert.match(html, /Polar charges only the difference/);
   assert.match(html, /data-raise-difference="true"/);
