@@ -3,7 +3,7 @@ import { clickCountsByListing } from "../core/clicks.js";
 import { listListings, type Listing } from "../core/listing.js";
 import { MIN_BID_USD, rankedBoard, type RankedListing } from "../core/rank.js";
 import { currentWeekId } from "../core/week.js";
-import { BOARD_CSS } from "../views/skin.js";
+import { BOARD_CSS, HOUSE_CSS } from "../views/skin.js";
 
 function escapeHtml(value: string): string {
   return value
@@ -23,7 +23,10 @@ function renderLayout(input: {
   title: string;
   path: string;
   body: string;
+  emptyHouse?: boolean;
 }): string {
+  const css = input.emptyHouse === true ? HOUSE_CSS : BOARD_CSS;
+  const houseAttr = input.emptyHouse === true ? ' data-empty-house="true"' : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,9 +36,9 @@ function renderLayout(input: {
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
-  <style>${BOARD_CSS}</style>
+  <style>${css}</style>
 </head>
-<body>
+<body${houseAttr}>
   <header class="site-header">
     <a class="brand" href="/">first.<em>slot</em></a>
     <nav aria-label="Main">
@@ -329,6 +332,7 @@ ${items.join("\n")}
   return renderLayout({
     title: "Opening three minutes",
     path: "/",
+    emptyHouse: emptyRoom,
     body: `${claimChrome(defaultBid, emptyRoom, topUsd)}
   ${rows}`,
   });
