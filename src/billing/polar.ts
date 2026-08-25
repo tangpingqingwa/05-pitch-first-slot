@@ -27,6 +27,16 @@ export type CheckoutStart = {
   url: string;
 };
 
+export type PolarCheckoutRecord = {
+  checkoutId: string;
+  listingId: string;
+  weekId: string;
+  chargeUsd: number;
+  nextUsd: number;
+  url: string;
+  status: "pending" | "paid";
+};
+
 export type PolarWebhookResult = {
   checkoutId: string;
   paidAt: string;
@@ -37,6 +47,7 @@ export type PolarPort = {
   readonly kind: "fixture" | "live";
   createCheckout(input: CreateCheckoutInput): Promise<CheckoutStart>;
   applyPaid(checkoutId: string, paidAt: string): Promise<void>;
+  getCheckout(checkoutId: string): PolarCheckoutRecord | undefined;
   handleWebhook(
     rawBody: string,
     headers: Record<string, string>,

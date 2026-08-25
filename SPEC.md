@@ -151,6 +151,7 @@ The deck/URL is a public outbound link. Each confirmed click increments `clicks`
 | `GET /` | public | ranked board for the open week; bid + current $; company; one-liner; clickable URL; click count |
 | `GET /about` | public | what the slot is; that you cannot buy the show |
 | `GET /rules` | public | the auction rules in this SPEC |
+| `GET /checkout/complete` | public | Polar return. A paid raise names the difference (Sunday pay raised Monday still pays the difference). Unpaid Polar checkout stays off the house. |
 | `POST /listings` | public | create listing (no payment yet) |
 | `POST /listings/:id/bids` | public | start Polar checkout for first bid or raise |
 | `POST /listings/:id/clicks` | public | increment clicks, then redirect to canonical URL |
@@ -175,7 +176,7 @@ No on-site chat. No comment thread.
 
 CI and `scripts/test.sh` must not set `POLAR_LIVE=1` and must not require Polar secrets.
 
-A bid becomes current only after a successful payment (fixture or live webhook). Unpaid checkout sessions do not change rank.
+A bid becomes current only after a successful payment (fixture or live webhook). Unpaid checkout sessions do not change rank. Occupied checkout and Polar return name that a raise charges the difference — a Sunday pay raised Monday still pays the difference. Unpaid Polar checkout stays off the house.
 
 ---
 

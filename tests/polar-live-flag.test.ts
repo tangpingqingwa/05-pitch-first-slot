@@ -131,8 +131,10 @@ test("PolarLive createCheckout uses POLAR_API_BASE override", async () => {
       POLAR_API_BASE: "https://polar-api.test",
       POLAR_PRODUCT_ID: "prod_test",
     },
-    fetch: (async (input) => {
+    fetch: (async (input, init) => {
       seen.push(String(input));
+      const body = typeof init?.body === "string" ? init.body : "";
+      assert.match(body, /checkout\/complete\?checkoutId=\{CHECKOUT_ID\}/);
       return new Response(
         JSON.stringify({
           id: "chk_sandbox_override",
