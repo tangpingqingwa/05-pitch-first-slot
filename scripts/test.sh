@@ -968,6 +968,60 @@ if [[ -f package.json ]]; then
     || fail "empty / must not wrap Claim after the slot"
   grep -q 'claimWrapAt > offAt && claimAt > claimWrapAt' tests/pages.test.ts \
     || fail "pages tests must put occupied Claim after Open #1 and the listings"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "empty / must stamp Claim / Outbid as the first empty click"
+  grep -q 'href="#write"' src/http/pages.ts \
+    || fail "empty Outbid must hop to the later write"
+  grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
+    || fail "empty Company / deck URL / one-liner must wrap as later-write after Outbid"
+  grep -q 'id="write"' src/http/pages.ts \
+    || fail "empty later write must sit at #write after the Outbid hop"
+  grep -q 'emptyRoom === true' src/http/pages.ts \
+    || fail "empty Claim-first composition must apply only on the empty house"
+  if awk '/emptyRoom === true/,/: `<form id="bid-form" class="bid-form" method/' src/http/pages.ts | grep -q 'bid-row'; then
+    fail "empty house must not put Company / deck URL in a bid-row fighting Outbid"
+  fi
+  grep -q 'class="bid-row"' src/http/pages.ts \
+    || fail "occupied Claim must keep Company / deck URL / Outbid in the bid-row"
+  grep -F -q '.house-empty[data-empty-house] a.outbid[data-first-click="claim"]' src/views/skin.ts \
+    || fail "empty Outbid first click must be composed in the empty house"
+  grep -F -q '.house-empty[data-empty-house] .later-write[data-later-write]' src/views/skin.ts \
+    || fail "empty later write must sit after Outbid, not same-weight fields"
+  grep -F -q '.house-empty[data-empty-house] .later-write[data-later-write] .outbid' src/views/skin.ts \
+    || fail "empty later-write Outbid must stay quieter than the first click"
+  if grep -E '^\.later-write' src/views/skin.ts; then
+    fail "later-write CSS must stay scoped to house-empty"
+  fi
+  if grep -E '^a\.outbid\[data-first-click="claim"\]' src/views/skin.ts; then
+    fail "empty Claim first-click CSS must stay scoped to house-empty"
+  fi
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -E 'data-later-write|data-first-click="claim"|#write:target' \
+    | grep -v 'house-empty\[data-empty-house\]'; then
+    fail "HOUSE_CSS must scope empty Claim-first / later-write to house-empty"
+  fi
+  if awk '/^export const OCCUPIED_CSS/{p=1} p{print} /^export const BOARD_CSS/{exit}' src/views/skin.ts \
+    | grep -Eq 'data-later-write|data-first-click="claim"|#write:target'; then
+    fail "OCCUPIED_CSS must not restyle empty Claim-first / later-write"
+  fi
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -Eq 'later-write|data-first-click="claim"|href="#write"'; then
+    fail "unpaid cue must not stamp empty Claim-first later-write"
+  fi
+  if grep -n 'occupiedHouse === true' -A 8 src/http/pages.ts | grep -Eq 'later-write|data-first-click="claim"'; then
+    fail "occupied / must not wrap Claim as empty later-write"
+  fi
+  grep -q 'empty house keeps one first click' tests/pages.test.ts \
+    || fail "pages tests must cover empty Claim / Outbid as the first click"
+  grep -q 'Claim / Outbid, then the deck URL' tests/pages.test.ts \
+    || fail "pages tests must put empty deck URL after the Outbid hop"
+  grep -q 'Claim / Outbid, then the deck URL' "$test_log" \
+    || fail "pages tests must cover empty Claim / Outbid then the deck URL"
+  grep -q 'doesNotMatch(boardMarkup(empty), /class="bid-row"/)' tests/pages.test.ts \
+    || fail "empty / must not keep Company / deck URL in a bid-row with Outbid"
+  grep -q 'doesNotMatch(markup, /data-first-click="claim"/)' tests/pages.test.ts \
+    || fail "occupied / must not stamp empty Claim as the first click"
+  grep -q 'hopAt > bidAt && writeAt > hopAt' tests/pages.test.ts \
+    || fail "pages tests must put empty Outbid before the later write"
   if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -q 'data-rolling-week'; then
     fail "unpaid cue must not stamp the rolling week window"
   fi

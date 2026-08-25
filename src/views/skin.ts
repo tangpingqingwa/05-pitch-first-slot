@@ -198,6 +198,26 @@ h1.headline {
 .house-empty[data-empty-house] [data-claim-after-slot] {
   display: none;
 }
+.house-empty[data-empty-house] a.outbid[data-first-click="claim"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.25rem auto 0;
+}
+.house-empty[data-empty-house] .later-write[data-later-write] {
+  margin-top: 1.6rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed rgb(232 177 90 / 0.22);
+}
+.house-empty[data-empty-house] .later-write[data-later-write] .outbid {
+  height: 2.4rem;
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+.house-empty[data-empty-house] #write:target {
+  outline: 1px dashed rgb(232 177 90 / 0.35);
+  outline-offset: 0.45rem;
+}
 `;
 
 /** Occupied / unpaid cue chrome. Empty house must not ship this. */

@@ -289,7 +289,7 @@ function claimChrome(
   <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
 </p>`;
     hint =
-      "Company, deck URL, and a one-liner. Unpaid checkout does not rank.";
+      "Outbid first. Company, deck URL, and a one-liner after that hop. Unpaid checkout does not rank.";
   } else if (topUsd !== undefined) {
     const raiseChargeUsd = Math.max(0, defaultBidUsd - topUsd);
     note = `<p class="claim-note" data-occupied-raise data-raise-difference="true">
@@ -342,7 +342,19 @@ function claimChrome(
     <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
   </div>
   ${note}
-  <form id="bid-form" class="bid-form" method="post" action="/listings">
+  ${
+    emptyRoom === true
+      ? `<a class="outbid" data-first-click="claim" href="#write">Outbid</a>
+  <form id="bid-form" class="bid-form later-write" data-later-write="true" method="post" action="/listings">
+    <div id="write">
+      <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
+      <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
+      <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
+      <button type="submit" class="outbid">Outbid</button>
+    </div>
+    <p class="form-hint">${hint}</p>
+  </form>`
+      : `<form id="bid-form" class="bid-form" method="post" action="/listings">
     <div class="bid-row">
       <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
       <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
@@ -350,7 +362,8 @@ function claimChrome(
     </div>
     <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
     <p class="form-hint">${hint}</p>
-  </form>
+  </form>`
+  }
 </section>
 <script>
   (function () {
@@ -412,7 +425,9 @@ ${offBoard.join("\n")}
   ${laterRows}
   ${unpaidRows}`;
   const claim = claimChrome(defaultBid, emptyRoom, topUsd);
-  // Occupied house: Open #1 is the first click. Claim #1 is a later write after the slot.
+  // Empty house: Claim / Outbid is the first click. Company / deck URL / one-liner
+  // are a later write after that hop. Occupied house: Open #1 is the first click.
+  // Claim #1 is a later write after the slot.
   const body =
     occupiedHouse === true
       ? `${rows}
