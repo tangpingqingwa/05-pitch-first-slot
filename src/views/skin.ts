@@ -810,6 +810,14 @@ export const OCCUPIED_CSS = /* css */ `
   height: 2.4rem;
   font-weight: 600;
 }
+/* Occupied claim-note sits after Outbid so dashed $amount and Outbid stay adjacent. */
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-form {
+  margin-top: 0.5rem;
+}
+.house-occupied[data-occupied-house] .claim-note[data-after-outbid] {
+  margin-top: 0.7rem;
+  margin-bottom: 0.2rem;
+}
 `;
 
 export const BOARD_CSS = `${HOUSE_CSS}
