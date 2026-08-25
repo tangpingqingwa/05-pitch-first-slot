@@ -475,7 +475,7 @@ export function renderRules(): string {
   <li><strong>Ties.</strong> Same bid amount: the <strong>older</strong> successful payment wins (earlier paidAt, then earlier listing.createdAt).</li>
   <li><strong>Raise = difference.</strong> If a listing is at $40 and the founder bids $55, Polar charges <strong>$15</strong>, not $55. The public bid becomes $55.</li>
   <li><strong>Below #1 is allowed.</strong> A $5 bid still lists, at the rank that amount buys.</li>
-  <li><strong>Same listing, same week.</strong> One current bid per listing in the rolling window. A raise updates that row; it does not create a second row.</li>
+  <li><strong>Same listing still inside last 7 days.</strong> One current bid per listing in the rolling window. A raise updates that row; it does not create a second row. <code>weekId</code> stays an audit label — not raise identity. A founder who paid Sunday still raises on Monday if that listing is inside last 7 days. After 7 days the same listing is a new full bid.</li>
   <li><strong>New week / weekly reset.</strong> Paid bids expire after <strong>7 days</strong> from <code>paidAt</code>. Not Monday 00:00 UTC. The ranked board starts empty when the window is empty. Listings may remain; they are unranked until a new paid bid in the rolling last 7 days.</li>
   <li><strong>No retract.</strong> A paid bid is not refundable because someone else raised.</li>
 </ol>

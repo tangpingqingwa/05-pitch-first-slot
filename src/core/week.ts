@@ -1,4 +1,7 @@
-/** Rolling last-7-days house window. Tests may set `WEEK_NOW`. */
+/**
+ * Rolling last-7-days house window. Tests may set `WEEK_NOW`.
+ * Raise identity is the listing still inside this window. `weekId` is an audit label only.
+ */
 
 export type WeekId = string;
 
@@ -38,7 +41,7 @@ export function bidInRollingWeek(
 
 /**
  * Monday 00:00 UTC calendar date label for checkout/audit (`YYYY-MM-DD`).
- * Rank does not use this as the house window.
+ * Rank does not use this as the house window. Raise identity does not use this.
  */
 export function weekIdFor(now: Date): WeekId {
   const day = new Date(

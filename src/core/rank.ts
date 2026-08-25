@@ -133,6 +133,7 @@ export function rankListings(
   }));
 }
 
+/** Same listing still inside last 7 days raises. A new listing always pays a full bid. weekId is not the raise key. */
 export function quoteBid(current: Bid | undefined, nextUsd: number): BidQuote {
   if (!Number.isInteger(nextUsd)) {
     throw new BidError("invalid_bid", "bid must be a whole-dollar USD amount");
@@ -152,6 +153,7 @@ export function quoteBid(current: Bid | undefined, nextUsd: number): BidQuote {
   return { chargeUsd: nextUsd - current.amountUsd, nextUsd };
 }
 
+/** Audit lookup by weekId. Raise identity is getBidInRollingWeek. */
 export function getBid(
   db: AppDb,
   listingId: string,
@@ -167,7 +169,7 @@ export function getBid(
   return row ? mapBid(row) : undefined;
 }
 
-/** Current paid bid still inside the rolling last-7-days window. */
+/** Raise identity: current paid bid still inside last 7 days. Not weekId. */
 export function getBidInRollingWeek(
   db: AppDb,
   listingId: string,
@@ -203,6 +205,7 @@ export function getBidInRollingWeek(
   return current[0];
 }
 
+/** Raise identity is the listing still inside last 7 days. weekId is an audit label only. */
 export function checkoutWeekId(
   db: AppDb,
   listingId: string,

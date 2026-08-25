@@ -1028,6 +1028,83 @@ if [[ -f package.json ]]; then
   if grep -Eqi '24h lock|lock on #1' src/http/pages.ts src/views/skin.ts; then
     fail "rolling week is not a 24h lock on #1"
   fi
+
+  echo "== UX: occupied raise identity is last-7-days — not the UTC week label =="
+  grep -q 'Same listing still inside last 7 days' src/http/pages.ts \
+    || fail "occupied /rules must name last-7-days raise identity"
+  grep -q 'weekId</code> stays an audit label — not raise identity' src/http/pages.ts \
+    || fail "occupied /rules must keep weekId as an audit label"
+  if grep -q 'Same listing, same week' src/http/pages.ts SPEC.md; then
+    fail "occupied /rules must not tax raise identity as the UTC week"
+  fi
+  if grep -qi 'same weekId' src/http/pages.ts SPEC.md; then
+    fail "raise identity must not key on weekId"
+  fi
+  grep -Fq 'Identity for raise: same **listing** still inside the rolling last 7 days' SPEC.md \
+    || fail "SPEC must name last-7-days raise identity"
+  grep -Fq '`weekId` stays a Polar/audit label — not raise identity' SPEC.md \
+    || fail "SPEC must keep weekId as an audit label, not raise identity"
+  grep -Fq 'Raise identity is the same listing still inside that window — not `weekId`' BUILD.md \
+    || fail "BUILD must keep raise identity off weekId"
+  grep -q 'Same listing still inside last 7 days raises' src/core/rank.ts \
+    || fail "rank.ts must name last-7-days raise identity"
+  grep -q 'weekId is not the raise key' src/core/rank.ts \
+    || fail "rank.ts must keep weekId off raise identity"
+  grep -q 'Raise identity is the listing still inside last 7 days. weekId is an audit label only.' src/core/rank.ts \
+    || fail "checkoutWeekId must keep weekId as audit, not raise identity"
+  grep -A 8 'export function checkoutWeekId' src/core/rank.ts | grep -q 'getBidInRollingWeek' \
+    || fail "checkoutWeekId must quote against last-7-days, not weekId"
+  if grep -A 8 'export function checkoutWeekId' src/core/rank.ts | grep -q 'getBid('; then
+    fail "checkoutWeekId must not key raise identity on weekId"
+  fi
+  grep -q 'Same listing still inside last 7 days is a raise. weekId is not the raise key.' src/billing/polar_fixture.ts \
+    || fail "Polar fixture checkout must raise on last-7-days identity"
+  grep -q 'Raise identity is checkoutWeekId (last 7 days), not currentWeekId.' src/http/bids.ts \
+    || fail "HTTP bids must raise on last-7-days identity"
+  grep -q 'Raise identity is checkoutWeekId (last 7 days), not currentWeekId.' src/http/listings.ts \
+    || fail "form checkout must raise on last-7-days identity"
+  grep -q 'Raise identity is the listing still inside this window' src/core/week.ts \
+    || fail "week.ts must keep weekId as Polar/audit only"
+  grep -q 'occupied /rules raise identity is last-7-days, not the UTC week label' tests/pages.test.ts \
+    || fail "rules tests must cover last-7-days raise identity"
+  grep -q 'same listing still inside last-7-days raises after the UTC week label rolls' tests/rank.test.ts \
+    || fail "rank tests must raise a Sunday pay across Monday weekId"
+  grep -q 'Polar fixture raise after the UTC week label rolls charges the difference' tests/polar-fixture.test.ts \
+    || fail "polar-fixture tests must raise a Sunday pay across Monday weekId"
+  grep -q 'occupied /rules raise identity is last-7-days, not the UTC week label' "$test_log" \
+    || fail "pages tests must cover last-7-days raise identity"
+  grep -q 'same listing still inside last-7-days raises after the UTC week label rolls' "$test_log" \
+    || fail "rank tests must cover Sunday pay Monday raise"
+  grep -q 'Polar fixture raise after the UTC week label rolls charges the difference' "$test_log" \
+    || fail "polar-fixture tests must cover Sunday pay Monday raise"
+  grep -q 'class="bid-row"' src/http/pages.ts \
+    || fail "raise-identity cut must keep occupied bid-row"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "raise-identity cut must keep empty Claim / Outbid as the first click"
+  grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
+    || fail "raise-identity cut must keep empty deck URL as a later write"
+  grep -q 'class="outbid">Outbid' src/http/pages.ts \
+    || fail "raise-identity cut must keep Outbid"
+  grep -q 'data-bid-step' src/http/pages.ts \
+    || fail "raise-identity cut must keep ± steppers"
+  grep -q 'bid-field' src/http/pages.ts \
+    || fail "raise-identity cut must keep the dashed amount"
+  grep -q 'The room is empty' src/http/pages.ts \
+    || fail "raise-identity cut must keep honest empty"
+  grep -q 'data-occupied-raise' src/http/pages.ts \
+    || fail "raise-identity cut must keep occupied raise cue"
+  grep -q 'Polar charges only the difference' src/http/pages.ts \
+    || fail "raise-identity cut must keep Polar raise = difference"
+  if grep -Eq 'raise-after-open-seven|open-after-raise-six' src/http/pages.ts src/views/skin.ts; then
+    fail "raise identity must not add another numbered hop stamp"
+  fi
+  if grep -Eqi '24h lock|lock on #1' src/http/pages.ts src/core/rank.ts src/core/week.ts src/billing/polar_fixture.ts; then
+    fail "raise identity is not a 24h lock on #1"
+  fi
+  if grep -Eq 'raise-identity|raise-rolling' src/views/skin.ts; then
+    fail "raise identity must not recolor or rebuild the house"
+  fi
+
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi

@@ -48,6 +48,7 @@ export const listingRoutes: FastifyPluginAsync = async (app) => {
       const hasFormBid =
         body.amountUsd !== undefined || body.nextUsd !== undefined;
       if (isHtmlForm(request) && hasFormBid) {
+        // Raise identity is checkoutWeekId (last 7 days), not currentWeekId.
         const { current, weekId } = checkoutWeekId(app.db, listing.id, app.now());
         const nextUsd = parseBidUsd(body.amountUsd ?? body.nextUsd);
         const quote = quoteBid(current, nextUsd);

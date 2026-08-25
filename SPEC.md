@@ -93,11 +93,13 @@ Clone of outbid.lol economics, with a rolling last-7-days window and a single pr
 4. **Ties.** Same bid amount: the **older** successful payment wins (earlier `paidAt`, then earlier `listing.createdAt`).
 5. **Raise = difference.** If a listing is at $40 and the founder bids $55, Polar charges **$15**, not $55. The public bid becomes $55.
 6. **Below #1 is allowed.** A $5 bid still lists, at the rank that amount buys.
-7. **Same listing, same week.** One current bid per listing in the rolling window. A raise updates that row; it does not create a second row.
+7. **Same listing still inside last 7 days.** One current bid per listing in the rolling window. A raise updates that row; it does not create a second row. `weekId` is not the raise key.
 8. **New week.** Paid bids expire **7 days** after `paidAt`. Ranked board starts empty when the window is empty. Listings may remain; they are unranked until a new paid bid in the rolling last 7 days. Monday 00:00 UTC is **not** the expiry.
 9. **No retract.** A paid bid is not refundable because someone else raised.
 
 The house window is the **rolling last 7 days**, not a civil Monday midnight. `weekId` remains a UTC Monday date label for Polar/audit (`YYYY-MM-DD`). Example: a payment at `2026-08-17T00:00:00Z` stores `weekId=2026-08-17`, and it stays ranked until `2026-08-24T00:00:00Z` — seven days later, including across Monday midnight.
+
+Identity for raise: same **listing** still inside the rolling last 7 days from `paidAt`. `weekId` stays a Polar/audit label — not raise identity. A founder who paid Sunday still raises on Monday if that listing is inside last 7 days. After the window ends, the same listing is a new full bid.
 
 ---
 
@@ -126,7 +128,7 @@ On write, normalize:
 - **strip tracking query keys:** `utm_*`, `fbclid`, `gclid`, `gbraid`, `wbraid`, `msclkid`, `mc_eid`, `igshid`, `ref`, `ref_src`, `ref_url`, `yclid`
 - drop empty `?`
 
-Two listings with the same canonical URL in the same week collapse to one listing (the older one). A new bid on that URL raises the existing row.
+Two listings with the same canonical URL collapse to one listing (the older one). A new bid on that URL raises the existing row while it remains inside last 7 days. After 7 days the same listing is a new full bid. `weekId` is not the raise key.
 
 ### Reject
 
