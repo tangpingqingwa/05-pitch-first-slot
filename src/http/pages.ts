@@ -294,7 +294,7 @@ function claimChrome(
       "Outbid first. Company, deck URL, and a one-liner after that hop. Unpaid checkout does not rank.";
   } else if (topUsd !== undefined) {
     const raiseChargeUsd = Math.max(0, defaultBidUsd - topUsd);
-    note = `<p class="claim-note" data-occupied-raise data-raise-difference="true">
+    note = `<p class="claim-note" data-occupied-raise data-raise-difference="true" data-after-outbid="true">
   <span class="room" data-quiet-room="true">#1 is $${topUsd}.</span>
   <span class="week-window" data-rolling-week="true" data-quiet-window="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
   <span class="raise-charge" data-raise-charge="true" data-quiet-charge="true" data-current-usd="${topUsd}">Polar charges $<span data-raise-charge-usd>${raiseChargeUsd}</span> — only the difference.</span>
@@ -328,6 +328,7 @@ function claimChrome(
       });
     });
     input.addEventListener("input", syncCharge);`;
+  const occupiedNoteAfterOutbid = emptyRoom === false && topUsd !== undefined;
   return `<section id="claim">
   <div class="stage-head">
     <h1 class="headline">Opening three minutes</h1>
@@ -340,7 +341,7 @@ function claimChrome(
     </label>
     <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
   </div>
-  ${note}
+  ${occupiedNoteAfterOutbid ? "" : note}
   ${
     emptyRoom === true
       ? `<a class="outbid" data-first-click="claim" href="#write">Outbid</a>
@@ -359,6 +360,7 @@ function claimChrome(
       <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
       <button type="submit" class="outbid">Outbid</button>
     </div>
+    ${occupiedNoteAfterOutbid ? note : ""}
     <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
     <p class="form-hint">${hint}</p>
   </form>`
