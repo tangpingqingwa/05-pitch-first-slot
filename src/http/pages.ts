@@ -295,7 +295,7 @@ function claimChrome(
   } else if (topUsd !== undefined) {
     const raiseChargeUsd = Math.max(0, defaultBidUsd - topUsd);
     note = `<p class="claim-note" data-occupied-raise data-raise-difference="true">
-  <span class="room">#1 is $${topUsd}.</span>
+  <span class="room" data-quiet-room="true">#1 is $${topUsd}.</span>
   <span class="week-window" data-rolling-week="true" data-quiet-window="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
   <span class="raise-charge" data-raise-charge="true" data-quiet-charge="true" data-current-usd="${topUsd}">Polar charges $<span data-raise-charge-usd>${raiseChargeUsd}</span> — only the difference.</span>
 </p>`;
