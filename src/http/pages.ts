@@ -331,7 +331,7 @@ function claimChrome(
   const occupiedNoteAfterOutbid = emptyRoom === false && topUsd !== undefined;
   const occupiedOutbidBesidePlus = occupiedNoteAfterOutbid;
   return `<section id="claim">
-  <div class="stage-head">
+  <div class="stage-head"${occupiedOutbidBesidePlus ? ' data-quiet-headline="true"' : ""}>
     <h1 class="headline">Opening three minutes</h1>
   </div>
   <div class="claim">

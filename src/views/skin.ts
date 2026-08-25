@@ -794,11 +794,17 @@ export const OCCUPIED_CSS = /* css */ `
   padding-top: 1.1rem;
   border-top: 1px dashed rgb(232 177 90 / 0.22);
 }
-.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .headline {
-  font-size: clamp(1.35rem, 4.2vw, 1.85rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  color: rgb(203, 183, 154);
+/* Occupied claim-after-slot headline recedes so ± Outbid stay the action cluster. */
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] .headline {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: rgb(143, 122, 98);
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] + .claim {
+  margin-top: 0.35rem;
 }
 .house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim {
   margin-top: 0.7rem;
