@@ -803,11 +803,15 @@ export const OCCUPIED_CSS = /* css */ `
   letter-spacing: 0.02em;
   color: rgb(143, 122, 98);
 }
-.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] + .claim {
-  margin-top: 0.35rem;
-}
+/* Occupied claim-after-slot stage-head collapses so ± Outbid open the claim. */
 .house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim {
-  margin-top: 0.7rem;
+  margin-top: 0;
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim + .stage-head[data-quiet-headline] {
+  text-align: start;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.35rem auto 0;
 }
 .house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-field {
   font-size: 1.45rem;

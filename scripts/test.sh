@@ -1726,9 +1726,9 @@ if [[ -f package.json ]]; then
     /data-quiet-headline="true"/ {quiet=NR}
     /<div class="claim">/ {claim=NR}
     /occupiedOutbidBesidePlus \? `<button type="submit"/ {out=NR}
-    END { if (!(head && quiet && claim && out && quiet >= head && claim > quiet && out > claim)) exit 1 }
+    END { if (!(head && quiet && claim && out && quiet >= head && out > claim)) exit 1 }
   ' src/http/pages.ts \
-    || fail "occupied template must recede the headline above ± Outbid, not delete it"
+    || fail "occupied template must recede the headline, not delete it"
   grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] .headline' src/views/skin.ts \
     || fail "occupied claim-after-slot headline must recede in occupied CSS"
   grep -F -A 8 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] .headline' src/views/skin.ts | grep -q 'font-family: var(--sans)' \
@@ -1737,7 +1737,7 @@ if [[ -f package.json ]]; then
     || fail "occupied claim-after-slot headline must recede smaller than dashed \$amount"
   grep -F -A 8 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] .headline' src/views/skin.ts | grep -q 'color: rgb(143, 122, 98)' \
     || fail "occupied claim-after-slot headline must recede to the quiet cluster color"
-  grep -F -A 3 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] + .claim' src/views/skin.ts | grep -q 'margin-top: 0.35rem' \
+  grep -F -A 5 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim + .stage-head[data-quiet-headline]' src/views/skin.ts | grep -q 'margin: 0.35rem auto 0' \
     || fail "receded headline must sit close to ± Outbid, not as a title block"
   grep -F -A 4 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-field' src/views/skin.ts | grep -q 'font-size: 1.45rem' \
     || fail "headline recede must keep dashed \$amount the action size"
@@ -1805,6 +1805,126 @@ if [[ -f package.json ]]; then
   fi
   if grep -Eq 'raise-after-open-seven|open-after-raise-six|occupied-claim-headline-after' src/http/pages.ts src/views/skin.ts; then
     fail "headline recede cut must not add another named hop"
+  fi
+
+  echo "== UX: occupied claim-after-slot stage-head collapses so ± Outbid open the claim =="
+  grep -q 'occupied claim-after-slot stage-head collapses so ± Outbid open the claim' tests/pages.test.ts \
+    || fail "pages tests must cover occupied claim-after-slot stage-head collapse"
+  grep -q 'occupied claim-after-slot stage-head collapses' "$test_log" \
+    || fail "pages tests must run occupied claim-after-slot stage-head collapse"
+  grep -q 'data-quiet-headline="true"' src/http/pages.ts \
+    || fail "occupied quiet headline must remain after the stage-head band collapses"
+  grep -q 'Opening three minutes' src/http/pages.ts \
+    || fail "occupied Opening three minutes must recede as a kicker, not vanish"
+  grep -q 'const stageHead' src/http/pages.ts \
+    || fail "occupied quiet kicker must stay a stage-head, not vanish"
+  grep -q 'const claimCluster' src/http/pages.ts \
+    || fail "occupied ± Outbid must stay a claim cluster so they can open the claim"
+  awk '
+    /occupiedOutbidBesidePlus \? `\$\{claimCluster\}/ {occ=NR}
+    /\$\{stageHead\}` : `\$\{stageHead\}/ {kicker=NR}
+    /: `\$\{stageHead\}/ {empty=NR}
+    END { if (!(occ && kicker && empty && kicker>=occ && empty>=kicker)) exit 1 }
+  ' src/http/pages.ts \
+    || fail "occupied claim must open with ± Outbid; empty house keeps the title band"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'only the difference' \
+    || fail "stage-head collapse must keep Polar raise-pays-difference"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-after-outbid' \
+    || fail "stage-head collapse must not restamp occupied-claim-note-after-outbid copy"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-room' \
+    || fail "stage-head collapse must not restamp occupied-room-quiet copy"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-window' \
+    || fail "stage-head collapse must not restamp occupied-week-window-quiet copy"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-charge' \
+    || fail "stage-head collapse must not restamp occupied-raise-charge-quiet copy"
+  grep -q 'data-beside-plus="true"' src/http/pages.ts \
+    || fail "stage-head collapse must not restamp occupied-outbid-beside-plus"
+  grep -q 'data-oneliner="true"' src/http/pages.ts \
+    || fail "stage-head collapse must not restamp occupied-oneliner-recede"
+  grep -q '${occupiedNoteAfterOutbid ? "" : note}' src/http/pages.ts \
+    || fail "empty house must keep the claim-note before Claim / Outbid"
+  grep -q '${occupiedNoteAfterOutbid ? note : ""}' src/http/pages.ts \
+    || fail "occupied form must interpolate the claim-note after Outbid"
+  grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim + .stage-head[data-quiet-headline]' src/views/skin.ts \
+    || fail "occupied stage-head must collapse after ± Outbid, not as a title band above"
+  grep -F -A 5 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim + .stage-head[data-quiet-headline]' src/views/skin.ts | grep -q 'text-align: start' \
+    || fail "occupied stage-head must collapse off the centered title band"
+  grep -F -A 5 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim + .stage-head[data-quiet-headline]' src/views/skin.ts | grep -q 'width: fit-content' \
+    || fail "occupied stage-head must collapse off a full-width title band"
+  grep -F -A 2 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim {' src/views/skin.ts | grep -q 'margin-top: 0' \
+    || fail "occupied ± Outbid must open the claim with no title-band margin"
+  if grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] + .claim' src/views/skin.ts; then
+    fail "occupied stage-head must not remain a title band above ± Outbid"
+  fi
+  grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .stage-head[data-quiet-headline] .headline' src/views/skin.ts \
+    || fail "stage-head collapse must keep the quiet Opening three minutes kicker"
+  grep -F -A 4 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-field' src/views/skin.ts | grep -q 'font-size: 1.45rem' \
+    || fail "stage-head collapse must keep dashed \$amount the action size"
+  grep -F -A 6 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim .outbid[data-beside-plus]' src/views/skin.ts | grep -q 'font-weight: 700' \
+    || fail "stage-head collapse must keep occupied Outbid the action in the cluster"
+  grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action] .field[data-oneliner]' src/views/skin.ts \
+    || fail "stage-head collapse must keep occupied one-liner receded with company/url"
+  grep -A 8 '^h1.headline' src/views/skin.ts | grep -q 'clamp(2.4rem, 8vw, 4.1rem)' \
+    || fail "empty house must keep the full Opening three minutes headline"
+  grep -F -q '.stage-head { text-align: center; }' src/views/skin.ts \
+    || fail "empty house must keep the centered stage-head title band"
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -Eq 'data-quiet-headline|fit-content'; then
+    fail "HOUSE_CSS must not stamp occupied stage-head collapse chrome"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 12 src/http/pages.ts | grep -Eq 'data-quiet-headline'; then
+    fail "must not put Polar lecture on the #1 cue"
+  fi
+  if grep -n 'data-empty-room' -A 8 src/http/pages.ts | grep -Eq 'data-quiet-headline'; then
+    fail "empty Claim-first must not stamp occupied headline recede"
+  fi
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -Eq 'data-quiet-headline'; then
+    fail "unpaid cue must not stamp occupied headline recede"
+  fi
+  if grep -n 'occupiedHouse === true' -A 8 src/http/pages.ts | grep -Eq 'later-write|data-first-click="claim"'; then
+    fail "occupied / must not wrap Claim as empty later-write"
+  fi
+  grep -n 'data-empty-room' -A 4 src/http/pages.ts | grep -q 'The room is empty' \
+    || fail "empty house must keep The room is empty before Claim / Outbid"
+  grep -q 'class="bid-row"' src/http/pages.ts \
+    || fail "stage-head collapse cut must keep occupied bid-row DNA"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "stage-head collapse cut must keep empty Claim / Outbid as the first click"
+  grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
+    || fail "stage-head collapse cut must keep empty deck URL as a later write"
+  grep -q 'data-bid-step' src/http/pages.ts \
+    || fail "stage-head collapse cut must keep ±"
+  grep -q 'class="outbid">Outbid' src/http/pages.ts \
+    || fail "stage-head collapse cut must keep Outbid"
+  grep -q 'bid-field' src/http/pages.ts \
+    || fail "stage-head collapse cut must keep the dashed amount"
+  grep -q 'Polar charged the difference' src/http/pages.ts \
+    || fail "stage-head collapse cut must not restamp checkout-raise-copy"
+  grep -q 'Sunday pay raised Monday still pays the difference' src/http/pages.ts \
+    || fail "Sunday→Monday raise-pays-difference must stay on checkout return"
+  grep -q 'Same listing still inside last 7 days' src/http/pages.ts \
+    || fail "stage-head collapse cut must not restamp raise-rolling-identity"
+  grep -q 'occupied claim keeps raise-pays-difference short' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-claim-short copy"
+  grep -q 'occupied raise-charge stays quiet' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-raise-charge-quiet copy"
+  grep -q 'occupied rolling-week cue stays quiet' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-week-window-quiet copy"
+  grep -q 'occupied #1 room line stays quiet' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-room-quiet copy"
+  grep -q 'occupied claim-note sits after Outbid' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-claim-note-after-outbid copy"
+  grep -q 'occupied Outbid sits beside ±' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-outbid-beside-plus copy"
+  grep -q 'occupied one-liner recedes with company/url' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-oneliner-recede copy"
+  grep -q 'occupied claim-after-slot headline recedes so ± Outbid stay the action cluster' tests/pages.test.ts \
+    || fail "stage-head collapse cut must not restamp occupied-claim-headline-recede copy"
+  if grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'The $ you type is the public bid'; then
+    fail "stage-head collapse must not restamp occupied-claim-short lecture"
+  fi
+  if grep -Eq 'raise-after-open-seven|open-after-raise-six|occupied-claim-headline-after|occupied-claim-stage-head-after' src/http/pages.ts src/views/skin.ts; then
+    fail "stage-head collapse cut must not add another named hop"
   fi
 
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
