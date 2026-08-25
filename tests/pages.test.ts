@@ -1900,7 +1900,7 @@ test("occupied claim-after-slot headline recedes so ± Outbid stay the action cl
   );
   assert.match(
     html,
-    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.stage-head\[data-quiet-headline\] \+ \.claim \{[\s\S]*margin-top: 0\.35rem/,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.claim \+ \.stage-head\[data-quiet-headline\] \{[\s\S]*margin: 0\.35rem auto 0/,
   );
   assert.match(
     html,
@@ -1937,9 +1937,10 @@ test("occupied claim-after-slot headline recedes so ± Outbid stay the action cl
   const roomAt = claim.indexOf('data-quiet-room="true"');
   const windowAt = claim.indexOf('data-quiet-window="true"');
   const chargeAt = claim.indexOf('data-raise-charge="true"');
-  assert.ok(headlineWrapAt > -1 && headlineAt > headlineWrapAt);
-  assert.ok(minusAt > headlineAt && fieldAt > minusAt && plusAt > fieldAt);
-  assert.ok(outbidAt > plusAt && rowAt > outbidAt);
+  assert.ok(minusAt > -1 && fieldAt > minusAt && plusAt > fieldAt);
+  assert.ok(outbidAt > plusAt);
+  assert.ok(headlineWrapAt > outbidAt && headlineAt > headlineWrapAt);
+  assert.ok(rowAt > headlineAt);
   assert.ok(companyAt > rowAt && urlAt > companyAt);
   assert.ok(onelinerAttrAt > urlAt && oneLinerAt > onelinerAttrAt);
   assert.ok(noteAt > oneLinerAt && roomAt > noteAt && windowAt > roomAt && chargeAt > windowAt);
@@ -1969,6 +1970,167 @@ test("occupied claim-after-slot headline recedes so ± Outbid stay the action cl
   assert.doesNotMatch(unpaid, /data-after-action/);
   assert.doesNotMatch(unpaid, /data-oneliner/);
   assert.doesNotMatch(unpaid, /data-after-outbid/);
+  assert.doesNotMatch(boardMarkup(html), /data-first-click="claim"/);
+  assert.doesNotMatch(boardMarkup(html), /data-later-write/);
+  assert.doesNotMatch(html, /data-return=/);
+});
+
+test("occupied claim-after-slot stage-head collapses so ± Outbid open the claim", async () => {
+  const emptyApp = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => emptyApp.close());
+  const empty = (await emptyApp.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(empty);
+  assert.match(empty, /<a class="outbid" data-first-click="claim" href="#write">Outbid<\/a>/);
+  assert.match(empty, /class="bid-form later-write" data-later-write="true"/);
+  assert.match(empty, /<div class="stage-head">/);
+  assert.match(empty, /<h1 class="headline">Opening three minutes<\/h1>/);
+  assert.doesNotMatch(boardMarkup(empty), /class="bid-row"/);
+  assert.doesNotMatch(empty, /data-occupied-raise/);
+  assert.doesNotMatch(empty, /data-quiet-headline/);
+  assert.doesNotMatch(
+    empty,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.claim \+ \.stage-head\[data-quiet-headline\]/,
+  );
+  assert.match(empty, /\.stage-head \{ text-align: center; \}/);
+  assert.match(
+    empty,
+    /h1\.headline \{[\s\S]*font-family: var\(--serif\);[\s\S]*font-size: clamp\(2\.4rem, 8vw, 4\.1rem\)/,
+  );
+  const emptyClaim = boardMarkup(empty).slice(boardMarkup(empty).indexOf('id="claim"'));
+  const emptyHeadAt = emptyClaim.indexOf('class="stage-head"');
+  const emptyHeadlineAt = emptyClaim.indexOf(
+    '<h1 class="headline">Opening three minutes</h1>',
+  );
+  const emptyMinusAt = emptyClaim.indexOf('data-bid-step="-1"');
+  const emptyOutbidAt = emptyClaim.indexOf(
+    'class="outbid" data-first-click="claim" href="#write">Outbid',
+  );
+  const emptyCompanyAt = emptyClaim.indexOf('name="company"');
+  const emptyUrlAt = emptyClaim.indexOf('name="url"');
+  assert.ok(emptyHeadAt > -1 && emptyHeadlineAt > emptyHeadAt);
+  assert.ok(emptyMinusAt > emptyHeadlineAt && emptyOutbidAt > emptyMinusAt);
+  assert.ok(emptyCompanyAt > emptyOutbidAt && emptyUrlAt > emptyCompanyAt);
+  assert.match(empty, /The room is empty/);
+  assert.doesNotMatch(empty, /#1 is \$/);
+  assert.doesNotMatch(empty, /New deck: Polar/);
+  assert.doesNotMatch(empty, /Sunday pay raised Monday/);
+  assert.doesNotMatch(empty, /The \$ you type is the public bid/);
+
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+  const later = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${later.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(second.statusCode, 200);
+  await createListing(app, {
+    company: "Cue Only",
+    oneLiner: "Still waiting on Polar",
+    url: "https://cue.example/deck",
+  });
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const markup = boardMarkup(html);
+  const claimStart = markup.indexOf('id="claim"');
+  const claim = markup.slice(claimStart);
+  const cue = listingCard(html, "Stage Co");
+  const unpaid = listingCard(html, "Cue Only");
+
+  assert.match(claim, /class="stage-head" data-quiet-headline="true"/);
+  assert.match(claim, /<h1 class="headline">Opening three minutes<\/h1>/);
+  assert.match(
+    claim,
+    /data-beside-plus="true" class="outbid">Outbid/,
+  );
+  assert.match(claim, /class="bid-row" data-after-action="true"/);
+  assert.match(
+    claim,
+    /class="bid-row" data-after-action="true"[\s\S]*name="company"[\s\S]*name="url"[\s\S]*data-oneliner="true"[\s\S]*name="oneLiner"/,
+  );
+  assert.match(
+    claim,
+    /class="claim-note" data-occupied-raise data-raise-difference="true" data-after-outbid="true"/,
+  );
+  assert.match(
+    claim,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
+  );
+  assert.match(
+    html,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.claim \{\s*margin-top: 0;/,
+  );
+  assert.match(
+    html,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.claim \+ \.stage-head\[data-quiet-headline\] \{[\s\S]*text-align: start[\s\S]*width: fit-content/,
+  );
+  assert.match(
+    html,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.stage-head\[data-quiet-headline\] \.headline \{[\s\S]*font-size: 0\.75rem/,
+  );
+  assert.match(
+    html,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.bid-field \{[\s\S]*font-size: 1\.45rem/,
+  );
+  assert.match(
+    html,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.claim \.outbid\[data-beside-plus\] \{[\s\S]*font-weight: 700/,
+  );
+  assert.doesNotMatch(
+    html,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.stage-head\[data-quiet-headline\] \+ \.claim/,
+  );
+  assert.doesNotMatch(
+    html,
+    /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.claim \{\s*margin-top: 0\.7rem/,
+  );
+  const minusAt = claim.indexOf('data-bid-step="-1"');
+  const fieldAt = claim.indexOf('class="bid-field"');
+  const plusAt = claim.indexOf('data-bid-step="1"');
+  const outbidAt = claim.indexOf('data-beside-plus="true"');
+  const headlineWrapAt = claim.indexOf('data-quiet-headline="true"');
+  const headlineAt = claim.indexOf('<h1 class="headline">Opening three minutes</h1>');
+  const rowAt = claim.indexOf('data-after-action="true"');
+  const companyAt = claim.indexOf('name="company"');
+  const urlAt = claim.indexOf('name="url"');
+  const oneLinerAt = claim.indexOf('name="oneLiner"');
+  const onelinerAttrAt = claim.indexOf('data-oneliner="true"');
+  const noteAt = claim.indexOf('data-after-outbid="true"');
+  const chargeAt = claim.indexOf('data-raise-charge="true"');
+  assert.ok(minusAt > -1 && fieldAt > minusAt && plusAt > fieldAt);
+  assert.ok(outbidAt > plusAt && headlineWrapAt > outbidAt);
+  assert.ok(headlineAt > headlineWrapAt && rowAt > headlineAt);
+  assert.ok(companyAt > rowAt && urlAt > companyAt);
+  assert.ok(onelinerAttrAt > urlAt && oneLinerAt > onelinerAttrAt);
+  assert.ok(noteAt > oneLinerAt && chargeAt > noteAt);
+  assert.match(claim, /class="bid-row"/);
+  assert.match(claim, /Unpaid Polar checkout stays off the house/);
+  assert.doesNotMatch(claim, /The \$ you type is the public bid/);
+  assert.doesNotMatch(claim, /New deck: Polar/);
+  assert.doesNotMatch(claim, /Sunday pay raised Monday/);
+  assert.doesNotMatch(cue, /data-quiet-headline/);
+  assert.match(cue, /Polar charges only the difference/);
+  assert.match(cue, /data-first-click="open"/);
+  assert.match(unpaid, /data-off-board="true"/);
+  assert.match(unpaid, /Not on the board/);
+  assert.doesNotMatch(unpaid, /data-quiet-headline/);
   assert.doesNotMatch(boardMarkup(html), /data-first-click="claim"/);
   assert.doesNotMatch(boardMarkup(html), /data-later-write/);
   assert.doesNotMatch(html, /data-return=/);
@@ -5936,7 +6098,7 @@ test("occupied house keeps one first click — Open #1, Claim stays after the sl
   assert.ok(slotAt > -1 && openAt > slotAt);
   assert.ok(laterAt > openAt && offAt > laterAt);
   assert.ok(claimWrapAt > offAt && claimAt > claimWrapAt);
-  assert.ok(headlineAt > claimAt && outbidAt > headlineAt);
+  assert.ok(outbidAt > claimAt && headlineAt > outbidAt);
   assert.match(html, /class="house house-occupied" data-occupied-house="true"/);
   assert.match(html, /class="claim-after-slot" data-claim-after-slot="true"/);
   assert.match(html, /data-quiet-headline="true"/);

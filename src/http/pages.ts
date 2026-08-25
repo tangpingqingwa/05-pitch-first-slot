@@ -330,11 +330,10 @@ function claimChrome(
     input.addEventListener("input", syncCharge);`;
   const occupiedNoteAfterOutbid = emptyRoom === false && topUsd !== undefined;
   const occupiedOutbidBesidePlus = occupiedNoteAfterOutbid;
-  return `<section id="claim">
-  <div class="stage-head"${occupiedOutbidBesidePlus ? ' data-quiet-headline="true"' : ""}>
+  const stageHead = `<div class="stage-head"${occupiedOutbidBesidePlus ? ' data-quiet-headline="true"' : ""}>
     <h1 class="headline">Opening three minutes</h1>
-  </div>
-  <div class="claim">
+  </div>`;
+  const claimCluster = `<div class="claim">
     <button type="button" class="step" data-bid-step="-1" aria-label="Decrease bid by one">−</button>
     <label class="bid-field">
       <span class="sr-only">Amount in dollars</span>
@@ -342,7 +341,11 @@ function claimChrome(
     </label>
     <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
     ${occupiedOutbidBesidePlus ? `<button type="submit" form="bid-form" data-beside-plus="true" class="outbid">Outbid</button>` : ""}
-  </div>
+  </div>`;
+  return `<section id="claim">
+  ${occupiedOutbidBesidePlus ? `${claimCluster}
+  ${stageHead}` : `${stageHead}
+  ${claimCluster}`}
   ${occupiedNoteAfterOutbid ? "" : note}
   ${
     emptyRoom === true
