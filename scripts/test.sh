@@ -294,18 +294,31 @@ if [[ -f package.json ]]; then
     || fail "occupied board must expose a raise cue"
   grep -q 'Polar charges only the difference' src/http/pages.ts \
     || fail "occupied raise cue must say Polar charges only the difference"
-  grep -q 'The $ you type is the public bid' src/http/pages.ts \
-    || fail "occupied raise cue must say the typed \$ is the public bid"
   grep -q 'data-raise-difference="true"' src/http/pages.ts \
     || fail "occupied raise must stamp data-raise-difference on the claim"
   grep -q 'data-raise-charge="true"' src/http/pages.ts \
     || fail "occupied raise must stamp Polar's difference charge"
   grep -q 'data-raise-charge-usd' src/http/pages.ts \
     || fail "occupied raise must show Polar's difference dollars"
+  grep -q 'Polar charges $<span data-raise-charge-usd>' src/http/pages.ts \
+    || fail "occupied claim must keep Polar raise-pays-difference dollars"
   grep -q 'only the difference, not a new bid' src/http/pages.ts \
-    || fail "occupied raise must not look like a full new bid"
-  grep -q 'Same deck URL raises this row' src/http/pages.ts \
-    || fail "occupied form hint must say a same-deck raise updates the row"
+    || fail "checkout return must still name only the difference, not a new bid"
+  if grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'The $ you type is the public bid'; then
+    fail "occupied claim must not lecture the dashed \$amount over ± Outbid"
+  fi
+  if grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'New deck: Polar'; then
+    fail "occupied claim must not lecture New deck Polar over ± Outbid"
+  fi
+  if grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'Sunday pay raised Monday'; then
+    fail "occupied claim must not restamp checkout Sunday→Monday copy"
+  fi
+  if grep -n 'data-occupied-raise' -A 8 src/http/pages.ts | grep -q 'Same deck URL raises this row'; then
+    fail "occupied claim hint must not lecture Same deck URL over Outbid"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 12 src/http/pages.ts | grep -Eq 'New deck: Polar|Sunday pay raised Monday'; then
+    fail "must not put Polar lecture on the #1 cue"
+  fi
   if grep -n 'data-empty-room' -A 4 src/http/pages.ts | grep -q 'data-raise-difference'; then
     fail "empty house must not stamp a raise-difference charge"
   fi
@@ -1152,6 +1165,38 @@ if [[ -f package.json ]]; then
     || fail "checkout copy cut must keep empty Claim / Outbid as the first click"
   grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
     || fail "checkout copy cut must keep empty deck URL as a later write"
+
+  echo "== UX: occupied claim keeps raise-pays-difference short — ± Outbid stay the action =="
+  grep -q 'occupied claim keeps raise-pays-difference short' tests/pages.test.ts \
+    || fail "pages tests must cover shortened occupied claim"
+  grep -q 'occupied claim keeps raise-pays-difference short' "$test_log" \
+    || fail "pages tests must run shortened occupied claim"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'only the difference' \
+    || fail "occupied claim must keep Polar raise-pays-difference"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-raise-charge' \
+    || fail "occupied claim must keep the live difference charge"
+  grep -q 'data-bid-step' src/http/pages.ts \
+    || fail "occupied claim short cut must keep ±"
+  grep -q 'class="outbid">Outbid' src/http/pages.ts \
+    || fail "occupied claim short cut must keep Outbid"
+  grep -q 'class="bid-row"' src/http/pages.ts \
+    || fail "occupied claim short cut must keep occupied bid-row"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "occupied claim short cut must keep empty Claim / Outbid as the first click"
+  grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
+    || fail "occupied claim short cut must keep empty deck URL as a later write"
+  grep -q 'Polar charged the difference' src/http/pages.ts \
+    || fail "occupied claim short cut must not restamp checkout-raise-copy"
+  grep -q 'Sunday pay raised Monday still pays the difference' src/http/pages.ts \
+    || fail "Sunday→Monday raise-pays-difference must stay on checkout return"
+  grep -q 'Same listing still inside last 7 days' src/http/pages.ts \
+    || fail "occupied claim short cut must not restamp raise-rolling-identity"
+  if grep -n 'data-empty-room' -A 8 src/http/pages.ts | grep -q 'Sunday pay raised Monday'; then
+    fail "empty Claim-first must not restamp Sunday→Monday checkout copy"
+  fi
+  if grep -Eq 'raise-after-open-seven|open-after-raise-six' src/http/pages.ts src/views/skin.ts; then
+    fail "occupied claim short cut must not add another named hop"
+  fi
 
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"

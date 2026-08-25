@@ -296,13 +296,10 @@ function claimChrome(
     const raiseChargeUsd = Math.max(0, defaultBidUsd - topUsd);
     note = `<p class="claim-note" data-occupied-raise data-raise-difference="true">
   <span class="room">#1 is $${topUsd}.</span>
-  The $ you type is the public bid.
   <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
-  <span class="raise-charge" data-raise-charge="true" data-current-usd="${topUsd}">Polar charges $<span data-raise-charge-usd>${raiseChargeUsd}</span> to raise — only the difference, not a new bid.</span>
-  New deck: Polar charges that full amount. Same deck already ranked: Polar charges only the difference. Sunday pay raised Monday still pays the difference.
+  <span class="raise-charge" data-raise-charge="true" data-current-usd="${topUsd}">Polar charges $<span data-raise-charge-usd>${raiseChargeUsd}</span> — only the difference.</span>
 </p>`;
-    hint =
-      "Same deck URL raises this row. Polar charges only the difference. Unpaid Polar checkout stays off the house until Polar reports paid.";
+    hint = "Unpaid Polar checkout stays off the house.";
   } else {
     note = `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.
   <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
