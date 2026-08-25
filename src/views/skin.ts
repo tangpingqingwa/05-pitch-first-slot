@@ -838,6 +838,11 @@ export const OCCUPIED_CSS = /* css */ `
   height: 2.4rem;
   font-size: 0.88rem;
 }
+/* Occupied one-liner recedes with company/url so ± Outbid stay the action cluster. */
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action] .field[data-oneliner] {
+  flex: 1 1 100%;
+  min-width: 100%;
+}
 `;
 
 export const BOARD_CSS = `${HOUSE_CSS}
