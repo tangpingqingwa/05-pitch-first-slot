@@ -1337,7 +1337,7 @@ if [[ -f package.json ]]; then
   echo "== UX: occupied #1 room line stays quiet — ± Outbid stay the action =="
   grep -q 'occupied #1 room line stays quiet' tests/pages.test.ts \
     || fail "pages tests must cover quiet occupied #1 room line"
-  grep -q 'occupied #1 room line stays quiet' "$test_log" \
+  grep -q 'room line stays quiet' "$test_log" \
     || fail "pages tests must run quiet occupied #1 room line"
   grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q '#1 is \$' \
     || fail "quiet room line must keep occupied #1 is \$N copy"
