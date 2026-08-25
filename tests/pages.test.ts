@@ -286,7 +286,7 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   assert.match(occupied, /#1 · \$12/);
   assert.match(occupied, /class="claim-note" data-occupied-raise/);
   assert.match(occupied, /data-raise-difference="true"/);
-  assert.match(occupied, /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/);
+  assert.match(occupied, /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/);
   assert.match(occupied, /Polar charges only the difference/);
   assert.match(occupied, /data-occupied-house="true"/);
   assert.match(occupied, /class="house house-occupied" data-occupied-house="true"/);
@@ -573,9 +573,9 @@ test("HTML Outbid form creates the listing then fixture-ranks the opening slot",
   assert.match(board.body, /value="6"/);
   assert.match(
     board.body,
-    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
   );
-  assert.match(board.body, /Same deck URL raises this row\. Polar charges only the difference/);
+  assert.match(board.body, /Unpaid Polar checkout stays off the house/);
   assert.match(board.body, /Polar charges only the difference/);
   const lone = listingCard(board.body, "Stage Co");
   assert.match(lone, /data-prize-first="true"/);
@@ -685,7 +685,7 @@ test("same deck URL on the form raises the existing row by the difference", asyn
   assert.match(html, /value="13"/);
   assert.match(
     html,
-    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
   );
   assert.match(html, /Polar charges only the difference/);
 });
@@ -725,24 +725,25 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
   assert.match(html, /data-rolling-week="true"/);
   assert.match(html, /Rolling last 7 days\. Not Monday 00:00 UTC\./);
   assert.match(html, /#1 is \$20\./);
-  assert.match(html, /The \$ you type is the public bid/);
+  assert.match(html, /data-bid-step="-1"/);
+  assert.match(html, /data-bid-step="1"/);
+  assert.match(html, /class="outbid">Outbid/);
+  assert.match(html, /class="bid-row"/);
   assert.match(html, /data-raise-charge="true"/);
   assert.match(html, /data-current-usd="20"/);
   assert.match(
     html,
-    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
   );
-  assert.match(html, /New deck: Polar charges that full amount/);
-  assert.match(
-    html,
-    /Same deck already ranked: Polar charges only the difference/,
-  );
-  assert.match(html, /Sunday pay raised Monday still pays the difference/);
-  assert.match(html, /Same deck URL raises this row\. Polar charges only the difference/);
-  assert.match(
-    html,
-    /Unpaid Polar checkout stays off the house until Polar reports paid/,
-  );
+  assert.doesNotMatch(html, /The \$ you type is the public bid/);
+  assert.doesNotMatch(html, /New deck: Polar charges that full amount/);
+  assert.doesNotMatch(html, /Same deck already ranked: Polar charges only the difference/);
+  assert.doesNotMatch(html, /Sunday pay raised Monday/);
+  assert.doesNotMatch(html, /Same deck URL raises this row/);
+  assert.match(html, /Unpaid Polar checkout stays off the house/);
+  assert.doesNotMatch(html, /until Polar reports paid/);
+  assert.doesNotMatch(listingCard(html, "Stage Co"), /New deck: Polar/);
+  assert.doesNotMatch(listingCard(html, "Stage Co"), /Sunday pay raised Monday/);
   assert.match(html, /value="21"/);
   assert.match(html, /#1 · \$20/);
   assert.match(html, /#2 · \$5/);
@@ -878,19 +879,22 @@ test("occupied raise is certain — Polar charges only the difference, not a new
   assert.match(claim, /data-current-usd="40"/);
   assert.match(
     claim,
-    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
   );
-  assert.match(claim, /The \$ you type is the public bid/);
-  assert.match(claim, /New deck: Polar charges that full amount/);
+  assert.match(claim, /data-bid-step="-1"/);
+  assert.match(claim, /data-bid-step="1"/);
+  assert.match(claim, /class="outbid">Outbid/);
+  assert.match(claim, /class="bid-row"/);
+  assert.doesNotMatch(claim, /The \$ you type is the public bid/);
+  assert.doesNotMatch(claim, /New deck: Polar charges that full amount/);
+  assert.doesNotMatch(claim, /Same deck already ranked: Polar charges only the difference/);
+  assert.doesNotMatch(claim, /Sunday pay raised Monday/);
   assert.match(
     claim,
-    /Same deck already ranked: Polar charges only the difference/,
+    /Unpaid Polar checkout stays off the house/,
   );
-  assert.match(claim, /Sunday pay raised Monday still pays the difference/);
-  assert.match(
-    claim,
-    /Same deck URL raises this row\. Polar charges only the difference\. Unpaid Polar checkout stays off the house until Polar reports paid\./,
-  );
+  assert.doesNotMatch(claim, /Same deck URL raises this row/);
+  assert.doesNotMatch(claim, /until Polar reports paid/);
   assert.match(claim, /function syncCharge/);
   assert.match(claim, /next > current \? next - current : 0/);
   assert.doesNotMatch(claim, /class="outbid">New bid/);
@@ -937,7 +941,7 @@ test("occupied raise is certain — Polar charges only the difference, not a new
   assert.match(raisedBoard, /value="56"/);
   assert.match(
     raisedBoard,
-    /Polar charges \$<span data-raise-charge-usd>1<\/span> to raise — only the difference, not a new bid/,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
   );
   assert.match(listingCard(raisedBoard, "Cue Only"), /data-off-board="true"/);
   assert.match(listingCard(raisedBoard, "Cue Only"), /Not on the board/);
@@ -945,6 +949,78 @@ test("occupied raise is certain — Polar charges only the difference, not a new
   assert.match(raisedBoard, /data-off-board-list="true"/);
   assert.doesNotMatch(rankedListMarkup(raisedBoard), /Cue Only/);
   assert.doesNotMatch(boardMarkup(raisedBoard), /data-empty-house/);
+});
+
+test("occupied claim keeps raise-pays-difference short — ± Outbid stay the action", async () => {
+  const emptyApp = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => emptyApp.close());
+  const empty = (await emptyApp.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(empty);
+  assert.match(empty, /<a class="outbid" data-first-click="claim" href="#write">Outbid<\/a>/);
+  assert.match(empty, /class="bid-form later-write" data-later-write="true"/);
+  assert.doesNotMatch(boardMarkup(empty), /class="bid-row"/);
+  assert.doesNotMatch(empty, /data-occupied-raise/);
+  assert.doesNotMatch(empty, /New deck: Polar/);
+  assert.doesNotMatch(empty, /Sunday pay raised Monday/);
+  assert.doesNotMatch(empty, /The \$ you type is the public bid/);
+
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+  const leader = await createListing(app, {
+    company: "Stage Co",
+    oneLiner: "Opens the room",
+    url: "https://stage.example/deck",
+  });
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${leader.id}/bids`,
+    payload: { amountUsd: 20 },
+  });
+  assert.equal(first.statusCode, 200);
+  const later = await createListing(app, {
+    company: "Helix Labs",
+    oneLiner: "Benchtop instruments for small labs",
+    url: "https://helix.example/deck",
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: `/listings/${later.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(second.statusCode, 200);
+
+  const html = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(html);
+  const markup = boardMarkup(html);
+  const claimStart = markup.indexOf('id="claim"');
+  const claim = markup.slice(claimStart);
+  const cue = listingCard(html, "Stage Co");
+
+  assert.match(claim, /class="claim-note" data-occupied-raise data-raise-difference="true"/);
+  assert.match(claim, /#1 is \$20\./);
+  assert.match(
+    claim,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
+  );
+  assert.match(claim, /data-bid-step="-1"/);
+  assert.match(claim, /data-bid-step="1"/);
+  assert.match(claim, /class="bid-field"/);
+  assert.match(claim, /class="outbid">Outbid/);
+  assert.match(claim, /class="bid-row"/);
+  assert.doesNotMatch(claim, /The \$ you type is the public bid/);
+  assert.doesNotMatch(claim, /New deck: Polar/);
+  assert.doesNotMatch(claim, /Same deck already ranked/);
+  assert.doesNotMatch(claim, /Sunday pay raised Monday/);
+  assert.doesNotMatch(claim, /Same deck URL raises this row/);
+  assert.match(claim, /Unpaid Polar checkout stays off the house/);
+  assert.doesNotMatch(claim, /until Polar reports paid/);
+  assert.doesNotMatch(cue, /New deck: Polar/);
+  assert.doesNotMatch(cue, /Sunday pay raised Monday/);
+  assert.doesNotMatch(cue, /The \$ you type is the public bid/);
+  assert.match(cue, /Polar charges only the difference/);
+  assert.doesNotMatch(boardMarkup(html), /data-first-click="claim"/);
+  assert.doesNotMatch(boardMarkup(html), /data-later-write/);
+  assert.doesNotMatch(html, /data-return=/);
 });
 
 test("occupied paid cue names Open deck as the only outbound hop", async () => {
@@ -1179,7 +1255,8 @@ test("occupied #1 cue hops Then Outbid after Open deck", async () => {
   assert.doesNotMatch(below, /data-open-after-raise-five=/);
   assert.doesNotMatch(below, /data-open-after-raise-four=/);
   assert.match(html, /class="claim-note" data-occupied-raise/);
-  assert.match(html, /The \$ you type is the public bid/);
+  assert.match(html, /Polar charges \$<span data-raise-charge-usd>/);
+  assert.doesNotMatch(html, /The \$ you type is the public bid/);
   assert.doesNotMatch(html, /typical raise/i);
   assert.doesNotMatch(html, /claim this rank/i);
   assert.doesNotMatch(html, /hot deal/i);
@@ -5124,11 +5201,14 @@ test("occupied checkout copy names Polar raise-pays-difference — unpaid stays 
   assertPitchNightChrome(occupied);
   assert.match(occupied, /class="claim-note" data-occupied-raise/);
   assert.match(occupied, /data-raise-difference="true"/);
-  assert.match(occupied, /Sunday pay raised Monday still pays the difference/);
   assert.match(
     occupied,
-    /Unpaid Polar checkout stays off the house until Polar reports paid/,
+    /Polar charges \$<span data-raise-charge-usd>1<\/span> — only the difference/,
   );
+  assert.doesNotMatch(occupied, /Sunday pay raised Monday/);
+  assert.doesNotMatch(occupied, /New deck: Polar/);
+  assert.match(occupied, /Unpaid Polar checkout stays off the house/);
+  assert.doesNotMatch(occupied, /until Polar reports paid/);
   assert.match(occupied, /class="bid-row"/);
   assert.doesNotMatch(boardMarkup(occupied), /data-first-click="claim"/);
   assert.doesNotMatch(boardMarkup(occupied), /data-later-write/);
