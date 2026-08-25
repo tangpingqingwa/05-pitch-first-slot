@@ -3,12 +3,15 @@ import { after, test } from "node:test";
 import { buildApp } from "../src/app.js";
 import {
   compareRank,
+  getBid,
+  getBidInRollingWeek,
   MIN_BID_USD,
   quoteBid,
   rankKey,
   rankListings,
   type Bid,
 } from "../src/core/rank.js";
+import { currentWeekId } from "../src/core/week.js";
 import type { Listing } from "../src/core/listing.js";
 
 const WEEK = "2026-08-17";
@@ -382,4 +385,98 @@ test("SPEC 12: rolling last 7 days drops last week's rank — not Monday 00:00 U
     (await app.inject({ method: "GET", url: "/" })).body,
     /#1 · \$5/,
   );
+});
+
+test("same listing still inside last-7-days raises after the UTC week label rolls", async () => {
+  let now = new Date("2026-08-16T12:00:00.000Z");
+  const app = await buildApp({
+    databasePath: ":memory:",
+    now: () => now,
+  });
+  after(() => app.close());
+
+  const listingRow = await createListing(app, {
+    company: "Sunday Pitch",
+    oneLiner: "Paid before Monday midnight",
+    url: "https://sunday-pitch.example/deck",
+  });
+  const paid = await app.inject({
+    method: "POST",
+    url: `/listings/${listingRow.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(paid.statusCode, 200);
+  const sunday = paid.json() as {
+    weekId: string;
+    chargeUsd: number;
+    amountUsd: number;
+  };
+  assert.equal(sunday.weekId, "2026-08-10");
+  assert.equal(sunday.chargeUsd, 5);
+  assert.equal(sunday.amountUsd, 5);
+
+  now = new Date("2026-08-17T00:00:00.000Z");
+  const mondayLabel = currentWeekId(now);
+  assert.equal(mondayLabel, "2026-08-17");
+  assert.notEqual(mondayLabel, sunday.weekId);
+  assert.equal(getBid(app.db, listingRow.id, mondayLabel), undefined);
+  assert.equal(getBidInRollingWeek(app.db, listingRow.id, now)?.amountUsd, 5);
+  assert.equal(getBidInRollingWeek(app.db, listingRow.id, now)?.weekId, "2026-08-10");
+
+  const raised = await app.inject({
+    method: "POST",
+    url: `/listings/${listingRow.id}/bids`,
+    payload: { amountUsd: 12 },
+  });
+  assert.equal(raised.statusCode, 200);
+  const raiseBody = raised.json() as {
+    weekId: string;
+    chargeUsd: number;
+    amountUsd: number;
+  };
+  assert.equal(raiseBody.chargeUsd, 7);
+  assert.equal(raiseBody.amountUsd, 12);
+  assert.equal(raiseBody.weekId, "2026-08-10");
+  assert.equal(getBid(app.db, listingRow.id, "2026-08-10")?.amountUsd, 12);
+  assert.equal(getBid(app.db, listingRow.id, mondayLabel), undefined);
+
+  const formRaise = await app.inject({
+    method: "POST",
+    url: "/listings",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      accept: "text/html",
+    },
+    payload: new URLSearchParams({
+      company: "Sunday Pitch",
+      oneLiner: "Paid before Monday midnight",
+      url: "https://sunday-pitch.example/deck",
+      amountUsd: "20",
+    }).toString(),
+  });
+  assert.equal(formRaise.statusCode, 303);
+  assert.equal(getBid(app.db, listingRow.id, "2026-08-10")?.amountUsd, 20);
+  assert.equal(getBid(app.db, listingRow.id, mondayLabel), undefined);
+
+  const board = await app.inject({ method: "GET", url: "/" });
+  assert.match(board.body, /#1 · \$20/);
+  assert.doesNotMatch(board.body, /#2/);
+  assert.equal((board.body.match(/Sunday Pitch/g) ?? []).length, 1);
+
+  now = new Date("2026-08-24T00:00:01.000Z");
+  assert.equal(getBidInRollingWeek(app.db, listingRow.id, now), undefined);
+  const next = await app.inject({
+    method: "POST",
+    url: `/listings/${listingRow.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(next.statusCode, 200);
+  const nextBody = next.json() as {
+    weekId: string;
+    chargeUsd: number;
+    amountUsd: number;
+  };
+  assert.equal(nextBody.chargeUsd, 5);
+  assert.equal(nextBody.amountUsd, 5);
+  assert.equal(nextBody.weekId, "2026-08-24");
 });

@@ -5053,3 +5053,25 @@ test("GET /checkout/complete returns to the room", async () => {
   assert.equal(done.statusCode, 303);
   assert.equal(done.headers.location, "/");
 });
+
+test("occupied /rules raise identity is last-7-days, not the UTC week label", async () => {
+  const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => app.close());
+
+  const rules = await app.inject({ method: "GET", url: "/rules" });
+  assert.equal(rules.statusCode, 200);
+  assert.match(rules.body, /Same listing still inside last 7 days/);
+  assert.match(rules.body, /weekId<\/code> stays an audit label — not raise identity/);
+  assert.doesNotMatch(rules.body, /Same listing, same week/);
+  assert.doesNotMatch(rules.body, /same weekId/i);
+  assert.match(rules.body, /Raise = difference/);
+  assert.match(rules.body, /rolling last 7 days/i);
+  assert.match(rules.body, /Monday 00:00 UTC/);
+
+  const empty = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(empty);
+  assert.match(empty, /<a class="outbid" data-first-click="claim" href="#write">Outbid<\/a>/);
+  assert.match(empty, /class="bid-form later-write" data-later-write="true"/);
+  assert.doesNotMatch(boardMarkup(empty), /class="bid-row"/);
+  assert.doesNotMatch(empty, /data-occupied-raise/);
+});

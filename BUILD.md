@@ -18,7 +18,7 @@ Pay-to-rank clone of outbid.lol. USD. Polar + fixture. No chat, no NSFW, no inve
 | Money | Integer USD cents | No float dollars |
 | Payments | `PolarPort` — fixture default; live Polar when `POLAR_LIVE=1` | Merchant of record; CI stays offline |
 | Tests | `node:test` + `tsx` | No Jest |
-| Time | UTC only; public window = rolling last 7 days; `weekId` = Monday date label | SPEC cadence |
+| Time | UTC only; public window = rolling last 7 days; `weekId` = Monday date label (audit, not raise identity) | SPEC cadence |
 | Host | One VPS, Caddy TLS | No AWS required for v1 |
 
 **Out of stack:** Prisma, Nest, Redis, Next.js, Vercel, Supabase, Stripe (Polar is the rail).
@@ -108,6 +108,7 @@ function rankKey(b: Bid, listing: Listing): [number, string, string, string] {
 ```
 
 - Compare only bids whose `paidAt` falls in the rolling last 7 days (`now - 7d` inclusive). Not Monday 00:00 UTC.
+- Raise identity is the same listing still inside that window — not `weekId`. Sunday pay raised Monday (ISO week rolled) still charges the difference. After 7 days the same listing is a new full bid.
 - Raise: `chargeUsd = nextUsd - currentUsd`. Reject if `nextUsd <= currentUsd` or `nextUsd < 5`.
 - First bid: `chargeUsd = nextUsd`, `nextUsd >= 5`.
 - Do not store a `traction` column.

@@ -76,6 +76,7 @@ export class PolarLive implements PolarPort {
     if (getListingById(this.db, input.listingId) === undefined) {
       throw new BidError("listing_not_found", "listing not found", 404);
     }
+    // Same listing still inside last 7 days is a raise. weekId is not the raise key.
     const current = getBidInRollingWeek(this.db, input.listingId, this.now());
     const quote = quoteBid(current, input.nextUsd);
     if (quote.chargeUsd !== input.chargeUsd) {

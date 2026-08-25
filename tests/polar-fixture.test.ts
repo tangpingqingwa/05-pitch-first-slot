@@ -53,6 +53,10 @@ test("GET /about and GET /rules are 200 with cannot-buy-the-show + weekly reset"
   assert.match(rules.body, /difference/);
   assert.match(rules.body, /cannot_buy_show/);
   assert.match(rules.body, /weekly reset/i);
+  assert.match(rules.body, /Same listing still inside last 7 days/);
+  assert.match(rules.body, /weekId<\/code> stays an audit label — not raise identity/);
+  assert.doesNotMatch(rules.body, /Same listing, same week/);
+  assert.doesNotMatch(rules.body, /same weekId/i);
 });
 
 test("POLAR_FIXTURE_ONLY=1 wins over POLAR_LIVE=1", () => {
@@ -164,6 +168,54 @@ test("Polar fixture raise $5 → $12 charges $7 then rank updates", async () => 
   const board = await app.inject({ method: "GET", url: "/" });
   assert.match(board.body, /#1 · \$12/);
   assert.doesNotMatch(board.body, /#2/);
+});
+
+test("Polar fixture raise after the UTC week label rolls charges the difference", async () => {
+  let now = new Date("2026-08-16T12:00:00.000Z");
+  const app = await buildApp({
+    databasePath: ":memory:",
+    now: () => now,
+  });
+  after(() => app.close());
+
+  const listing = await createListing(app, {
+    company: "Sunday Fixture",
+    oneLiner: "Fixture raise across Monday weekId",
+    url: "https://sunday-fixture.example",
+  });
+  const first = new PolarFixture(app.db, { now: () => now });
+  await first.createCheckout({
+    listingId: listing.id,
+    weekId: currentWeekId(now),
+    chargeUsd: 5,
+    nextUsd: 5,
+  });
+  assert.equal(getBid(app.db, listing.id, "2026-08-10")?.amountUsd, 5);
+
+  now = new Date("2026-08-17T00:00:00.000Z");
+  assert.equal(currentWeekId(now), "2026-08-17");
+  const polar = new PolarFixture(app.db, { now: () => now });
+  const raised = await polar.createCheckout({
+    listingId: listing.id,
+    weekId: currentWeekId(now),
+    chargeUsd: 7,
+    nextUsd: 12,
+  });
+  assert.equal(polar.getCheckout(raised.checkoutId)?.chargeUsd, 7);
+  assert.equal(polar.getCheckout(raised.checkoutId)?.weekId, "2026-08-10");
+  assert.equal(getBid(app.db, listing.id, "2026-08-10")?.amountUsd, 12);
+  assert.equal(getBid(app.db, listing.id, "2026-08-17"), undefined);
+
+  now = new Date("2026-08-24T00:00:01.000Z");
+  const aged = new PolarFixture(app.db, { now: () => now });
+  const next = await aged.createCheckout({
+    listingId: listing.id,
+    weekId: currentWeekId(now),
+    chargeUsd: 5,
+    nextUsd: 5,
+  });
+  assert.equal(aged.getCheckout(next.checkoutId)?.chargeUsd, 5);
+  assert.equal(getBid(app.db, listing.id, "2026-08-24")?.amountUsd, 5);
 });
 
 test("POST /listings/:id/bids starts Polar fixture checkout then ranks", async () => {

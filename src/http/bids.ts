@@ -26,6 +26,7 @@ export const bidRoutes: FastifyPluginAsync = async (app) => {
         if (listing === undefined) {
           throw new BidError("listing_not_found", "listing not found", 404);
         }
+        // Raise identity is checkoutWeekId (last 7 days), not currentWeekId.
         const { current, weekId } = checkoutWeekId(app.db, listing.id, app.now());
         const nextUsd = parseBidUsd(
           body.amountUsd !== undefined ? body.amountUsd : body.nextUsd,
