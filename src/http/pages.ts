@@ -360,10 +360,10 @@ function claimChrome(
     <div class="bid-row"${occupiedOutbidBesidePlus ? ' data-after-action="true"' : ""}>
       <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
       <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
-      ${occupiedOutbidBesidePlus ? "" : `<button type="submit" class="outbid">Outbid</button>`}
+      ${occupiedOutbidBesidePlus ? `<div class="field" data-oneliner="true"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>` : `<button type="submit" class="outbid">Outbid</button>`}
     </div>
     ${occupiedNoteAfterOutbid ? note : ""}
-    <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
+    ${occupiedOutbidBesidePlus ? "" : `<div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>`}
     <p class="form-hint">${hint}</p>
   </form>`
   }
