@@ -818,6 +818,26 @@ export const OCCUPIED_CSS = /* css */ `
   margin-top: 0.7rem;
   margin-bottom: 0.2rem;
 }
+/* Occupied Outbid sits beside ± so dashed $amount and Outbid are one cluster. */
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim .outbid[data-beside-plus] {
+  flex: 0 0 auto;
+  height: 2.4rem;
+  font-weight: 700;
+  padding: 0 1.15rem;
+}
+/* Occupied company/url recede after the ± Outbid action. */
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action] {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgb(232 177 90 / 0.22);
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action] .field {
+  min-width: 8rem;
+}
+.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action] .field input {
+  height: 2.4rem;
+  font-size: 0.88rem;
+}
 `;
 
 export const BOARD_CSS = `${HOUSE_CSS}

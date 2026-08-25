@@ -1495,6 +1495,104 @@ if [[ -f package.json ]]; then
     fail "claim-note after Outbid cut must not add another named hop"
   fi
 
+  echo "== UX: occupied Outbid sits beside ± — company/url recede after the action =="
+  grep -q 'occupied Outbid sits beside ±' tests/pages.test.ts \
+    || fail "pages tests must cover occupied Outbid beside ±"
+  grep -q 'company/url recede after the action' "$test_log" \
+    || fail "pages tests must run occupied Outbid beside ±"
+  grep -q 'occupiedOutbidBesidePlus' src/http/pages.ts \
+    || fail "occupied Outbid must compose beside ±, not in the bid-row with company/url"
+  grep -q 'data-beside-plus="true"' src/http/pages.ts \
+    || fail "occupied Outbid must stamp beside-plus so dashed \$amount and Outbid are one cluster"
+  grep -q 'data-after-action="true"' src/http/pages.ts \
+    || fail "occupied bid-row must stamp after-action so company/url recede after Outbid"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'only the difference' \
+    || fail "Outbid beside ± must keep Polar raise-pays-difference"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-after-outbid' \
+    || fail "Outbid beside ± must not restamp occupied-claim-note-after-outbid copy"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-room' \
+    || fail "Outbid beside ± must not restamp occupied-room-quiet copy"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-window' \
+    || fail "Outbid beside ± must not restamp occupied-week-window-quiet copy"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-charge' \
+    || fail "Outbid beside ± must not restamp occupied-raise-charge-quiet copy"
+  grep -q '${occupiedNoteAfterOutbid ? "" : note}' src/http/pages.ts \
+    || fail "empty house must keep the claim-note before Claim / Outbid"
+  grep -q '${occupiedNoteAfterOutbid ? note : ""}' src/http/pages.ts \
+    || fail "occupied form must interpolate the claim-note after Outbid"
+  awk '
+    /<div class="claim">/ {p=1}
+    p && /data-bid-step="1"/ {plus=NR}
+    p && /occupiedOutbidBesidePlus \? `<button type="submit"/ {out=NR}
+    p && /data-after-action="true"/ {row=NR}
+    END { if (!(plus && out && row && out > plus && row > out)) exit 1 }
+  ' src/http/pages.ts \
+    || fail "occupied template must put Outbid beside ±, then recede company/url"
+  grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim .outbid[data-beside-plus]' src/views/skin.ts \
+    || fail "occupied Outbid beside ± must be composed in occupied CSS"
+  grep -F -q '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action]' src/views/skin.ts \
+    || fail "occupied company/url must recede after the ± Outbid cluster"
+  grep -F -A 6 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim .outbid[data-beside-plus]' src/views/skin.ts | grep -q 'font-weight: 700' \
+    || fail "occupied Outbid beside ± must stay the action in the cluster"
+  grep -F -A 6 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action]' src/views/skin.ts | grep -q 'border-top: 1px dashed' \
+    || fail "occupied company/url must recede with a dashed separator after Outbid"
+  grep -F -A 4 '.house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action] .field input' src/views/skin.ts | grep -q 'font-size: 0.88rem' \
+    || fail "occupied company/url inputs must recede smaller than dashed \$amount"
+  grep -F -A 4 '.house-occupied[data-occupied-house] .claim-note[data-after-outbid]' src/views/skin.ts | grep -q 'margin-top: 0.7rem' \
+    || fail "Outbid beside ± must keep occupied claim-note after Outbid"
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -Eq 'data-beside-plus|data-after-action'; then
+    fail "HOUSE_CSS must not stamp occupied Outbid-beside-plus chrome"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 12 src/http/pages.ts | grep -Eq 'beside-plus|after-action|data-beside-plus|data-after-action'; then
+    fail "must not put Polar lecture on the #1 cue"
+  fi
+  if grep -n 'data-empty-room' -A 8 src/http/pages.ts | grep -Eq 'data-beside-plus|data-after-action'; then
+    fail "empty Claim-first must not stamp occupied Outbid beside ±"
+  fi
+  if grep -n 'function renderUnranked' -A 14 src/http/pages.ts | grep -Eq 'beside-plus|after-action'; then
+    fail "unpaid cue must not stamp occupied Outbid beside ±"
+  fi
+  if grep -n 'occupiedHouse === true' -A 8 src/http/pages.ts | grep -Eq 'later-write|data-first-click="claim"'; then
+    fail "occupied / must not wrap Claim as empty later-write"
+  fi
+  grep -n 'data-empty-room' -A 4 src/http/pages.ts | grep -q 'The room is empty' \
+    || fail "empty house must keep The room is empty before Claim / Outbid"
+  grep -q 'class="bid-row"' src/http/pages.ts \
+    || fail "Outbid beside ± cut must keep occupied bid-row DNA"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "Outbid beside ± cut must keep empty Claim / Outbid as the first click"
+  grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
+    || fail "Outbid beside ± cut must keep empty deck URL as a later write"
+  grep -q 'data-bid-step' src/http/pages.ts \
+    || fail "Outbid beside ± cut must keep ±"
+  grep -q 'class="outbid">Outbid' src/http/pages.ts \
+    || fail "Outbid beside ± cut must keep Outbid"
+  grep -q 'bid-field' src/http/pages.ts \
+    || fail "Outbid beside ± cut must keep the dashed amount"
+  grep -q 'Polar charged the difference' src/http/pages.ts \
+    || fail "Outbid beside ± cut must not restamp checkout-raise-copy"
+  grep -q 'Sunday pay raised Monday still pays the difference' src/http/pages.ts \
+    || fail "Sunday→Monday raise-pays-difference must stay on checkout return"
+  grep -q 'Same listing still inside last 7 days' src/http/pages.ts \
+    || fail "Outbid beside ± cut must not restamp raise-rolling-identity"
+  grep -q 'occupied claim keeps raise-pays-difference short' tests/pages.test.ts \
+    || fail "Outbid beside ± cut must not restamp occupied-claim-short copy"
+  grep -q 'occupied raise-charge stays quiet' tests/pages.test.ts \
+    || fail "Outbid beside ± cut must not restamp occupied-raise-charge-quiet copy"
+  grep -q 'occupied rolling-week cue stays quiet' tests/pages.test.ts \
+    || fail "Outbid beside ± cut must not restamp occupied-week-window-quiet copy"
+  grep -q 'occupied #1 room line stays quiet' tests/pages.test.ts \
+    || fail "Outbid beside ± cut must not restamp occupied-room-quiet copy"
+  grep -q 'occupied claim-note sits after Outbid' tests/pages.test.ts \
+    || fail "Outbid beside ± cut must not restamp occupied-claim-note-after-outbid copy"
+  if grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'The $ you type is the public bid'; then
+    fail "Outbid beside ± must not restamp occupied-claim-short lecture"
+  fi
+  if grep -Eq 'raise-after-open-seven|open-after-raise-six' src/http/pages.ts src/views/skin.ts; then
+    fail "Outbid beside ± cut must not add another named hop"
+  fi
+
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi

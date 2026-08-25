@@ -329,6 +329,7 @@ function claimChrome(
     });
     input.addEventListener("input", syncCharge);`;
   const occupiedNoteAfterOutbid = emptyRoom === false && topUsd !== undefined;
+  const occupiedOutbidBesidePlus = occupiedNoteAfterOutbid;
   return `<section id="claim">
   <div class="stage-head">
     <h1 class="headline">Opening three minutes</h1>
@@ -340,6 +341,7 @@ function claimChrome(
       <span class="currency">$</span><input id="bid" name="amountUsd" form="bid-form" inputmode="numeric" pattern="[0-9]*" value="${defaultBidUsd}"/>
     </label>
     <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one">+</button>
+    ${occupiedOutbidBesidePlus ? `<button type="submit" form="bid-form" data-beside-plus="true" class="outbid">Outbid</button>` : ""}
   </div>
   ${occupiedNoteAfterOutbid ? "" : note}
   ${
@@ -355,10 +357,10 @@ function claimChrome(
     <p class="form-hint">${hint}</p>
   </form>`
       : `<form id="bid-form" class="bid-form" method="post" action="/listings">
-    <div class="bid-row">
+    <div class="bid-row"${occupiedOutbidBesidePlus ? ' data-after-action="true"' : ""}>
       <div class="field"><input name="company" required maxlength="80" placeholder="Company"/></div>
       <div class="field"><input name="url" type="url" required placeholder="https://deck-or-site"/></div>
-      <button type="submit" class="outbid">Outbid</button>
+      ${occupiedOutbidBesidePlus ? "" : `<button type="submit" class="outbid">Outbid</button>`}
     </div>
     ${occupiedNoteAfterOutbid ? note : ""}
     <div class="field"><input name="oneLiner" required maxlength="140" placeholder="One-liner for the room"/></div>
