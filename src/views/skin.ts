@@ -771,11 +771,13 @@ export const OCCUPIED_CSS = /* css */ `
   font-weight: 400;
   color: rgb(143, 122, 98);
 }
+/* Occupied rolling-week cue recedes so dashed $amount and Outbid stay the action. */
 .house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week] {
-  margin-top: 0.45rem;
-  font-family: var(--serif);
-  font-size: 1.05rem;
-  color: var(--cream);
+  margin-top: 0.2rem;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: rgb(143, 122, 98);
 }
 .house-occupied[data-occupied-house] .listings {
   margin-top: 0;

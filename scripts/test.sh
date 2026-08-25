@@ -1263,6 +1263,77 @@ if [[ -f package.json ]]; then
     fail "quiet raise-charge cut must not add another named hop"
   fi
 
+  echo "== UX: occupied rolling-week cue stays quiet — ± Outbid stay the action =="
+  grep -q 'occupied rolling-week cue stays quiet' tests/pages.test.ts \
+    || fail "pages tests must cover quiet occupied rolling-week cue"
+  grep -q 'occupied rolling-week cue stays quiet' "$test_log" \
+    || fail "pages tests must run quiet occupied rolling-week cue"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'Rolling last 7 days. Not Monday 00:00 UTC.' \
+    || fail "quiet week-window must keep rolling last-7-days copy"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-window' \
+    || fail "occupied rolling-week cue must stamp quiet so ± Outbid stay the action"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'only the difference' \
+    || fail "quiet week-window must keep Polar raise-pays-difference"
+  grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'data-quiet-charge' \
+    || fail "quiet week-window must not restamp occupied-raise-charge-quiet copy"
+  grep -F -q '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts \
+    || fail "occupied rolling-week cue must be quieted in occupied CSS"
+  grep -F -A 8 '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts | grep -q 'font-size: 0.75rem' \
+    || fail "occupied rolling-week cue must stay smaller than dashed \$amount"
+  grep -F -A 8 '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts | grep -q 'var(--sans)' \
+    || fail "occupied rolling-week cue must not lecture in serif over ± Outbid"
+  grep -F -A 8 '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts | grep -q 'rgb(143, 122, 98)' \
+    || fail "occupied rolling-week cue must stay muted so Outbid stays the action"
+  if grep -F -A 8 '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts | grep -q 'var(--serif)'; then
+    fail "occupied rolling-week cue must not sit as a serif lecture between ± and Outbid"
+  fi
+  if grep -F -A 8 '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts | grep -q 'font-size: 1.05rem'; then
+    fail "occupied rolling-week cue must not match cream-serif lecture size over the dashed amount"
+  fi
+  if grep -F -A 8 '.house-occupied[data-occupied-house] .claim-note .week-window[data-rolling-week]' src/views/skin.ts | grep -q 'var(--cream)'; then
+    fail "occupied rolling-week cue must not cream-lecture over ± Outbid"
+  fi
+  grep -A 8 '.claim-note .raise-charge' src/views/skin.ts | grep -q 'font-size: 0.75rem' \
+    || fail "quiet week-window must keep occupied raise-charge muted"
+  if awk '/^export const HOUSE_CSS/{p=1} p{print} /^export const OCCUPIED_CSS/{exit}' src/views/skin.ts \
+    | grep -Eq 'data-quiet-window'; then
+    fail "HOUSE_CSS must not stamp occupied quiet week-window chrome"
+  fi
+  if grep -n 'function raiseAfterDeckHop' -A 12 src/http/pages.ts | grep -Eq 'quiet-window|week-window'; then
+    fail "must not put Polar lecture or the week-window on the #1 cue"
+  fi
+  if grep -n 'data-empty-room' -A 8 src/http/pages.ts | grep -Eq 'data-quiet-window'; then
+    fail "empty Claim-first must not stamp occupied quiet week-window"
+  fi
+  grep -q 'class="bid-row"' src/http/pages.ts \
+    || fail "quiet week-window cut must keep occupied bid-row"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "quiet week-window cut must keep empty Claim / Outbid as the first click"
+  grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
+    || fail "quiet week-window cut must keep empty deck URL as a later write"
+  grep -q 'data-bid-step' src/http/pages.ts \
+    || fail "quiet week-window cut must keep ±"
+  grep -q 'class="outbid">Outbid' src/http/pages.ts \
+    || fail "quiet week-window cut must keep Outbid"
+  grep -q 'bid-field' src/http/pages.ts \
+    || fail "quiet week-window cut must keep the dashed amount"
+  grep -q 'Polar charged the difference' src/http/pages.ts \
+    || fail "quiet week-window cut must not restamp checkout-raise-copy"
+  grep -q 'Sunday pay raised Monday still pays the difference' src/http/pages.ts \
+    || fail "Sunday→Monday raise-pays-difference must stay on checkout return"
+  grep -q 'Same listing still inside last 7 days' src/http/pages.ts \
+    || fail "quiet week-window cut must not restamp raise-rolling-identity"
+  grep -q 'occupied claim keeps raise-pays-difference short' tests/pages.test.ts \
+    || fail "quiet week-window cut must not restamp occupied-claim-short copy"
+  grep -q 'occupied raise-charge stays quiet' tests/pages.test.ts \
+    || fail "quiet week-window cut must not restamp occupied-raise-charge-quiet copy"
+  if grep -n 'data-occupied-raise' -A 6 src/http/pages.ts | grep -q 'The $ you type is the public bid'; then
+    fail "quiet week-window must not restamp occupied-claim-short lecture"
+  fi
+  if grep -Eq 'raise-after-open-seven|open-after-raise-six' src/http/pages.ts src/views/skin.ts; then
+    fail "quiet week-window cut must not add another named hop"
+  fi
+
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi
