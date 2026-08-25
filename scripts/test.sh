@@ -1105,6 +1105,54 @@ if [[ -f package.json ]]; then
     fail "raise identity must not recolor or rebuild the house"
   fi
 
+  echo "== occupied checkout/return names Polar raise-pays-difference =="
+  grep -q 'Sunday pay raised Monday still pays the difference' src/http/pages.ts \
+    || fail "occupied checkout must name Sunday→Monday raise still pays the difference"
+  grep -q 'Unpaid Polar checkout stays off the house until Polar reports paid' src/http/pages.ts \
+    || fail "occupied checkout must name unpaid Polar stays off the house"
+  grep -q 'renderCheckoutReturn' src/http/pages.ts \
+    || fail "Polar return must render checkout copy instead of a silent redirect"
+  grep -q 'data-return="paid"' src/http/pages.ts \
+    || fail "paid Polar return must stamp data-return=paid"
+  grep -q 'data-return="pending"' src/http/pages.ts \
+    || fail "unpaid Polar return must stamp data-return=pending"
+  grep -q 'data-return="cancel"' src/http/pages.ts \
+    || fail "canceled Polar return must stamp data-return=cancel"
+  grep -q 'Polar charged the difference' src/http/pages.ts \
+    || fail "paid raise return must name Polar charged the difference"
+  grep -F -q 'checkout/complete?checkoutId={CHECKOUT_ID}' src/billing/polar_live.ts \
+    || fail "live Polar success_url must return to /checkout/complete"
+  grep -q 'Occupied checkout: Polar charges the difference on a raise. Unpaid stays off.' src/views/skin.ts \
+    || fail "occupied CSS must name checkout raise-pays-difference without rebuilding the house"
+  grep -q 'occupied checkout copy names Polar raise-pays-difference — unpaid stays off' tests/pages.test.ts \
+    || fail "pages tests must cover occupied checkout raise-pays-difference copy"
+  grep -q 'occupied checkout copy names Polar raise-pays-difference' "$test_log" \
+    || fail "pages tests must run occupied checkout raise-pays-difference"
+  grep -q 'occupied checkout unpaid Polar return stays off the house' "$test_log" \
+    || fail "pages tests must cover unpaid Polar return stays off the house"
+  grep -q 'GET /checkout/complete' SPEC.md \
+    || fail "SPEC must list Polar return copy"
+  grep -q 'Unpaid Polar checkout stays off the house' SPEC.md \
+    || fail "SPEC must name unpaid Polar stays off the house"
+  if grep -n 'data-empty-room' -A 8 src/http/pages.ts | grep -q 'Sunday pay raised Monday'; then
+    fail "empty Claim-first must not restamp Sunday→Monday checkout copy"
+  fi
+  if grep -n 'data-empty-room' -A 8 src/http/pages.ts | grep -q 'stays off the house'; then
+    fail "empty Claim-first must not restamp occupied unpaid-off checkout copy"
+  fi
+  if grep -A 24 'export function renderRules' src/http/pages.ts | grep -q 'data-return'; then
+    fail "checkout return copy must not restamp /rules raise identity"
+  fi
+  if grep -Eq 'data-unpaid-off|raise-after-open-seven|open-after-raise-six-stamp' src/http/pages.ts src/views/skin.ts; then
+    fail "checkout copy must not add a hop stamp"
+  fi
+  grep -q 'class="bid-row"' src/http/pages.ts \
+    || fail "checkout copy cut must keep occupied bid-row"
+  grep -q 'data-first-click="claim"' src/http/pages.ts \
+    || fail "checkout copy cut must keep empty Claim / Outbid as the first click"
+  grep -q 'class="bid-form later-write" data-later-write="true"' src/http/pages.ts \
+    || fail "checkout copy cut must keep empty deck URL as a later write"
+
   if grep -Eqi 'polar\.(sh|in)|api\.polar' "$test_log"; then
     fail "unit tests must not call live Polar hosts"
   fi

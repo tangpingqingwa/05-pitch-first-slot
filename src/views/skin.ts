@@ -762,6 +762,7 @@ export const OCCUPIED_CSS = /* css */ `
 .house-occupied[data-occupied-house] .listings-later[data-later-seats] .seat.later-seat[data-later-seat] .clicks {
   font-size: 0.72rem;
 }
+/* Occupied checkout: Polar charges the difference on a raise. Unpaid stays off. */
 .claim-note .raise-charge {
   display: block;
   margin: 0.4rem 0 0.2rem;

@@ -167,6 +167,9 @@ test("GET / opening three minutes is a pitch-night stage with honest empty room 
   assert.doesNotMatch(html, /Not on the board/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
+  assert.doesNotMatch(html, /Sunday pay raised Monday/);
+  assert.doesNotMatch(html, /stays off the house/);
+  assert.doesNotMatch(html, /data-return=/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-charge/);
   assert.doesNotMatch(boardMarkup(html), /not a new bid/);
@@ -246,6 +249,9 @@ test("empty house stays empty — occupied / unpaid chrome does not leak onto /"
   assert.doesNotMatch(html, /class="off-board"/);
   assert.doesNotMatch(html, /data-occupied-raise/);
   assert.doesNotMatch(html, /Polar charges only the difference/);
+  assert.doesNotMatch(html, /Sunday pay raised Monday/);
+  assert.doesNotMatch(html, /stays off the house/);
+  assert.doesNotMatch(html, /data-return=/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-difference/);
   assert.doesNotMatch(boardMarkup(html), /data-raise-charge/);
   assert.doesNotMatch(boardMarkup(html), /not a new bid/);
@@ -330,6 +336,9 @@ test("empty house stays empty — prize-first / later-fact $bid cannot leak onto
   assert.doesNotMatch(empty, /cue-label">Bid</);
   assert.doesNotMatch(empty, /data-occupied-raise/);
   assert.doesNotMatch(empty, /Polar charges only the difference/);
+  assert.doesNotMatch(empty, /Sunday pay raised Monday/);
+  assert.doesNotMatch(empty, /stays off the house/);
+  assert.doesNotMatch(empty, /data-return=/);
   assertNoFalsePositiveRank(empty);
 
   const app = await buildApp({ databasePath: ":memory:", now: () => NOW });
@@ -728,7 +737,12 @@ test("occupied raise cue tells a founder who is not #1 what Polar charges", asyn
     html,
     /Same deck already ranked: Polar charges only the difference/,
   );
+  assert.match(html, /Sunday pay raised Monday still pays the difference/);
   assert.match(html, /Same deck URL raises this row\. Polar charges only the difference/);
+  assert.match(
+    html,
+    /Unpaid Polar checkout stays off the house until Polar reports paid/,
+  );
   assert.match(html, /value="21"/);
   assert.match(html, /#1 · \$20/);
   assert.match(html, /#2 · \$5/);
@@ -872,9 +886,10 @@ test("occupied raise is certain — Polar charges only the difference, not a new
     claim,
     /Same deck already ranked: Polar charges only the difference/,
   );
+  assert.match(claim, /Sunday pay raised Monday still pays the difference/);
   assert.match(
     claim,
-    /Same deck URL raises this row\. Polar charges only the difference\. Unpaid checkout does not rank\./,
+    /Same deck URL raises this row\. Polar charges only the difference\. Unpaid Polar checkout stays off the house until Polar reports paid\./,
   );
   assert.match(claim, /function syncCharge/);
   assert.match(claim, /next > current \? next - current : 0/);
@@ -5042,16 +5057,158 @@ test("empty house keeps one first click — Claim / Outbid, then the deck URL", 
   assert.match(html, /Rolling last 7 days\. Not Monday 00:00 UTC\./);
 });
 
-test("GET /checkout/complete returns to the room", async () => {
-  const app = await buildApp({ databasePath: ":memory:" });
+test("occupied checkout copy names Polar raise-pays-difference — unpaid stays off", async () => {
+  const emptyApp = await buildApp({ databasePath: ":memory:", now: () => NOW });
+  after(() => emptyApp.close());
+  const empty = (await emptyApp.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(empty);
+  assert.match(empty, /<a class="outbid" data-first-click="claim" href="#write">Outbid<\/a>/);
+  assert.match(empty, /class="bid-form later-write" data-later-write="true"/);
+  assert.doesNotMatch(boardMarkup(empty), /class="bid-row"/);
+  assert.doesNotMatch(empty, /data-occupied-raise/);
+  assert.doesNotMatch(empty, /Sunday pay raised Monday/);
+  assert.doesNotMatch(empty, /stays off the house/);
+  assert.doesNotMatch(empty, /data-return=/);
+  assert.doesNotMatch(empty, /Polar charged the difference/);
+
+  let now = new Date("2026-08-16T12:00:00.000Z");
+  const db = openDatabase(":memory:");
+  after(() => db.close());
+  const polar = new PolarFixture(db, { now: () => now });
+  const app = await buildApp({ db, polar, now: () => now });
   after(() => app.close());
 
-  const done = await app.inject({
-    method: "GET",
-    url: "/checkout/complete?checkoutId=fix_test",
+  const listing = await createListing(app, {
+    company: "Sunday Pitch",
+    oneLiner: "Paid before Monday midnight",
+    url: "https://sunday-pitch.example/deck",
   });
-  assert.equal(done.statusCode, 303);
-  assert.equal(done.headers.location, "/");
+  const first = await app.inject({
+    method: "POST",
+    url: `/listings/${listing.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(first.statusCode, 200);
+  const firstBody = first.json() as { checkoutId: string; chargeUsd: number };
+  assert.equal(firstBody.chargeUsd, 5);
+
+  const firstReturn = await app.inject({
+    method: "GET",
+    url: `/checkout/complete?checkoutId=${encodeURIComponent(firstBody.checkoutId)}`,
+  });
+  assert.equal(firstReturn.statusCode, 200);
+  assert.match(firstReturn.body, /data-return="paid"/);
+  assert.match(firstReturn.body, /Sunday Pitch is on the house at \$5/);
+  assert.match(firstReturn.body, /Unpaid Polar checkout would have stayed off the house/);
+  assert.doesNotMatch(firstReturn.body, /data-raise-difference/);
+  assert.doesNotMatch(boardMarkup(firstReturn.body), /data-occupied-house/);
+  assert.doesNotMatch(boardMarkup(firstReturn.body), /data-empty-house/);
+  assert.doesNotMatch(boardMarkup(firstReturn.body), /data-first-click="claim"/);
+
+  now = new Date("2026-08-17T00:00:00.000Z");
+  const raised = await app.inject({
+    method: "POST",
+    url: `/listings/${listing.id}/bids`,
+    payload: { amountUsd: 12 },
+  });
+  assert.equal(raised.statusCode, 200);
+  const raiseBody = raised.json() as {
+    checkoutId: string;
+    chargeUsd: number;
+    amountUsd: number;
+  };
+  assert.equal(raiseBody.chargeUsd, 7);
+  assert.equal(raiseBody.amountUsd, 12);
+
+  const occupied = (await app.inject({ method: "GET", url: "/" })).body;
+  assertPitchNightChrome(occupied);
+  assert.match(occupied, /class="claim-note" data-occupied-raise/);
+  assert.match(occupied, /data-raise-difference="true"/);
+  assert.match(occupied, /Sunday pay raised Monday still pays the difference/);
+  assert.match(
+    occupied,
+    /Unpaid Polar checkout stays off the house until Polar reports paid/,
+  );
+  assert.match(occupied, /class="bid-row"/);
+  assert.doesNotMatch(boardMarkup(occupied), /data-first-click="claim"/);
+  assert.doesNotMatch(boardMarkup(occupied), /data-later-write/);
+  assert.doesNotMatch(occupied, /data-return=/);
+
+  const raiseReturn = await app.inject({
+    method: "GET",
+    url: `/checkout/complete?checkoutId=${encodeURIComponent(raiseBody.checkoutId)}`,
+  });
+  assert.equal(raiseReturn.statusCode, 200);
+  assert.match(raiseReturn.body, /data-return="paid"/);
+  assert.match(raiseReturn.body, /data-raise-difference="true"/);
+  assert.match(raiseReturn.body, /Polar charged the difference/);
+  assert.match(
+    raiseReturn.body,
+    /Polar charged \$7 to raise to \$12 — only the difference, not a new bid/,
+  );
+  assert.match(raiseReturn.body, /Sunday pay raised Monday still pays the difference/);
+  assert.match(raiseReturn.body, /Sunday Pitch is on the house at \$12/);
+  assert.doesNotMatch(boardMarkup(raiseReturn.body), /data-occupied-house/);
+  assert.doesNotMatch(boardMarkup(raiseReturn.body), /class="bid-row"/);
+  assert.doesNotMatch(boardMarkup(raiseReturn.body), /data-empty-claim-first/);
+});
+
+test("occupied checkout unpaid Polar return stays off the house", async () => {
+  const db = openDatabase(":memory:");
+  after(() => db.close());
+  const polar = new PolarFixture(db, { autoSettle: false, now: () => NOW });
+  const app = await buildApp({ db, polar, now: () => NOW });
+  after(() => app.close());
+
+  const listing = await createListing(app, {
+    company: "Ghost Pitch",
+    oneLiner: "Abandoned Polar checkout",
+    url: "https://ghost-pitch.example/deck",
+  });
+  const started = await polar.createCheckout({
+    listingId: listing.id,
+    weekId: WEEK,
+    chargeUsd: 5,
+    nextUsd: 5,
+  });
+  assert.equal(polar.getCheckout(started.checkoutId)?.status, "pending");
+
+  const pending = await app.inject({
+    method: "GET",
+    url: `/checkout/complete?checkoutId=${encodeURIComponent(started.checkoutId)}`,
+  });
+  assert.equal(pending.statusCode, 200);
+  assert.match(pending.body, /data-return="pending"/);
+  assert.match(pending.body, /Unpaid Polar checkout stays off the house until Polar reports paid/);
+  assert.doesNotMatch(pending.body, /data-return="paid"/);
+  assert.doesNotMatch(pending.body, /Ghost Pitch is on the house/);
+
+  const house = (await app.inject({ method: "GET", url: "/" })).body;
+  const unpaid = listingCard(house, "Ghost Pitch");
+  assert.match(unpaid, /Not on the board/);
+  assert.doesNotMatch(house, /data-occupied-raise/);
+  assert.doesNotMatch(house, /Sunday pay raised Monday/);
+  assert.equal(getBid(app.db, listing.id, WEEK), undefined);
+
+  const cancel = await app.inject({
+    method: "GET",
+    url: `/checkout/complete?checkoutId=${encodeURIComponent(started.checkoutId)}&status=cancel`,
+  });
+  assert.equal(cancel.statusCode, 200);
+  assert.match(cancel.body, /data-return="cancel"/);
+  assert.match(cancel.body, /Unpaid Polar checkout stays off the house/);
+  assert.match(cancel.body, /An abandoned Outbid is not the opening slot/);
+  assert.doesNotMatch(cancel.body, /data-return="paid"/);
+  assert.doesNotMatch(cancel.body, /data-raise-difference/);
+
+  const unknown = await app.inject({
+    method: "GET",
+    url: "/checkout/complete",
+  });
+  assert.equal(unknown.statusCode, 200);
+  assert.match(unknown.body, /data-return="pending"/);
+  assert.match(unknown.body, /Unpaid Polar checkout stays off the house until Polar reports paid/);
+  assert.match(unknown.body, /This page does not trust the query string alone/);
 });
 
 test("occupied /rules raise identity is last-7-days, not the UTC week label", async () => {

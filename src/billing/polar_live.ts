@@ -252,7 +252,7 @@ function liveCheckoutBody(
   const body: Record<string, unknown> = {
     amount: quote.chargeUsd * 100,
     currency: "usd",
-    success_url: `${publicBaseUrl(env)}/`,
+    success_url: `${publicBaseUrl(env)}/checkout/complete?checkoutId={CHECKOUT_ID}`,
     metadata: {
       listingId: input.listingId,
       weekId: input.weekId,

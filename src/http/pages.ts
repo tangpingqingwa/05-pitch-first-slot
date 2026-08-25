@@ -1,7 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
+import type { PolarCheckoutRecord, PolarPort } from "../billing/polar.js";
 import { clickCountsByListing } from "../core/clicks.js";
-import { listListings, type Listing } from "../core/listing.js";
+import { getListingById, listListings, type Listing } from "../core/listing.js";
 import { MIN_BID_USD, rankedBoard, type RankedListing } from "../core/rank.js";
+import type { AppDb } from "../db.js";
 import { BOARD_CSS, HOUSE_CSS } from "../views/skin.js";
 
 function escapeHtml(value: string): string {
@@ -297,10 +299,10 @@ function claimChrome(
   The $ you type is the public bid.
   <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
   <span class="raise-charge" data-raise-charge="true" data-current-usd="${topUsd}">Polar charges $<span data-raise-charge-usd>${raiseChargeUsd}</span> to raise — only the difference, not a new bid.</span>
-  New deck: Polar charges that full amount. Same deck already ranked: Polar charges only the difference.
+  New deck: Polar charges that full amount. Same deck already ranked: Polar charges only the difference. Sunday pay raised Monday still pays the difference.
 </p>`;
     hint =
-      "Same deck URL raises this row. Polar charges only the difference. Unpaid checkout does not rank.";
+      "Same deck URL raises this row. Polar charges only the difference. Unpaid Polar checkout stays off the house until Polar reports paid.";
   } else {
     note = `<p class="claim-note">This week's first three minutes are for sale. The rest of the room is not. Rank is the bid after Polar lands.
   <span class="week-window" data-rolling-week="true">Rolling last 7 days. Not Monday 00:00 UTC.</span>
@@ -485,6 +487,88 @@ export function renderRules(): string {
   });
 }
 
+function firstQuery(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim() !== "") {
+    return value.trim();
+  }
+  return undefined;
+}
+
+export function checkoutReturnKind(
+  polar: PolarPort,
+  query: { checkoutId?: unknown; status?: unknown },
+): {
+  kind: "cancel" | "pending" | "paid";
+  session?: PolarCheckoutRecord;
+} {
+  const rawStatus = (firstQuery(query.status) ?? "").toLowerCase();
+  if (
+    rawStatus === "cancel" ||
+    rawStatus === "canceled" ||
+    rawStatus === "cancelled"
+  ) {
+    return { kind: "cancel" };
+  }
+  const checkoutId = firstQuery(query.checkoutId);
+  if (!checkoutId) {
+    return { kind: "pending" };
+  }
+  const session = polar.getCheckout(checkoutId);
+  if (!session) {
+    return { kind: "pending" };
+  }
+  if (session.status === "paid") {
+    return { kind: "paid", session };
+  }
+  return { kind: "pending", session };
+}
+
+/** Occupied Polar return. Does not apply payment. Unpaid stays off the house. */
+export function renderCheckoutReturn(
+  polar: PolarPort,
+  db: AppDb,
+  query: { checkoutId?: unknown; status?: unknown },
+): string {
+  const result = checkoutReturnKind(polar, query);
+  let body: string;
+  if (result.kind === "cancel") {
+    body = `<article class="program" data-return="cancel">
+<h1>Checkout canceled</h1>
+<p>Unpaid Polar checkout stays off the house. Rank updates only after Polar reports paid. An abandoned Outbid is not the opening slot.</p>
+<p><a href="/">Back to the room</a></p>
+</article>`;
+  } else if (result.kind === "paid" && result.session) {
+    const listing = getListingById(db, result.session.listingId);
+    const company = listing ? escapeHtml(listing.company) : "This listing";
+    const isRaise = result.session.chargeUsd < result.session.nextUsd;
+    if (isRaise) {
+      body = `<article class="program" data-return="paid" data-raise-difference="true">
+<h1>Polar charged the difference</h1>
+<p>Polar charged $${result.session.chargeUsd} to raise to $${result.session.nextUsd} — only the difference, not a new bid. Sunday pay raised Monday still pays the difference.</p>
+<p>${company} is on the house at $${result.session.nextUsd}. Rank is the bid after Polar reports paid.</p>
+<p><a href="/">Back to the room</a></p>
+</article>`;
+    } else {
+      body = `<article class="program" data-return="paid">
+<h1>Polar reports paid</h1>
+<p>${company} is on the house at $${result.session.nextUsd}. Rank is the bid. Unpaid Polar checkout would have stayed off the house.</p>
+<p><a href="/">Back to the room</a></p>
+</article>`;
+    }
+  } else {
+    body = `<article class="program" data-return="pending">
+<h1>Checkout is not paid</h1>
+<p>Unpaid Polar checkout stays off the house until Polar reports paid. This page does not trust the query string alone.</p>
+<p><a href="/">Back to the room</a></p>
+</article>`;
+  }
+  return renderLayout({
+    title: "Checkout · Pitch First Slot",
+    path: "/checkout/complete",
+    body,
+  });
+}
+
 export const pageRoutes: FastifyPluginAsync = async (app) => {
   app.get("/", async (_request, reply) => {
     const listings = listListings(app.db);
@@ -503,7 +587,10 @@ export const pageRoutes: FastifyPluginAsync = async (app) => {
     return reply.type("text/html; charset=utf-8").send(renderRules());
   });
 
-  app.get("/checkout/complete", async (_request, reply) => {
-    return reply.redirect("/", 303);
+  app.get("/checkout/complete", async (request, reply) => {
+    const query = request.query as { checkoutId?: string; status?: string };
+    return reply
+      .type("text/html; charset=utf-8")
+      .send(renderCheckoutReturn(app.polar, app.db, query));
   });
 };
