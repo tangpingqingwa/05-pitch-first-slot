@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { FastifyPluginAsync } from "fastify";
 
 const PUBLIC_ROOT = resolve(process.cwd(), "public");
+const INDEXNOW_KEY = "80a743f63f883a8a08398597572d438b";
 const ICONS = new Set([
   "brand-mark.svg",
   "brand-mark.png",
@@ -31,6 +32,13 @@ const ICONS = new Set([
 
 /** Small allow-listed asset surface; no arbitrary filesystem path is accepted. */
 export const assetRoutes: FastifyPluginAsync = async (app) => {
+  app.get(`/${INDEXNOW_KEY}.txt`, async (_request, reply) =>
+    reply
+      .header("cache-control", "public, max-age=86400")
+      .type("text/plain; charset=utf-8")
+      .send(`${INDEXNOW_KEY}\n`),
+  );
+
   app.get("/fonts/dm-sans-latin-variable.woff2", async (_request, reply) =>
     reply
       .header("cache-control", "public, max-age=31536000, immutable")
