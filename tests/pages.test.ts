@@ -300,7 +300,8 @@ function assertSharedParityCssLegacy(html: string, occupied: boolean): void {
     /document\.documentElement\.setAttribute\("data-theme", dark \? "light" : "dark"\)/,
   );
   assert.match(html, /toggle\.setAttribute\("aria-pressed", String\(!dark\)\)/);
-  assert.doesNotMatch(html, /▰|⌕|◐|More <span|brand-mark|header-tool/);
+  assert.match(html, /<img class="brand-mark" src="\/icons\/brand-mark\.svg"[^>]*>/);
+  assert.doesNotMatch(html, /▰|⌕|◐|More <span|header-tool/);
   if (occupied) {
     assert.match(html, /<ol class="listings leaderboard" data-slot="top-three" data-top-three-list="true"/);
     assert.equal(count(boardMarkup(html), /data-top-three-list="true"/g), 1);
@@ -389,7 +390,10 @@ function assertPitchHouseCss(html: string, occupied: boolean): void {
   assert.match(html, /@media \(max-width: 640px\)/);
   assert.match(html, /\.bid-row \{[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(html, /<header class="site-header" data-slot="site-header">/);
-  assert.match(html, /<a class="brand" data-slot="brand" href="\/">first\.<em>slot<\/em><\/a>/);
+  assert.match(
+    html,
+    /<a class="brand" data-slot="brand" href="\/"><img class="brand-mark" src="\/icons\/brand-mark\.svg"[^>]*>first\.<em>slot<\/em><\/a>/,
+  );
   assert.match(html, /data-stage-section="opening-cue"/);
   assert.match(html, /data-pitch-taxonomy="stage-state"/);
   assert.doesNotMatch(html, /data-reference-fixture|picks\.daily|DTC Picks Daily|outbid\.lol|This morning's cover|Test this today|118 online|1,404,927 visitors|\/icons\/outbid-mark/);

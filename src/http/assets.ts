@@ -4,6 +4,8 @@ import type { FastifyPluginAsync } from "fastify";
 
 const PUBLIC_ROOT = resolve(process.cwd(), "public");
 const ICONS = new Set([
+  "brand-mark.svg",
+  "brand-mark.png",
   "bitcoin.svg",
   "bot.svg",
   "chevron-down.svg",
@@ -42,7 +44,35 @@ export const assetRoutes: FastifyPluginAsync = async (app) => {
     }
     return reply
       .header("cache-control", "public, max-age=31536000, immutable")
-      .type("image/svg+xml; charset=utf-8")
+      .type(request.params.name.endsWith(".png") ? "image/png" : "image/svg+xml; charset=utf-8")
       .send(readFileSync(resolve(PUBLIC_ROOT, "icons", request.params.name)));
   });
+
+  app.get("/favicon.ico", async (_request, reply) =>
+    reply
+      .header("cache-control", "public, max-age=86400")
+      .type("image/png")
+      .send(readFileSync(resolve(PUBLIC_ROOT, "icons", "brand-mark.png"))),
+  );
+
+  app.get("/robots.txt", async (_request, reply) =>
+    reply
+      .header("cache-control", "public, max-age=3600")
+      .type("text/plain; charset=utf-8")
+      .send("User-agent: *\nAllow: /\nDisallow: /checkout/\nDisallow: /click/\nSitemap: https://pitchslot.lol/sitemap.xml\n"),
+  );
+
+  app.get("/sitemap.xml", async (_request, reply) =>
+    reply
+      .header("cache-control", "public, max-age=3600")
+      .type("application/xml; charset=utf-8")
+      .send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://pitchslot.lol</loc><changefreq>daily</changefreq><priority>1.0</priority></url><url><loc>https://pitchslot.lol/about</loc><changefreq>monthly</changefreq></url><url><loc>https://pitchslot.lol/rules</loc><changefreq>monthly</changefreq></url></urlset>'),
+  );
+
+  app.get("/site.webmanifest", async (_request, reply) =>
+    reply
+      .header("cache-control", "public, max-age=3600")
+      .type("application/manifest+json")
+      .send({ name: "Pitch First Slot", short_name: "Pitch Slot", start_url: "/", display: "standalone", background_color: "#1f1511", theme_color: "#d9775f", icons: [{ src: "/icons/brand-mark.png", sizes: "512x512", type: "image/png" }] }),
+  );
 };

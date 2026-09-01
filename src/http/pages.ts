@@ -7,6 +7,14 @@ import { rollingWeekStart } from "../core/week.js";
 import type { AppDb } from "../db.js";
 import { BOARD_CSS, HOUSE_CSS } from "../views/skin.js";
 
+function publicCss(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, (comment) =>
+    /waffo|fixture|reference|outbid|local-only|test-only|implementation|development/i.test(comment)
+      ? ""
+      : comment,
+  );
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -141,7 +149,32 @@ function renderLayout(input: {
   occupiedHouse?: boolean;
   searchRanked?: RankedListing[];
   period?: BoardPeriod;
+  description?: string;
+  canonicalPath?: string;
+  noIndex?: boolean;
 }): string {
+  const siteUrl = "https://pitchslot.lol";
+  const siteName = "Pitch First Slot";
+  const defaultDescription =
+    "Discover startup pitches competing for the opening slot on a transparent rolling seven-day stage. Rank is the bid.";
+  const title = escapeHtml(input.title);
+  const description = escapeHtml(input.description ?? defaultDescription);
+  const canonicalPath = input.canonicalPath ??
+    (input.path === "/about" ? "/about" : input.path === "/rules" ? "/rules" : "/");
+  const canonical = `${siteUrl}${canonicalPath}`;
+  const noIndex = input.noIndex ?? /(checkout|payment|return)/i.test(input.title);
+  const robots = noIndex
+    ? "noindex,nofollow"
+    : "index,follow,max-image-preview:large,max-snippet:-1";
+  const structuredData = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteName,
+    url: siteUrl,
+    description: input.description ?? defaultDescription,
+    inLanguage: "en",
+    isAccessibleForFree: true,
+  }).replace(/</g, "\\u003c");
   const css = input.emptyHouse === true ? HOUSE_CSS : BOARD_CSS;
   const houseAttr =
     input.emptyHouse === true
@@ -165,13 +198,31 @@ function renderLayout(input: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(input.title)}</title>
-  <style>${css}</style>
+  <link rel="icon" type="image/svg+xml" href="/icons/brand-mark.svg">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="canonical" href="${canonical}">
+  <title>${title}</title>
+  <meta name="description" content="${description}">
+  <meta name="robots" content="${robots}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="${siteName}">
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:url" content="${canonical}">
+  <meta property="og:image" content="${siteUrl}/icons/brand-mark.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="${title}">
+  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:image" content="${siteUrl}/icons/brand-mark.png">
+  <script type="application/ld+json">${structuredData}</script>
+  <style>${publicCss(css)}</style>
 </head>
 <body${houseAttr}>
   <header class="site-header" data-slot="site-header">
     <div class="header-inner" data-slot="shell">
-      <a class="brand" data-slot="brand" href="/">first.<em>slot</em></a>
+      <a class="brand" data-slot="brand" href="/"><img class="brand-mark" src="/icons/brand-mark.svg" width="28" height="28" alt="" aria-hidden="true">first.<em>slot</em></a>
       ${input.period ? renderPeriodTabs(input.period, "header") : ""}
       <div class="header-context" aria-label="Board scope">One opening slot</div>
       <nav data-slot="primary-nav" aria-label="Main">

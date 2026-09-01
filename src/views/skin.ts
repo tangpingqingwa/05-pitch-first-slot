@@ -182,6 +182,7 @@ button:disabled { cursor: not-allowed; }
   letter-spacing: -0.045em;
   line-height: 1;
 }
+.brand-mark { display: block; width: 28px; height: 28px; flex: 0 0 28px; border-radius: 8px; }
 .brand em { color: var(--spot); font-style: normal; }
 .header-context {
   flex: 0 0 auto;
