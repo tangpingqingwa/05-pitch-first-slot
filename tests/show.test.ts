@@ -44,6 +44,14 @@ test("SPEC 11: checkout all remaining slots is 400 cannot_buy_show", async () =>
   assert.equal(wholeShow.statusCode, 400);
   assert.equal(wholeShow.json().error, "cannot_buy_show");
 
+  const unknownSku = await app.inject({
+    method: "POST",
+    url: `/listings/${listing.id}/bids`,
+    payload: { amountUsd: 50, sku: "unlisted_opening_product" },
+  });
+  assert.equal(unknownSku.statusCode, 400);
+  assert.equal(unknownSku.json().error, "cannot_buy_show");
+
   const pinWeeks = await app.inject({
     method: "POST",
     url: `/listings/${listing.id}/bids`,
@@ -61,7 +69,7 @@ test("SPEC 11: checkout all remaining slots is 400 cannot_buy_show", async () =>
   assert.equal((opening.json() as { amountUsd: number }).amountUsd, 5);
 });
 
-test("assertOpeningSlotOnly allows a missing or opening-slot SKU", () => {
+test("assertOpeningSlotOnly allows an allowlisted SKU and rejects unknown SKU", () => {
   assert.doesNotThrow(() => assertOpeningSlotOnly(undefined));
   assert.doesNotThrow(() => assertOpeningSlotOnly({ amountUsd: 5 }));
   assert.doesNotThrow(() =>
@@ -69,6 +77,14 @@ test("assertOpeningSlotOnly allows a missing or opening-slot SKU", () => {
   );
   assert.throws(
     () => assertOpeningSlotOnly({ sku: "all_remaining_slots" }),
+    (err: unknown) => {
+      assert.ok(err instanceof ShowError);
+      assert.equal(err.code, "cannot_buy_show");
+      return true;
+    },
+  );
+  assert.throws(
+    () => assertOpeningSlotOnly({ sku: "unlisted_opening_product" }),
     (err: unknown) => {
       assert.ok(err instanceof ShowError);
       assert.equal(err.code, "cannot_buy_show");

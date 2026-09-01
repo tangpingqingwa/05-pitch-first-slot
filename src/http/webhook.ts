@@ -1,8 +1,8 @@
-import type { FastifyPluginAsync } from "fastify";
-import { PolarError } from "../billing/polar.js";
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
+import { PaymentError } from "../billing/port.js";
 import { BidError } from "../core/rank.js";
 
-export const POLAR_WEBHOOK_PATH = "/webhooks/polar" as const;
+export const WAFFO_WEBHOOK_PATH = "/api/webhooks/waffo" as const;
 
 export const webhookRoutes: FastifyPluginAsync = async (app) => {
   app.addContentTypeParser(
@@ -13,27 +13,33 @@ export const webhookRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(POLAR_WEBHOOK_PATH, async (request, reply) => {
+  const receiveWebhook = async (request: FastifyRequest, reply: FastifyReply) => {
     const rawBody = rawWebhookBody(request.body);
     const headers = headerMap(request.headers);
     try {
-      const result = await app.polar.handleWebhook(
+      const result = await app.payment.handleWebhook(
         rawBody,
         headers,
         app.now().toISOString(),
       );
-      return { ok: true, status: "paid", checkoutId: result.checkoutId };
+      return {
+        ok: true,
+        status: result.status ?? "paid",
+        checkoutId: result.checkoutId,
+      };
     } catch (err) {
-      if (err instanceof PolarError || err instanceof BidError) {
+      if (err instanceof PaymentError || err instanceof BidError) {
         return reply.code(err.statusCode).send({ error: err.code });
       }
       const message = err instanceof Error ? err.message : "";
       if (message.startsWith("BLOCKED-SECRET")) {
-        return reply.code(503).send({ error: "polar_unavailable" });
+        return reply.code(503).send({ error: "payment_unavailable" });
       }
       throw err;
     }
-  });
+  };
+
+  app.post(WAFFO_WEBHOOK_PATH, receiveWebhook);
 };
 
 function rawWebhookBody(body: unknown): string {

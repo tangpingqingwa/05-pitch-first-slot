@@ -1,7 +1,10 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import { createPolarPort, type PolarPort } from "./billing/polar.js";
+import { createPaymentPort } from "./billing/index.js";
+import type { PaymentPort } from "./billing/port.js";
+import { isMemoryDatabasePath, paymentMode } from "./config.js";
 import { nowUtc } from "./core/week.js";
 import { openDatabase, type AppDb } from "./db.js";
+import { assetRoutes } from "./http/assets.js";
 import { bidRoutes } from "./http/bids.js";
 import { clickRoutes } from "./http/clicks.js";
 import { healthRoutes } from "./http/health.js";
@@ -13,7 +16,7 @@ declare module "fastify" {
   interface FastifyInstance {
     db: AppDb;
     now: () => Date;
-    polar: PolarPort;
+    payment: PaymentPort;
   }
 }
 
@@ -22,7 +25,7 @@ export type BuildAppOptions = {
   db?: AppDb;
   databasePath?: string;
   now?: () => Date;
-  polar?: PolarPort;
+  payment?: PaymentPort;
 };
 
 export async function buildApp(
@@ -30,18 +33,42 @@ export async function buildApp(
 ): Promise<FastifyInstance> {
   const app = Fastify({ logger: options.logger ?? false });
   const ownsDb = options.db === undefined;
-  const db = options.db ?? openDatabase(options.databasePath ?? ":memory:");
+  const configuredDatabasePath = options.databasePath ?? process.env.DATABASE_PATH?.trim();
+  const production = process.env.NODE_ENV === "production";
+  const mode = production || options.payment === undefined
+    ? paymentMode(process.env)
+    : undefined;
+  if (production && mode !== "waffo-prod") {
+    throw new Error("BLOCKED-CONFIG: production requires WAFFO_MODE=waffo-prod");
+  }
+  if (
+    production &&
+    (!process.env.DATABASE_PATH?.trim() ||
+      isMemoryDatabasePath(process.env.DATABASE_PATH) ||
+      !configuredDatabasePath ||
+      isMemoryDatabasePath(configuredDatabasePath))
+  ) {
+    throw new Error("BLOCKED-CONFIG: production requires an explicit durable DATABASE_PATH");
+  }
+  const db = options.db ?? openDatabase(configuredDatabasePath ?? ":memory:");
   const now = options.now ?? nowUtc;
-  const polar = options.polar ?? createPolarPort(db, { now });
+  const payment = options.payment ?? createPaymentPort(db, {
+    now,
+    databasePath: configuredDatabasePath,
+  });
+  if (production && payment.kind !== "live") {
+    throw new Error("BLOCKED-CONFIG: production cannot use the fixture payment rail");
+  }
   app.decorate("db", db);
   app.decorate("now", now);
-  app.decorate("polar", polar);
+  app.decorate("payment", payment);
   if (ownsDb) {
     app.addHook("onClose", async () => {
       db.close();
     });
   }
   await app.register(healthRoutes);
+  await app.register(assetRoutes);
   await app.register(listingRoutes);
   await app.register(bidRoutes);
   await app.register(clickRoutes);

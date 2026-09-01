@@ -19,43 +19,28 @@ const ALLOWED_SKUS = new Set([
   "deal_list_1",
 ]);
 
-const FORBIDDEN_SKU_TOKENS = [
-  "all_remaining_slots",
-  "remaining_slots",
-  "remaining_slot",
-  "whole_show",
-  "host_the_show",
-  "host_show",
-  "all_slots",
-  "every_pitch",
-  "pin_multiple_weeks",
-  "hide_others",
-  "hide_other_listings",
-];
-
 function normalizeToken(value: string): string {
   return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
 }
 
-function isForbiddenSku(value: string): boolean {
-  const token = normalizeToken(value);
-  if (token.length === 0 || ALLOWED_SKUS.has(token)) {
-    return false;
+function rejectUnknownSku(value: unknown): void {
+  if (value === undefined || value === null) {
+    return;
   }
-  return FORBIDDEN_SKU_TOKENS.some(
-    (forbidden) => token === forbidden || token.includes(forbidden),
-  );
-}
-
-function rejectIfForbiddenSku(value: unknown): void {
-  if (typeof value === "string" && isForbiddenSku(value)) {
+  if (typeof value !== "string") {
     throw new ShowError();
   }
+  const token = normalizeToken(value);
+  if (token.length === 0 || ALLOWED_SKUS.has(token)) {
+    return;
+  }
+  throw new ShowError();
 }
 
 /**
- * Refuse checkout for remaining slots, the whole show, multi-week pins,
- * or hiding other listings. Absent / opening-slot SKU is allowed.
+ * Refuse checkout for anything except the allowlisted opening-slot product.
+ * Absent / blank / opening-slot aliases are allowed; every other selector is
+ * rejected before checkout.
  */
 export function assertOpeningSlotOnly(body: unknown): void {
   if (body === null || typeof body !== "object" || Array.isArray(body)) {
@@ -88,8 +73,8 @@ export function assertOpeningSlotOnly(body: unknown): void {
     throw new ShowError();
   }
 
-  rejectIfForbiddenSku(input.sku);
-  rejectIfForbiddenSku(input.product);
-  rejectIfForbiddenSku(input.item);
-  rejectIfForbiddenSku(input.checkout);
+  rejectUnknownSku(input.sku);
+  rejectUnknownSku(input.product);
+  rejectUnknownSku(input.item);
+  rejectUnknownSku(input.checkout);
 }

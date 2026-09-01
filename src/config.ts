@@ -1,47 +1,104 @@
-export type PolarEnv = NodeJS.ProcessEnv;
+export type WaffoEnv = NodeJS.ProcessEnv;
+export type PaymentMode = "fixture" | "waffo-test" | "waffo-prod";
+export type WaffoEnvironment = "test" | "prod";
 
-/** `POLAR_FIXTURE_ONLY=1` always wins over `POLAR_LIVE`. */
-export function polarFixtureOnly(env: PolarEnv = process.env): boolean {
-  return env.POLAR_FIXTURE_ONLY === "1";
+function trimmed(env: WaffoEnv, key: string): string | undefined {
+  const value = env[key]?.trim();
+  return value ? value : undefined;
 }
 
-/** Live Polar only when `POLAR_LIVE=1`. Unset / `0` stay fixture. */
-export function polarLiveEnabled(env: PolarEnv = process.env): boolean {
-  if (polarFixtureOnly(env)) {
-    return false;
+function rejectLegacySelectors(env: WaffoEnv): void {
+  const legacy = [
+    "PAYMENT_MODE",
+    "WAFFO_LIVE",
+    "POLAR_LIVE",
+    "POLAR_FIXTURE_ONLY",
+  ];
+  const present = legacy.find((key) => trimmed(env, key) !== undefined);
+  if (present) {
+    throw new Error(
+      `BLOCKED-CONFIG: ${present} is obsolete; set the canonical WAFFO_MODE only`,
+    );
   }
-  return env.POLAR_LIVE === "1";
 }
 
-export function polarAccessToken(env: PolarEnv = process.env): string | undefined {
-  const token = env.POLAR_ACCESS_TOKEN?.trim();
-  return token ? token : undefined;
-}
-
-export function polarWebhookSecret(env: PolarEnv = process.env): string | undefined {
-  const secret = env.POLAR_WEBHOOK_SECRET?.trim();
-  return secret ? secret : undefined;
-}
-
-/** Optional Polar product for hosted checkout. Live sandbox needs this. */
-export function polarProductId(env: PolarEnv = process.env): string | undefined {
-  const productId = env.POLAR_PRODUCT_ID?.trim();
-  return productId ? productId : undefined;
-}
-
-export function publicBaseUrl(env: PolarEnv = process.env): string {
-  const raw = env.PUBLIC_BASE_URL?.trim();
-  if (raw) {
-    return raw.replace(/\/$/, "");
+/** Only WAFFO_MODE selects a rail. Missing mode never falls back to fixture. */
+export function waffoMode(env: WaffoEnv = process.env): PaymentMode | undefined {
+  rejectLegacySelectors(env);
+  const raw = trimmed(env, "WAFFO_MODE");
+  if (!raw) return undefined;
+  if (raw === "fixture" || raw === "waffo-test" || raw === "waffo-prod") {
+    return raw;
   }
-  return "http://localhost:3000";
+  throw new Error(
+    "BLOCKED-CONFIG: WAFFO_MODE must be fixture, waffo-test, or waffo-prod",
+  );
 }
 
-/** Override with `POLAR_API_BASE` in tests. Default host is assembled, never fetched from CI. */
-export function polarApiBase(env: PolarEnv = process.env): string {
-  const fromEnv = env.POLAR_API_BASE?.trim();
-  if (fromEnv) {
-    return fromEnv.replace(/\/$/, "");
+export function paymentMode(env: WaffoEnv = process.env): PaymentMode {
+  const mode = waffoMode(env);
+  if (!mode) {
+    throw new Error("BLOCKED-CONFIG: WAFFO_MODE must be explicit");
   }
-  return `https://${["api", "polar", "sh"].join(".")}`;
+  if (env.NODE_ENV === "production" && mode !== "waffo-prod") {
+    throw new Error("BLOCKED-CONFIG: production requires WAFFO_MODE=waffo-prod");
+  }
+  return mode;
+}
+
+export function waffoEnvironment(mode: PaymentMode): WaffoEnvironment | undefined {
+  if (mode === "waffo-test") return "test";
+  if (mode === "waffo-prod") return "prod";
+  return undefined;
+}
+
+export function waffoMerchantId(env: WaffoEnv = process.env): string | undefined {
+  return trimmed(env, "WAFFO_MERCHANT_ID");
+}
+
+export function waffoStoreId(env: WaffoEnv = process.env): string | undefined {
+  return trimmed(env, "WAFFO_STORE_ID");
+}
+
+export function waffoProductId(env: WaffoEnv = process.env): string | undefined {
+  return trimmed(env, "WAFFO_PRODUCT_ID");
+}
+
+export function waffoPrivateKey(env: WaffoEnv = process.env): string | undefined {
+  return trimmed(env, "WAFFO_PRIVATE_KEY");
+}
+
+export function waffoPrivateKeyFile(env: WaffoEnv = process.env): string | undefined {
+  return trimmed(env, "WAFFO_PRIVATE_KEY_FILE");
+}
+
+export function waffoWebhookPublicKey(
+  env: WaffoEnv = process.env,
+  environment?: WaffoEnvironment,
+): string | undefined {
+  const specific =
+    environment === "test"
+      ? trimmed(env, "WAFFO_WEBHOOK_TEST_PUBLIC_KEY")
+      : environment === "prod"
+        ? trimmed(env, "WAFFO_WEBHOOK_PROD_PUBLIC_KEY")
+        : undefined;
+  // A live rail must never silently select a key for the other environment or
+  // inherit the obsolete generic key. WaffoLive always supplies the mode.
+  return specific;
+}
+
+export function waffoApiBase(env: WaffoEnv = process.env): string {
+  return (trimmed(env, "WAFFO_API_BASE") ?? "https://api.waffo.ai").replace(
+    /\/+$/,
+    "",
+  );
+}
+
+export function isMemoryDatabasePath(value: string): boolean {
+  const path = value.trim();
+  return (
+    path === ":memory:" ||
+    /^file::memory(?::|\?|$)/i.test(path) ||
+    /^file:[^?]*(?:\?|&)mode=memory(?:&|$)/i.test(path)
+  );
 }

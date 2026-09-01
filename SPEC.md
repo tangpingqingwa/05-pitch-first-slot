@@ -31,7 +31,7 @@ One-line pitch: **This week's first three minutes are for sale. The rest of the 
 - Listing is company + one-liner + a deck or site URL. Nothing else ranks you.
 - Public click counts on the deck/URL are real increments, never seeded.
 - Weekly reset. Last week's #1 does not carry rank into the new week.
-- Offline tests stay green with a Polar **fixture**. Live Polar is env-gated.
+- Offline tests stay green with a Waffo **fixture**. Live Waffo is env-gated.
 
 ### Non-goals
 
@@ -91,15 +91,15 @@ Clone of outbid.lol economics, with a rolling last-7-days window and a single pr
 2. **Minimum.** First paid bid on a listing in a week is **$5**.
 3. **Rank = bid.** Sort paid bids in the rolling last 7 days descending. #1 is the opening slot.
 4. **Ties.** Same bid amount: the **older** successful payment wins (earlier `paidAt`, then earlier `listing.createdAt`).
-5. **Raise = difference.** If a listing is at $40 and the founder bids $55, Polar charges **$15**, not $55. The public bid becomes $55.
+5. **Raise = difference.** If a listing is at $40 and the founder bids $55, Waffo charges **$15**, not $55. The public bid becomes $55.
 6. **Below #1 is allowed.** A $5 bid still lists, at the rank that amount buys.
 7. **Same listing still inside last 7 days.** One current bid per listing in the rolling window. A raise updates that row; it does not create a second row. `weekId` is not the raise key.
-8. **New week.** Paid bids expire **7 days** after `paidAt`. Ranked board starts empty when the window is empty. Listings may remain; they are unranked until a new paid bid in the rolling last 7 days. Monday 00:00 UTC is **not** the expiry.
+8. **New week.** Paid bids expire at **exactly 7 days** after `paidAt` (the boundary is expired). Ranked board starts empty when the window is empty. Listings may remain; they are unranked until a new paid bid in the rolling last 7 days. Monday 00:00 UTC is **not** the expiry.
 9. **No retract.** A paid bid is not refundable because someone else raised.
 
-The house window is the **rolling last 7 days**, not a civil Monday midnight. `weekId` remains a UTC Monday date label for Polar/audit (`YYYY-MM-DD`). Example: a payment at `2026-08-17T00:00:00Z` stores `weekId=2026-08-17`, and it stays ranked until `2026-08-24T00:00:00Z` — seven days later, including across Monday midnight.
+The house window is the **rolling last 7 days**, not a civil Monday midnight. `weekId` remains a UTC Monday date label for Waffo/audit (`YYYY-MM-DD`). Example: a payment at `2026-08-17T00:00:00Z` stores `weekId=2026-08-17`, and it remains ranked for timestamps strictly before `2026-08-24T00:00:00Z`; at that exact seven-day boundary it is expired, including across Monday midnight.
 
-Identity for raise: same **listing** still inside the rolling last 7 days from `paidAt`. `weekId` stays a Polar/audit label — not raise identity. A founder who paid Sunday still raises on Monday if that listing is inside last 7 days. After the window ends, the same listing is a new full bid.
+Identity for raise: same **listing** still inside the rolling last 7 days from `paidAt`. `weekId` stays a Waffo/audit label — not raise identity. A founder who paid Sunday still raises on Monday if that listing is inside last 7 days. After the window ends, the same listing is a new full bid.
 
 ---
 
@@ -151,9 +151,10 @@ The deck/URL is a public outbound link. Each confirmed click increments `clicks`
 | `GET /` | public | ranked board for the open week; bid + current $; company; one-liner; clickable URL; click count |
 | `GET /about` | public | what the slot is; that you cannot buy the show |
 | `GET /rules` | public | the auction rules in this SPEC |
-| `GET /checkout/complete` | public | Polar return. A paid raise names the difference (Sunday pay raised Monday still pays the difference). Unpaid Polar checkout stays off the house. |
+| `GET /checkout/complete` | public | Waffo return. A paid raise names the difference (Sunday pay raised Monday still pays the difference). Unpaid Waffo checkout stays off the house. |
 | `POST /listings` | public | create listing (no payment yet) |
-| `POST /listings/:id/bids` | public | start Polar checkout for first bid or raise |
+| `POST /listings/:id/bids` | public | start Waffo checkout for first bid or raise |
+| `POST /api/webhooks/waffo` | provider | verify Waffo `order.completed`; settle a paid bid |
 | `POST /listings/:id/clicks` | public | increment clicks, then redirect to canonical URL |
 | `GET /healthz` | public | `{ ok: true }` |
 
@@ -165,18 +166,19 @@ No on-site chat. No comment thread.
 
 ## 9. Payments
 
-**Live rail:** [Polar](https://polar.sh/) as merchant of record (global USD, tax).  
-**Tests / CI:** `PolarPort` **fixture**. No network to Polar.
+**Live rail:** [Waffo](https://waffo.sh/) as merchant of record (global USD, tax).
+**Tests / CI:** `PaymentPort` **fixture**. No network to Waffo.
 
 | Env | Behavior |
 |---|---|
-| unset / `POLAR_LIVE=0` | fixture or fail-closed; no live checkout |
-| `POLAR_LIVE=1` + secrets | live Polar checkout + webhook |
-| `POLAR_FIXTURE_ONLY=1` | **always** fixture; wins over `POLAR_LIVE` |
+| `WAFFO_MODE=fixture` | offline fixture; no provider checkout |
+| `WAFFO_MODE=waffo-test` + test secrets | Waffo test checkout + signed webhook |
+| `WAFFO_MODE=waffo-prod` + production secrets | Waffo production checkout + signed webhook |
+| missing/invalid mode or legacy selector | fail closed; never create a fixture rank |
 
-CI and `scripts/test.sh` must not set `POLAR_LIVE=1` and must not require Polar secrets.
+CI and `scripts/test.sh` select `WAFFO_MODE=fixture` and must not require Waffo secrets.
 
-A bid becomes current only after a successful payment (fixture or live webhook). Unpaid checkout sessions do not change rank. Occupied checkout and Polar return name that a raise charges the difference — a Sunday pay raised Monday still pays the difference. Unpaid Polar checkout stays off the house.
+A bid becomes current only after a successful payment (fixture or live webhook). Unpaid checkout sessions do not change rank. Occupied checkout and Waffo return name that a raise charges the difference — a Sunday pay raised Monday still pays the difference. Unpaid Waffo checkout stays off the house.
 
 ---
 
@@ -227,7 +229,7 @@ Rank key for the open week: `(-amountUsd, paidAt, listing.createdAt, listing.id)
 | 1 | Empty week | 200, zero listings, no sample companies |
 | 2 | Listing: company + one-liner + https URL | 200, appears unranked until paid |
 | 3 | First bid $4 | 400, min $5 |
-| 4 | First bid $5 | rank by $5; Polar/fixture charged $5 |
+| 4 | First bid $5 | rank by $5; Waffo/fixture charged $5 |
 | 5 | Raise $5 → $12 | charge **$7**; public bid $12 |
 | 6 | Two listings both at $20; A paid first | A ranks above B |
 | 7 | URL with `?utm_source=x&fbclid=1` | stored URL has those keys stripped |
@@ -236,15 +238,15 @@ Rank key for the open week: `(-amountUsd, paidAt, listing.createdAt, listing.id)
 | 10 | Field `arr` or `users` on create | ignored or 400; never rendered |
 | 11 | Checkout “all remaining slots” | 400 `cannot_buy_show` |
 | 12 | Rolling last 7 days | a bid paid 7 days ago is unranked; Monday 00:00 UTC does not drop a bid still inside the window; board empty until a new pay in the window |
-| 13 | Polar fixture | rank updates with no live Polar |
+| 13 | Waffo fixture | rank updates with no live Waffo |
 | 14 | `GET /about` and `GET /rules` | 200, state cannot-buy-the-show + weekly reset (rolling last 7 days, not Monday 00:00 UTC) |
 
 ---
 
 ## 13. Milestones
 
-**M1:** board + listings + ranking + hygiene + about/rules, Polar fixture.  
-**M2:** live Polar, weekly reset job, public clicks.  
+**M1:** board + listings + ranking + hygiene + about/rules, Waffo fixture.
+**M2:** live Waffo, weekly reset job, public clicks.
 **M3:** operator live-smoke against the local process.
 
 Launch = M2. Live-smoke is required before calling the product done.
@@ -260,7 +262,7 @@ Development is GitHub trunk-based. **`main` is always cloneable, buildable, and 
 | Integration branch | `main` only. No long-lived `develop`. |
 | How code lands | Pull request into `main`. No direct push. |
 | Required check | GitHub Actions workflow `ci` (job id `ci`) must be green. |
-| Local / CI test | `bash scripts/test.sh` — offline, no Polar secrets. |
+| Local / CI test | `bash scripts/test.sh` — offline, no Waffo secrets. |
 | Branch names | `feat/` `fix/` `docs/` `chore/` `test/` + short slug. |
 | Merge | Squash. Delete the head branch. |
 | Broken `main` | Treat as an incident. Fix on `fix/…` via PR. |
@@ -269,4 +271,4 @@ Full process: [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 Implementation plan (stack, modules, PR DAG): [BUILD.md](./BUILD.md).
 
-Until there is an application binary, `scripts/test.sh` still has to pass: contract files exist, SPEC/CONTRIBUTING agree, no tracked secrets. Adding a server means **extending** that script with unit/contract tests. Live Polar is optional and must not be required for `main` to stay green.
+Until there is an application binary, `scripts/test.sh` still has to pass: contract files exist, SPEC/CONTRIBUTING agree, no tracked secrets. Adding a server means **extending** that script with unit/contract tests. Live Waffo is optional and must not be required for `main` to stay green.

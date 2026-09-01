@@ -87,6 +87,64 @@ test("clicks start at 0 and never copy another listing", async () => {
   assert.match(board.body, /Quiet[\s\S]*0 clicks/);
 });
 
+test("GET paid-card click links increment and redirect to the canonical URL", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+
+  const listing = await createListing(app, {
+    company: "Paid Deck",
+    oneLiner: "A visible paid-card deck link",
+    url: "https://readonly.example/deck",
+  });
+  const paid = await app.inject({
+    method: "POST",
+    url: `/listings/${listing.id}/bids`,
+    payload: { amountUsd: 5 },
+  });
+  assert.equal(paid.statusCode, 200);
+  assert.equal(getClickCount(app.db, listing.id), 0);
+
+  const paidBoard = await app.inject({ method: "GET", url: "/" });
+  assert.match(
+    paidBoard.body,
+    /class="open-deck"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/,
+  );
+
+  const opened = await app.inject({
+    method: "GET",
+    url: `/listings/${listing.id}/clicks`,
+  });
+  assert.equal(opened.statusCode, 302);
+  assert.equal(opened.headers.location, listing.url);
+  assert.equal(getClickCount(app.db, listing.id), 1);
+
+  const openedAgain = await app.inject({
+    method: "GET",
+    url: `/listings/${listing.id}/clicks`,
+  });
+  assert.equal(openedAgain.statusCode, 302);
+  assert.equal(openedAgain.headers.location, listing.url);
+  assert.equal(getClickCount(app.db, listing.id), 2);
+});
+
+test("GET unavailable deck links redirect without incrementing", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+
+  const listing = await createListing(app, {
+    company: "Unpaid Deck",
+    oneLiner: "Not visible as a paid card",
+    url: "https://unpaid.example/deck",
+  });
+  const opened = await app.inject({
+    method: "GET",
+    url: `/listings/${listing.id}/clicks`,
+  });
+  assert.equal(opened.statusCode, 302);
+  assert.equal(opened.headers.location, listing.url);
+  assert.equal(getClickCount(app.db, listing.id), 0);
+});
+
 test("unknown listing click is 404", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   after(() => app.close());
@@ -97,4 +155,11 @@ test("unknown listing click is 404", async () => {
   });
   assert.equal(missing.statusCode, 404);
   assert.equal(missing.json().error, "listing_not_found");
+
+  const missingGet = await app.inject({
+    method: "GET",
+    url: "/listings/does-not-exist/clicks",
+  });
+  assert.equal(missingGet.statusCode, 404);
+  assert.equal(missingGet.json().error, "listing_not_found");
 });

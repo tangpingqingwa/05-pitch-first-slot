@@ -58,10 +58,23 @@ test("rolling last-7-days window is 7 * 24h, not Monday 00:00 UTC", () => {
     rollingWeekStart(now).toISOString(),
     "2026-08-17T00:00:00.000Z",
   );
-  assert.equal(bidInRollingWeek("2026-08-17T00:00:00.000Z", now), true);
+  assert.equal(bidInRollingWeek("2026-08-17T00:00:00.000Z", now), false);
+  assert.equal(bidInRollingWeek("2026-08-17T00:00:00.001Z", now), true);
   assert.equal(bidInRollingWeek("2026-08-16T23:59:59.000Z", now), false);
   assert.equal(bidInRollingWeek("2026-08-23T23:59:59.000Z", now), true);
   assert.equal(bidInRollingWeek("2026-08-24T00:00:01.000Z", now), false);
+});
+
+test("paid bid expires at exactly seven days", () => {
+  const paidAt = "2026-08-16T12:00:00.000Z";
+  assert.equal(
+    bidInRollingWeek(paidAt, new Date("2026-08-23T11:59:59.999Z")),
+    true,
+  );
+  assert.equal(
+    bidInRollingWeek(paidAt, new Date("2026-08-23T12:00:00.000Z")),
+    false,
+  );
 });
 
 test("Monday 00:00 UTC does not drop a bid still inside the rolling week", () => {
@@ -69,11 +82,11 @@ test("Monday 00:00 UTC does not drop a bid still inside the rolling week", () =>
   const mondayMidnight = new Date("2026-08-17T00:00:00.000Z");
   assert.equal(bidInRollingWeek(sundayPay, mondayMidnight), true);
   assert.equal(
-    bidInRollingWeek(sundayPay, new Date("2026-08-23T12:00:00.000Z")),
+    bidInRollingWeek(sundayPay, new Date("2026-08-23T11:59:59.999Z")),
     true,
   );
   assert.equal(
-    bidInRollingWeek(sundayPay, new Date("2026-08-23T12:00:01.000Z")),
+    bidInRollingWeek(sundayPay, new Date("2026-08-23T12:00:00.000Z")),
     false,
   );
 });

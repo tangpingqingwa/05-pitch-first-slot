@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
-import { PolarError } from "../billing/polar.js";
+import { PaymentError } from "../billing/port.js";
 import { createListing, ListingError } from "../core/listing.js";
 import { BidError, checkoutWeekId, parseBidUsd, quoteBid } from "../core/rank.js";
 import { ShowError, assertOpeningSlotOnly } from "../core/show.js";
@@ -43,17 +43,26 @@ export const listingRoutes: FastifyPluginAsync = async (app) => {
 
   app.post("/listings", async (request, reply) => {
     try {
-      const listing = createListing(app.db, request.body, app.now());
       const body = (request.body ?? {}) as Record<string, unknown>;
+      const htmlForm = isHtmlForm(request);
       const hasFormBid =
         body.amountUsd !== undefined || body.nextUsd !== undefined;
-      if (isHtmlForm(request) && hasFormBid) {
+      let validatedNextUsd: number | undefined;
+      if (htmlForm && hasFormBid) {
+        // Validate every bid-only field before creating a listing. An invalid
+        // form must not leave an unranked durable row behind.
+        validatedNextUsd = parseBidUsd(body.amountUsd ?? body.nextUsd);
+        quoteBid(undefined, validatedNextUsd);
+        assertOpeningSlotOnly(body);
+      }
+
+      const listing = createListing(app.db, request.body, app.now());
+      if (htmlForm && hasFormBid) {
         // Raise identity is checkoutWeekId (last 7 days), not currentWeekId.
         const { current, weekId } = checkoutWeekId(app.db, listing.id, app.now());
-        const nextUsd = parseBidUsd(body.amountUsd ?? body.nextUsd);
+        const nextUsd = validatedNextUsd!;
         const quote = quoteBid(current, nextUsd);
-        assertOpeningSlotOnly(body);
-        const started = await app.polar.createCheckout({
+        const started = await app.payment.createCheckout({
           listingId: listing.id,
           weekId,
           chargeUsd: quote.chargeUsd,
@@ -67,13 +76,13 @@ export const listingRoutes: FastifyPluginAsync = async (app) => {
         err instanceof ListingError ||
         err instanceof BidError ||
         err instanceof ShowError ||
-        err instanceof PolarError
+        err instanceof PaymentError
       ) {
         return sendError(request, reply, err.statusCode, err.code, err.message);
       }
       const message = err instanceof Error ? err.message : "";
       if (message.startsWith("BLOCKED-SECRET")) {
-        return sendError(request, reply, 503, "polar_unavailable", message);
+        return sendError(request, reply, 503, "payment_unavailable", message);
       }
       throw err;
     }

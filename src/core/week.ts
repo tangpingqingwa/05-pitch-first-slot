@@ -7,7 +7,7 @@ export type WeekId = string;
 
 const WEEK_ID_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Inclusive length of the public week window. Not a Monday midnight bucket. */
+/** Duration of the public week window. Not a Monday midnight bucket. */
 export const ROLLING_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function nowUtc(env: NodeJS.ProcessEnv = process.env): Date {
@@ -22,7 +22,7 @@ export function nowUtc(env: NodeJS.ProcessEnv = process.env): Date {
   return parsed;
 }
 
-/** Inclusive start of the rolling last-7-days window. Not civil midnight. */
+/** Lower bound of the rolling last-7-days window; the exact boundary is expired. */
 export function rollingWeekStart(now: Date = nowUtc()): Date {
   return new Date(now.getTime() - ROLLING_WEEK_MS);
 }
@@ -36,7 +36,7 @@ export function bidInRollingWeek(
     return false;
   }
   const t = now.getTime();
-  return paid >= t - ROLLING_WEEK_MS && paid <= t;
+  return paid > t - ROLLING_WEEK_MS && paid <= t;
 }
 
 /**

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { buildApp } from "../src/app.js";
+import { WaffoFixture } from "../src/billing/waffo-fixture.js";
+import type { PaymentPort } from "../src/billing/port.js";
 import { openDatabase, type AppDb } from "../src/db.js";
 
 const SAMPLE_COMPANIES = [
@@ -23,7 +25,7 @@ test("GET / empty week is 200 with zero listings and no sample companies", async
   assert.match(response.headers["content-type"] ?? "", /text\/html/);
   const html = response.body;
   assert.match(html, /The room is empty\./);
-  assert.match(html, /This week's first slot is still open\. Outbid takes it after Polar lands\./);
+  assert.match(html, /This week's first slot is still open\. A confirmed bid takes it\./);
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /No listings this week/);
   assert.match(html, /Opening three minutes/);
@@ -170,6 +172,85 @@ test("POST /listings rejects invalid company, one-liner, and non-https URL", asy
   });
   assert.equal(httpUrl.statusCode, 400);
   assert.equal(httpUrl.json().error, "invalid_url");
+});
+
+test("HTML /listings validates bid and SKU before inserting or starting checkout", async () => {
+  const db = openDatabase(":memory:");
+  const fixture = new WaffoFixture(db, { autoSettle: false });
+  const checkoutInputs: Array<{ chargeUsd: number; nextUsd: number }> = [];
+  const payment: PaymentPort = {
+    kind: "fixture",
+    createCheckout: async (input) => {
+      checkoutInputs.push({ chargeUsd: input.chargeUsd, nextUsd: input.nextUsd });
+      return fixture.createCheckout(input);
+    },
+    applyPaid: fixture.applyPaid.bind(fixture),
+    getCheckout: fixture.getCheckout.bind(fixture),
+    handleWebhook: fixture.handleWebhook.bind(fixture),
+    database: () => db,
+  };
+  const app = await buildApp({ db, payment });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const postForm = (fields: Record<string, string>) =>
+    app.inject({
+      method: "POST",
+      url: "/listings",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        accept: "text/html",
+      },
+      payload: new URLSearchParams(fields).toString(),
+    });
+  const listingCount = () =>
+    (db.prepare("SELECT COUNT(*) AS count FROM listings").get() as { count: number }).count;
+
+  const rejected = [
+    {
+      company: "Unsafe Amount",
+      amountUsd: "9007199254740993",
+      message: "bid must be a whole-dollar USD amount",
+    },
+    {
+      company: "Below Minimum",
+      amountUsd: "4",
+      message: "first bid must be at least $5",
+    },
+    {
+      company: "Unknown Product",
+      amountUsd: "5",
+      sku: "all remaining slots",
+      message: "cannot buy the rest of the show",
+    },
+  ];
+  for (const [index, input] of rejected.entries()) {
+    const before = listingCount();
+    const response = await postForm({
+      company: input.company,
+      oneLiner: "No invalid row",
+      url: `https://${index}.invalid.example/deck`,
+      amountUsd: input.amountUsd,
+      ...(input.sku ? { sku: input.sku } : {}),
+    });
+    assert.equal(response.statusCode, 400);
+    assert.ok(response.body.includes(input.message));
+    assert.equal(listingCount(), before);
+    assert.equal(checkoutInputs.length, 0);
+  }
+
+  const valid = await postForm({
+    company: "Valid Pitch",
+    oneLiner: "Starts one checkout",
+    url: "https://valid.example/deck",
+    amountUsd: "5",
+    sku: "opening_slot",
+  });
+  assert.equal(valid.statusCode, 303);
+  assert.equal(listingCount(), 1);
+  assert.deepEqual(checkoutInputs, [{ chargeUsd: 5, nextUsd: 5 }]);
 });
 
 test("listings schema has no traction columns", () => {

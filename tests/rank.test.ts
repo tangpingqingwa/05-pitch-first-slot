@@ -6,6 +6,7 @@ import {
   getBid,
   getBidInRollingWeek,
   MIN_BID_USD,
+  parseBidUsd,
   quoteBid,
   rankKey,
   rankListings,
@@ -109,7 +110,7 @@ test("rankListings uses only the rolling last-7-days paidAt window", () => {
     bid: bid({
       listingId: "now",
       amountUsd: 5,
-      paidAt: "2026-08-17T00:00:00.000Z",
+      paidAt: "2026-08-17T00:00:00.001Z",
     }),
   };
   const previous = {
@@ -139,6 +140,17 @@ test("first bid $5 charges $5; raise $5 → $12 charges $7", () => {
     paidAt: "2026-08-17T01:00:00.000Z",
   });
   assert.deepEqual(quoteBid(current, 12), { chargeUsd: 7, nextUsd: 12 });
+});
+
+test("unsafe whole-dollar bids fail closed before cents serialization", () => {
+  assert.throws(
+    () => parseBidUsd("9007199254740993"),
+    (err: unknown) => err instanceof Error && "code" in err && err.code === "invalid_bid",
+  );
+  assert.throws(
+    () => quoteBid(undefined, Number.MAX_SAFE_INTEGER),
+    (err: unknown) => err instanceof Error && "code" in err && err.code === "invalid_bid",
+  );
 });
 
 test("SPEC 3: first bid $4 is 400 min $5", async () => {
@@ -364,7 +376,7 @@ test("SPEC 12: rolling last 7 days drops last week's rank — not Monday 00:00 U
   assert.match(monday.body, /Rolling last 7 days\. Not Monday 00:00 UTC\./);
   assert.doesNotMatch(monday.body, /Unranked — no paid bid yet/);
 
-  now = new Date("2026-08-23T12:00:01.000Z");
+  now = new Date("2026-08-23T12:00:00.000Z");
   const board = await app.inject({ method: "GET", url: "/" });
   assert.equal(board.statusCode, 200);
   assert.match(board.body, /Last Week Winner/);

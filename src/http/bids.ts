@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { PolarError } from "../billing/polar.js";
+import { PaymentError } from "../billing/port.js";
 import { getListingById } from "../core/listing.js";
 import {
   BidError,
@@ -32,14 +32,14 @@ export const bidRoutes: FastifyPluginAsync = async (app) => {
           body.amountUsd !== undefined ? body.amountUsd : body.nextUsd,
         );
         const quote = quoteBid(current, nextUsd);
-        const started = await app.polar.createCheckout({
+        const started = await app.payment.createCheckout({
           listingId: listing.id,
           weekId,
           chargeUsd: quote.chargeUsd,
           nextUsd: quote.nextUsd,
         });
         const paid = getBidInRollingWeek(app.db, listing.id, app.now());
-        if (app.polar.kind === "live" || paid === undefined) {
+        if (app.payment.kind === "live" || paid === undefined) {
           return reply.code(303).header("location", started.url).send({
             listingId: listing.id,
             weekId,
@@ -62,13 +62,13 @@ export const bidRoutes: FastifyPluginAsync = async (app) => {
         if (
           err instanceof BidError ||
           err instanceof ShowError ||
-          err instanceof PolarError
+          err instanceof PaymentError
         ) {
           return reply.code(err.statusCode).send({ error: err.code });
         }
         const message = err instanceof Error ? err.message : "";
         if (message.startsWith("BLOCKED-SECRET")) {
-          return reply.code(503).send({ error: "polar_unavailable" });
+          return reply.code(503).send({ error: "payment_unavailable" });
         }
         throw err;
       }

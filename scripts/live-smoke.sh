@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Operator smoke against a local process. Not called from scripts/test.sh or CI.
 # Starts the product process and walks every SPEC §12 acceptance row.
-# Fixture path is the default. Live Polar only if POLAR_LIVE=1 and secrets exist;
-# otherwise BLOCKED-SECRET for the live-checkout row.
+# Fixture path is explicit and offline. Production payment selection is Waffo;
+# the live-provider boundary below never calls a provider from this smoke.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,9 +19,20 @@ fi
 if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   fail "live-smoke must not run in GitHub Actions"
 fi
+if [[ "${WAFFO_MODE:-}" != "fixture" ]]; then
+  fail "live-smoke requires WAFFO_MODE=fixture"
+fi
+if [[ "${LIVE_SMOKE_BASE+x}" == "x" ]]; then
+  fail "LIVE_SMOKE_BASE is unsupported; live-smoke always starts an isolated local fixture"
+fi
 
 command -v curl >/dev/null || fail "curl is required"
 command -v node >/dev/null || fail "node is required"
+node_version="$(node --version)"
+node_major="${node_version#v}"
+node_major="${node_major%%.*}"
+[[ "$node_major" =~ ^[0-9]+$ ]] || fail "could not parse Node.js version ${node_version}"
+(( node_major >= 22 )) || fail "Node.js 22 or newer is required (found ${node_version})"
 
 if [[ ! -d node_modules ]]; then
   if [[ -f package-lock.json ]]; then
@@ -40,14 +51,7 @@ WEEK_PID=""
 LIVE_PID=""
 WORKDIR=""
 RESULT_LOG=""
-BASE="${LIVE_SMOKE_BASE:-}"
-
-# Capture operator Polar flags before the fixture process unsets them.
-OP_POLAR_LIVE="${POLAR_LIVE:-}"
-OP_POLAR_ACCESS_TOKEN="${POLAR_ACCESS_TOKEN:-}"
-OP_POLAR_WEBHOOK_SECRET="${POLAR_WEBHOOK_SECRET:-}"
-OP_POLAR_PRODUCT_ID="${POLAR_PRODUCT_ID:-}"
-OP_POLAR_API_BASE="${POLAR_API_BASE:-}"
+BASE=""
 
 cleanup() {
   if [[ -n "${LIVE_PID}" ]] && kill -0 "${LIVE_PID}" 2>/dev/null; then
@@ -117,8 +121,12 @@ start_server() {
   shift 3
   (
     cd "$root"
-    unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET || true
-    export POLAR_FIXTURE_ONLY=1
+    unset WAFFO_MODE WAFFO_MERCHANT_ID WAFFO_STORE_ID \
+      WAFFO_PRODUCT_ID WAFFO_PRIVATE_KEY WAFFO_PRIVATE_KEY_FILE \
+      WAFFO_WEBHOOK_PUBLIC_KEY WAFFO_WEBHOOK_TEST_PUBLIC_KEY \
+      WAFFO_WEBHOOK_PROD_PUBLIC_KEY WAFFO_API_BASE PAYMENT_MODE WAFFO_LIVE \
+      POLAR_LIVE POLAR_FIXTURE_ONLY || true
+    export WAFFO_MODE=fixture
     export PORT="${port}"
     export DATABASE_PATH="${db_path}"
     export PUBLIC_BASE_URL="http://127.0.0.1:${port}"
@@ -212,18 +220,15 @@ rank_for_company() {
     import { readFileSync } from "node:fs";
     const html = readFileSync(process.argv[1], "utf8");
     const company = process.argv[2];
-    const items = [...html.matchAll(/<li class="listing"[\s\S]*?<\/li>/g)].map((m) => m[0]);
-    for (const item of items) {
-      if (item.includes(`<p class="company">${company}</p>`)) {
-        const rank = item.match(/data-rank="(\d+)"/);
-        if (rank) {
-          process.stdout.write(rank[1]);
-          process.exit(0);
-        }
-        process.exit(3);
-      }
-    }
-    process.exit(2);
+    const items = [...html.matchAll(/<li class="listing[^\"]*"[\s\S]*?<\/li>/g)].map((m) => m[0]);
+    const matches = items.filter((item) => {
+      const value = item.match(/<p class="company"(?:\s[^>]*)?>([\s\S]*?)<\/p>/);
+      return value?.[1] === company;
+    });
+    if (matches.length !== 1) process.exit(2);
+    const rank = matches[0].match(/data-rank="(\d+)"/);
+    if (!rank) process.exit(3);
+    process.stdout.write(rank[1]);
   ' "$1" "$2"
 }
 
@@ -232,18 +237,15 @@ bid_for_company() {
     import { readFileSync } from "node:fs";
     const html = readFileSync(process.argv[1], "utf8");
     const company = process.argv[2];
-    const items = [...html.matchAll(/<li class="listing"[\s\S]*?<\/li>/g)].map((m) => m[0]);
-    for (const item of items) {
-      if (item.includes(`<p class="company">${company}</p>`)) {
-        const bid = item.match(/data-bid="(\d+)"/);
-        if (bid) {
-          process.stdout.write(bid[1]);
-          process.exit(0);
-        }
-        process.exit(3);
-      }
-    }
-    process.exit(2);
+    const items = [...html.matchAll(/<li class="listing[^\"]*"[\s\S]*?<\/li>/g)].map((m) => m[0]);
+    const matches = items.filter((item) => {
+      const value = item.match(/<p class="company"(?:\s[^>]*)?>([\s\S]*?)<\/p>/);
+      return value?.[1] === company;
+    });
+    if (matches.length !== 1) process.exit(2);
+    const bid = matches[0].match(/data-bid="(\d+)"/);
+    if (!bid) process.exit(3);
+    process.stdout.write(bid[1]);
   ' "$1" "$2"
 }
 
@@ -255,33 +257,27 @@ STAMP="$(date -u +%Y%m%d%H%M%S)"
 echo "== live-smoke (operator only; not CI) =="
 echo "root=${root}"
 
-if [[ -z "${BASE}" ]]; then
-  PORT="${LIVE_SMOKE_PORT:-$(pick_port)}"
-  BASE="http://127.0.0.1:${PORT}"
-  DB_PATH="${WORKDIR}/board.sqlite"
-  LOG_PATH="${WORKDIR}/server.log"
-  echo "starting local fixture server on ${BASE}"
-  echo "database=${DB_PATH}"
-  STARTED_PID="$(start_server "$PORT" "$DB_PATH" "$LOG_PATH")"
-  if ! wait_health "$BASE"; then
-    echo "server log:" >&2
-    cat "${LOG_PATH}" >&2 || true
-    fail "local server did not become healthy at ${BASE}/healthz"
-  fi
-else
-  BASE="${BASE%/}"
-  echo "assuming existing server at ${BASE}"
-  if ! wait_health "$BASE"; then
-    fail "existing server at ${BASE} did not answer /healthz"
-  fi
+PORT="$(pick_port)"
+BASE="http://127.0.0.1:${PORT}"
+DB_PATH="${WORKDIR}/board.sqlite"
+LOG_PATH="${WORKDIR}/server.log"
+echo "starting local fixture server on ${BASE}"
+echo "database=${DB_PATH}"
+STARTED_PID="$(start_server "$PORT" "$DB_PATH" "$LOG_PATH")"
+if ! wait_health "$BASE"; then
+  echo "server log:" >&2
+  cat "${LOG_PATH}" >&2 || true
+  fail "local server did not become healthy at ${BASE}/healthz"
 fi
+[[ -f "${DB_PATH}" ]] || fail "local fixture did not open its disposable SQLite database"
 
 echo "base=${BASE}"
-echo "operator POLAR_LIVE=${OP_POLAR_LIVE:-<unset>}"
-if [[ -n "${OP_POLAR_API_BASE}" ]]; then
-  echo "operator POLAR_API_BASE_set=1"
+echo "node=${node_version} (requires >=22)"
+echo "operator WAFFO_MODE=fixture"
+if [[ -n "${WAFFO_API_BASE:-}" ]]; then
+  echo "operator WAFFO_API_BASE_set=1"
 else
-  echo "operator POLAR_API_BASE=<unset>"
+  echo "operator WAFFO_API_BASE=<unset>"
 fi
 
 # --- healthz (process is up) ---
@@ -298,7 +294,7 @@ board0="${WORKDIR}/board0.html"
 board0_code="$(http_get "$BASE" "/" "$board0" || true)"
 if [[ "$board0_code" == "200" ]] \
   && html_has "$board0" 'The room is empty\.' \
-  && html_has "$board0" "This week's first slot is still open. Outbid takes it after Polar lands." \
+  && html_has "$board0" "This week's first slot is still open. A confirmed bid takes it." \
   && ! html_has "$board0" 'No listings this week' \
   && ! html_has "$board0" 'class="listing"' \
   && ! html_has "$board0" '\$[0-9]' \
@@ -371,28 +367,14 @@ else
     && [[ "$board4_code" == "200" ]] \
     && html_has "$board4" '#1 · \$5' \
     && html_has "$board4" 'Helix Labs' \
-    && html_has "$board4" 'data-occupied-raise' \
-    && html_has "$board4" 'Polar charges only the difference' \
+    && html_has "$board4" 'data-raise-difference' \
+    && html_has "$board4" 'only the difference' \
     && html_has "$board4" 'data-open-deck="true"' \
     && html_has "$board4" 'Open deck' \
-    && html_has "$board4" 'data-raise-after-deck="true"' \
-    && html_has "$board4" 'Then Outbid' \
-    && html_has "$board4" 'data-open-after-raise="true"' \
-    && html_has "$board4" 'after Then Outbid' \
-    && html_has "$board4" 'data-raise-after-open="true"' \
-    && html_has "$board4" 'after Open deck' \
-    && ! html_has "$board4" 'data-later-deck' \
-    && ! html_has "$board4" 'data-open-later' \
-    && ! html_has "$board4" 'data-open-after-raise-one' \
-    && ! html_has "$board4" 'data-raise-after-open-two' \
-    && ! html_has "$board4" 'data-open-after-raise-two' \
-    && ! html_has "$board4" 'data-raise-after-open-three' \
-    && ! html_has "$board4" 'data-open-after-raise-three' \
-    && ! html_has "$board4" 'data-raise-after-open-four' \
-    && ! html_has "$board4" 'data-open-after-raise-four' \
-    && ! html_has "$board4" 'data-raise-after-open-five' \
-    && ! html_has "$board4" 'data-open-after-raise-five' \
-    && ! html_has "$board4" 'data-raise-after-open-six' \
+    && html_has "$board4" 'data-first-click="open"' \
+    && html_has "$board4" 'data-prize-first="true"' \
+    && ! html_has "$board4" 'data-later-deck="true"' \
+    && ! html_has "$board4" 'data-open-later="true"' \
     && ! html_has "$board4" 'Unranked — no paid bid yet'; then
     record "4-first-bid-5" "PASS" "fixture charged \$5; public rank #1 · \$5"
   else
@@ -459,35 +441,13 @@ else
     && html_has "$board6" 'data-later-deck="true"' \
     && html_has "$board6" 'data-open-later="true"' \
     && html_has "$board6" 'data-later-seat="true"' \
-    && html_has "$board6" 'data-later-seats="true"' \
-    && html_has "$board6" 'listings-later' \
-    && html_has "$board6" 'data-open-one-first="true"' \
-    && html_has "$board6" 'data-open-one="true"' \
+    && html_has "$board6" 'data-stage-card="lead-cue"' \
+    && html_has "$board6" 'data-stage-card="later-cue"' \
+    && html_has "$board6" 'data-open-first="true"' \
     && html_has "$board6" 'data-first-click="open"' \
-    && html_has "$board6" 'data-raise-one-first="true"' \
-    && html_has "$board6" 'data-raise-one="true"' \
-    && html_has "$board6" 'data-open-after-raise-one-first="true"' \
-    && html_has "$board6" 'data-open-after-raise-one="true"' \
-    && html_has "$board6" 'data-raise-after-open-two-first="true"' \
-    && html_has "$board6" 'data-raise-after-open-two="true"' \
-    && html_has "$board6" 'data-open-after-raise-two-first="true"' \
-    && html_has "$board6" 'data-open-after-raise-two="true"' \
-    && html_has "$board6" 'data-raise-after-open-three-first="true"' \
-    && html_has "$board6" 'data-raise-after-open-three="true"' \
-    && html_has "$board6" 'data-open-after-raise-three-first="true"' \
-    && html_has "$board6" 'data-open-after-raise-three="true"' \
-    && html_has "$board6" 'data-raise-after-open-four-first="true"' \
-    && html_has "$board6" 'data-raise-after-open-four="true"' \
-    && html_has "$board6" 'data-open-after-raise-four-first="true"' \
-    && html_has "$board6" 'data-open-after-raise-four="true"' \
-    && html_has "$board6" 'data-raise-after-open-five-first="true"' \
-    && html_has "$board6" 'data-raise-after-open-five="true"' \
-    && html_has "$board6" 'data-open-after-raise-five-first="true"' \
-    && html_has "$board6" 'data-open-after-raise-five="true"' \
-    && html_has "$board6" 'data-raise-after-open-six-first="true"' \
-    && html_has "$board6" 'data-raise-after-open-six="true"' \
-    && html_has "$board6" 'Then Outbid' \
-    && html_has "$board6" 'Open deck'; then
+    && html_has "$board6" 'Open deck' \
+    && [[ "$(grep -o 'data-open-deck="true"' "$board6" | wc -l | tr -d ' ')" == "1" ]] \
+    && [[ "$(grep -o 'data-open-later="true"' "$board6" | wc -l | tr -d ' ')" -ge 1 ]]; then
     record "6-tie-older-wins" "PASS" "both \$20; Alpha paid first stays #1"
   else
     record "6-tie-older-wins" "FAIL" "tie rank HTTP a=${a_code} b=${b_code} alpha=${alpha_rank}/${alpha_bid} beta=${beta_rank}/${beta_bid}"
@@ -628,6 +588,10 @@ else
   fi
   week_old_board="${WORKDIR}/week-old.html"
   http_get "$week_old_base" "/" "$week_old_board" >/dev/null || true
+  week_db_ready=0
+  if [[ -f "$week_db" ]]; then
+    week_db_ready=1
+  fi
   if [[ -n "${WEEK_PID}" ]] && kill -0 "${WEEK_PID}" 2>/dev/null; then
     kill "${WEEK_PID}" 2>/dev/null || true
     wait "${WEEK_PID}" 2>/dev/null || true
@@ -644,7 +608,8 @@ else
   else
     week_monday_board="${WORKDIR}/week-monday.html"
     week_monday_code="$(http_get "$week_monday_base" "/" "$week_monday_board" || true)"
-    if [[ "$week_list_code" == "200" && "$week_bid_code" == "200" ]] \
+    if [[ "$week_db_ready" == "1" ]] \
+      && [[ "$week_list_code" == "200" && "$week_bid_code" == "200" ]] \
       && html_has "$week_old_board" '#1 · \$5' \
       && [[ "$week_monday_code" == "200" ]] \
       && html_has "$week_monday_board" 'Last Week Winner' \
@@ -687,15 +652,15 @@ else
   WEEK_PID=""
 fi
 
-# --- SPEC 13: Polar fixture — rank updates with no live Polar ---
+# --- SPEC 13: Waffo fixture — rank updates with no live Waffo ---
 fix_list="${WORKDIR}/fix-list.json"
 fix_list_hdrs="${WORKDIR}/fix-list.hdrs"
 fix_list_code="$(http_post_json "$BASE" "/listings" \
-  "{\"company\":\"Fixture Rank\",\"oneLiner\":\"Rank moves with no live Polar\",\"url\":\"https://fixture-${STAMP}.example\"}" \
+  "{\"company\":\"Fixture Rank\",\"oneLiner\":\"Rank moves with no live Waffo\",\"url\":\"https://fixture-${STAMP}.example\"}" \
   "$fix_list" "$fix_list_hdrs" || true)"
 fix_id="$(json_field "$fix_list" "id" || true)"
 if [[ "$fix_list_code" != "200" || -z "$fix_id" ]]; then
-  record "13-polar-fixture" "FAIL" "could not create fixture listing"
+  record "13-waffo-fixture" "FAIL" "could not create fixture listing"
 else
   fix_bid="${WORKDIR}/fix-bid.json"
   fix_bid_hdrs="${WORKDIR}/fix-bid.hdrs"
@@ -707,10 +672,10 @@ else
   if [[ "$fix_code" == "200" && "$fix_charge" == "5" && "$board13_code" == "200" ]] \
     && html_has "$board13" 'Fixture Rank' \
     && html_has "$board13" 'data-bid="5"' \
-    && ! grep -Eiq 'polar\.(sh|in)|api\.polar' "$fix_bid" "$board13"; then
-    record "13-polar-fixture" "PASS" "POLAR_LIVE unset; fixture rank # updates with no Polar network"
+    && ! grep -Eiq 'waffo\.(sh|in)|api\.waffo' "$fix_bid" "$board13"; then
+    record "13-waffo-fixture" "PASS" "explicit WAFFO_MODE=fixture; rank # updates with no Waffo network"
   else
-    record "13-polar-fixture" "FAIL" "fixture bid HTTP ${fix_code} charge=${fix_charge}"
+    record "13-waffo-fixture" "FAIL" "fixture bid HTTP ${fix_code} charge=${fix_charge}"
   fi
 fi
 
@@ -721,131 +686,22 @@ rules_body="${WORKDIR}/rules.html"
 rules_code="$(http_get "$BASE" "/rules" "$rules_body" || true)"
 if [[ "$about_code" == "200" && "$rules_code" == "200" ]] \
   && html_has "$about_body" 'cannot buy the show' \
-  && html_has "$about_body" 'weekly reset' \
-  && html_has "$about_body" 'Monday 00:00 UTC' \
-  && html_has "$about_body" 'rolling last 7 days' \
+  && html_has "$about_body" 'seven days' \
+  && html_has "$about_body" 'instead of resetting for everyone at Monday midnight' \
   && html_has "$rules_body" 'cannot buy the show' \
-  && html_has "$rules_body" 'weekly reset' \
-  && html_has "$rules_body" 'Monday 00:00 UTC' \
   && html_has "$rules_body" 'rolling last 7 days' \
-  && html_has "$rules_body" 'cannot_buy_show'; then
-  record "14-about-rules" "PASS" "GET /about and /rules 200; cannot-buy-the-show + rolling last-7-days weekly reset"
+  && html_has "$rules_body" 'does not reset for everyone at Monday midnight' \
+  && html_has "$rules_body" 'Unpaid checkout sessions do not change rank'; then
+  record "14-about-rules" "PASS" "GET /about and /rules 200; cannot-buy-the-show + rolling paid-placement window"
 else
   record "14-about-rules" "FAIL" "about HTTP ${about_code} rules HTTP ${rules_code}"
 fi
 
-# --- Live Polar checkout (not a SPEC numbered row; env-gated) ---
-echo "== polar live-checkout =="
-is_sandbox_checkout_url() {
-  local value="$1"
-  [[ "$value" == https://sandbox.polar.sh/* ]]
-}
-
-if [[ "${OP_POLAR_LIVE}" == "1" ]]; then
-  missing=""
-  if [[ -z "${OP_POLAR_ACCESS_TOKEN}" ]]; then
-    missing="POLAR_ACCESS_TOKEN"
-  elif [[ -z "${OP_POLAR_WEBHOOK_SECRET}" ]]; then
-    missing="POLAR_WEBHOOK_SECRET"
-  elif [[ -z "${OP_POLAR_PRODUCT_ID}" ]]; then
-    missing="POLAR_PRODUCT_ID"
-  fi
-  if [[ -n "$missing" ]]; then
-    echo "BLOCKED-SECRET: ${missing}"
-    record "live-checkout" "BLOCKED-SECRET" "${missing}"
-  else
-    live_port="$(pick_port)"
-    live_db="${WORKDIR}/polar-live.sqlite"
-    live_log="${WORKDIR}/polar-live.log"
-    live_base="http://127.0.0.1:${live_port}"
-    (
-      cd "$root"
-      unset POLAR_FIXTURE_ONLY || true
-      export POLAR_LIVE=1
-      export POLAR_ACCESS_TOKEN="${OP_POLAR_ACCESS_TOKEN}"
-      export POLAR_WEBHOOK_SECRET="${OP_POLAR_WEBHOOK_SECRET}"
-      export POLAR_PRODUCT_ID="${OP_POLAR_PRODUCT_ID}"
-      if [[ -n "${OP_POLAR_API_BASE}" ]]; then
-        export POLAR_API_BASE="${OP_POLAR_API_BASE}"
-      fi
-      export PORT="${live_port}"
-      export DATABASE_PATH="${live_db}"
-      export PUBLIC_BASE_URL="${live_base}"
-      exec node --import tsx src/server.ts
-    ) >"${live_log}" 2>&1 &
-    LIVE_PID=$!
-    if ! wait_health "$live_base"; then
-      if grep -q 'BLOCKED-SECRET: POLAR_ACCESS_TOKEN' "${live_log}"; then
-        echo "BLOCKED-SECRET: POLAR_ACCESS_TOKEN"
-        record "live-checkout" "BLOCKED-SECRET" "POLAR_ACCESS_TOKEN"
-      elif grep -q 'BLOCKED-SECRET: POLAR_WEBHOOK_SECRET' "${live_log}"; then
-        echo "BLOCKED-SECRET: POLAR_WEBHOOK_SECRET"
-        record "live-checkout" "BLOCKED-SECRET" "POLAR_WEBHOOK_SECRET"
-      elif grep -q 'BLOCKED-SECRET: POLAR_PRODUCT_ID' "${live_log}"; then
-        echo "BLOCKED-SECRET: POLAR_PRODUCT_ID"
-        record "live-checkout" "BLOCKED-SECRET" "POLAR_PRODUCT_ID"
-      else
-        record "live-checkout" "FAIL" "live Polar process did not become healthy"
-      fi
-    else
-      live_list="${WORKDIR}/live-list.json"
-      live_list_hdrs="${WORKDIR}/live-list.hdrs"
-      live_list_code="$(http_post_json "$live_base" "/listings" \
-        "{\"company\":\"Live Checkout\",\"oneLiner\":\"Must not rank until Polar pays\",\"url\":\"https://live-${STAMP}.example\"}" \
-        "$live_list" "$live_list_hdrs" || true)"
-      live_id="$(json_field "$live_list" "id" || true)"
-      live_bid="${WORKDIR}/live-bid.json"
-      live_bid_hdrs="${WORKDIR}/live-bid.hdrs"
-      live_bid_code="000"
-      live_bid_url=""
-      live_bid_loc=""
-      live_bid_err=""
-      if [[ -n "$live_id" ]]; then
-        live_bid_code="$(http_post_json "$live_base" "/listings/${live_id}/bids" \
-          '{"amountUsd":5}' "$live_bid" "$live_bid_hdrs" || true)"
-        live_bid_url="$(json_field "$live_bid" "url" || true)"
-        live_bid_loc="$(header_value "$live_bid_hdrs" "location" || true)"
-        live_bid_err="$(json_field "$live_bid" "error" || true)"
-      fi
-      live_board="${WORKDIR}/live-board.html"
-      http_get "$live_base" "/" "$live_board" >/dev/null || true
-      if [[ "$live_bid_url" == /checkout/complete* ]] || grep -Eiq 'fix_' "$live_bid" 2>/dev/null; then
-        record "live-checkout" "FAIL" "live Polar returned a fixture listing, not sandbox.polar.sh"
-      elif { [[ "$live_bid_code" == "200" ]] || [[ "$live_bid_code" =~ ^30[12378]$ ]]; } \
-        && { is_sandbox_checkout_url "$live_bid_url" || is_sandbox_checkout_url "$live_bid_loc"; }; then
-        if html_has "$live_board" '#1 · \$5' || html_has "$live_board" 'data-bid="5"'; then
-          record "live-checkout" "FAIL" "unpaid live Polar session appeared as ranked"
-        else
-          record "live-checkout" "PASS" "live Polar sandbox Checkout URL; unpaid session not ranked"
-        fi
-      elif [[ "$live_bid_code" == "503" && "$live_bid_err" == "polar_unavailable" ]]; then
-        record "live-checkout" "PASS-ERROR" "POLAR_LIVE=1 secrets present; Polar sandbox checkout failed closed"
-      elif [[ "$live_list_code" == "200" ]]; then
-        record "live-checkout" "FAIL" "live bid HTTP ${live_bid_code} did not return sandbox.polar.sh"
-      else
-        record "live-checkout" "FAIL" "live listing HTTP ${live_list_code} bid HTTP ${live_bid_code}"
-      fi
-    fi
-    if [[ -n "${LIVE_PID}" ]] && kill -0 "${LIVE_PID}" 2>/dev/null; then
-      kill "${LIVE_PID}" 2>/dev/null || true
-      wait "${LIVE_PID}" 2>/dev/null || true
-    fi
-    LIVE_PID=""
-  fi
-else
-  if [[ -z "${OP_POLAR_ACCESS_TOKEN}" ]]; then
-    echo "BLOCKED-SECRET: POLAR_ACCESS_TOKEN"
-    record "live-checkout" "BLOCKED-SECRET" "POLAR_ACCESS_TOKEN"
-  elif [[ -z "${OP_POLAR_WEBHOOK_SECRET}" ]]; then
-    echo "BLOCKED-SECRET: POLAR_WEBHOOK_SECRET"
-    record "live-checkout" "BLOCKED-SECRET" "POLAR_WEBHOOK_SECRET"
-  elif [[ -z "${OP_POLAR_PRODUCT_ID}" ]]; then
-    echo "BLOCKED-SECRET: POLAR_PRODUCT_ID"
-    record "live-checkout" "BLOCKED-SECRET" "POLAR_PRODUCT_ID"
-  else
-    record "live-checkout" "PASS-ERROR" "POLAR_LIVE unset; secrets present but live Polar not invoked"
-  fi
-fi
+# --- Live Waffo checkout boundary (not a SPEC numbered row) ---
+echo "== waffo live-checkout boundary =="
+# This script is fixture-only. Deployment and post-deploy Waffo checkout
+# verification require a separately authorized operation.
+record "live-checkout" "PASS-ERROR" "fixture mode; no Waffo provider request invoked"
 
 echo
 echo "== summary =="

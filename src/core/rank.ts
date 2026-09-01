@@ -57,6 +57,17 @@ type ListingRow = {
 
 type RankJoinRow = ListingRow & BidRow;
 
+const WHOLE_DOLLAR_ERROR = "bid must be a whole-dollar USD amount";
+const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER);
+
+function isSafeWholeDollar(value: number): boolean {
+  return Number.isSafeInteger(value) && Number.isSafeInteger(value * 100);
+}
+
+function invalidBid(): never {
+  throw new BidError("invalid_bid", WHOLE_DOLLAR_ERROR);
+}
+
 function mapListing(row: ListingRow): Listing {
   return {
     id: row.id,
@@ -78,13 +89,21 @@ function mapBid(row: BidRow): Bid {
 }
 
 export function parseBidUsd(value: unknown): number {
-  if (typeof value === "number" && Number.isInteger(value)) {
+  if (typeof value === "number" && isSafeWholeDollar(value)) {
     return value;
   }
   if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
-    return Number.parseInt(value.trim(), 10);
+    try {
+      const parsed = BigInt(value.trim());
+      const cents = parsed * 100n;
+      if (cents >= -MAX_SAFE_CENTS && cents <= MAX_SAFE_CENTS) {
+        return Number(parsed);
+      }
+    } catch {
+      // Fall through to the stable invalid-bid error below.
+    }
   }
-  throw new BidError("invalid_bid", "bid must be a whole-dollar USD amount");
+  return invalidBid();
 }
 
 export function rankKey(
@@ -135,8 +154,8 @@ export function rankListings(
 
 /** Same listing still inside last 7 days raises. A new listing always pays a full bid. weekId is not the raise key. */
 export function quoteBid(current: Bid | undefined, nextUsd: number): BidQuote {
-  if (!Number.isInteger(nextUsd)) {
-    throw new BidError("invalid_bid", "bid must be a whole-dollar USD amount");
+  if (!isSafeWholeDollar(nextUsd)) {
+    return invalidBid();
   }
   if (nextUsd < MIN_BID_USD) {
     throw new BidError("min_bid", `first bid must be at least $${MIN_BID_USD}`);
@@ -225,7 +244,11 @@ export function applyPaidBid(
 ): Bid {
   const current = getBidInRollingWeek(db, listingId, now);
   const quote = quoteBid(current, nextUsd);
+  const amountCents = quote.nextUsd * 100;
   const persistWeekId = current?.weekId ?? weekId;
+  // A raise changes the total bid and charges only the difference. Keep the
+  // first successful payment timestamp so equal-bid ordering stays stable.
+  const persistPaidAt = current?.paidAt ?? paidAt;
   db.prepare(
     `INSERT INTO bids (listing_id, week_id, amount_cents, paid_at)
      VALUES (@listingId, @weekId, @amountCents, @paidAt)
@@ -235,14 +258,14 @@ export function applyPaidBid(
   ).run({
     listingId,
     weekId: persistWeekId,
-    amountCents: quote.nextUsd * 100,
-    paidAt,
+    amountCents,
+    paidAt: persistPaidAt,
   });
   return {
     listingId,
     weekId: persistWeekId,
     amountUsd: quote.nextUsd,
-    paidAt,
+    paidAt: persistPaidAt,
   };
 }
 
