@@ -391,6 +391,7 @@ function assertPitchHouseCss(html: string, occupied: boolean): void {
   assert.match(html, /\.hero-title-copy \{[\s\S]*white-space: nowrap;/);
   assert.match(html, /\.claim \{[\s\S]*flex-wrap: nowrap;[\s\S]*white-space: nowrap;/);
   assert.match(html, /\.bid-row\[data-primary-form-row\] > \.field input,[\s\S]*height: 2\.75rem;[\s\S]*min-height: 2\.75rem;/);
+  assert.match(html, /\.step \{ width: 2\.75rem; height: 2\.75rem; flex: 0 0 2\.75rem; \}/);
   assert.match(html, /@media \(max-width: 640px\)/);
   assert.match(html, /\.bid-row \{[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(html, /<header class="site-header" data-slot="site-header">/);
@@ -411,10 +412,6 @@ function assertPitchHouseCss(html: string, occupied: boolean): void {
     );
     assert.match(html, /data-stage-section="on-stage"/);
     assert.match(html, /data-stage-card="lead-cue"/);
-    assert.match(
-      html,
-      /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.outbid \{[\s\S]*height: 2\.75rem;[\s\S]*min-height: 2\.75rem;/,
-    );
   } else {
     assert.doesNotMatch(boardMarkup(html), /data-stage-section="on-stage"|data-stage-card="lead-cue"/);
   }

@@ -2016,7 +2016,7 @@ html[data-theme="dark"] {
   .hero-title-copy { white-space: nowrap; }
   .claim { gap: 0.45rem; }
   .bid-field { font-size: 2rem; }
-  .step { width: 2.25rem; height: 2.25rem; }
+  .step { width: 2.75rem; height: 2.75rem; flex: 0 0 2.75rem; }
   .bid-form { margin-top: 1.1rem; }
   .bid-row { grid-template-columns: minmax(0, 1fr); gap: 0.55rem; }
   .field input, .function-choice, .outbid { min-height: 2.75rem; height: 2.75rem; }
@@ -2271,7 +2271,7 @@ h1.headline {
   border-top: 1px dashed rgb(232 177 90 / 0.22);
 }
 .house-empty[data-empty-house] .later-write[data-later-write] .outbid {
-  height: 2.75rem;
+  height: 2.4rem;
   font-weight: 600;
   margin-top: 0.15rem;
 }
@@ -2622,8 +2622,7 @@ export const OCCUPIED_CSS = /* css */ `
   font-size: 1.45rem;
 }
 .house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .outbid {
-  height: 2.75rem;
-  min-height: 2.75rem;
+  height: 2.4rem;
   font-weight: 600;
 }
 /* Occupied claim-note sits after Outbid so dashed $amount and Outbid stay adjacent. */
@@ -2637,8 +2636,7 @@ export const OCCUPIED_CSS = /* css */ `
 /* Occupied Outbid sits beside ± so dashed $amount and Outbid are one cluster. */
 .house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .claim .outbid[data-beside-plus] {
   flex: 0 0 auto;
-  height: 2.75rem;
-  min-height: 2.75rem;
+  height: 2.4rem;
   font-weight: 700;
   padding: 0 1.15rem;
 }
@@ -2652,8 +2650,7 @@ export const OCCUPIED_CSS = /* css */ `
   min-width: 8rem;
 }
 .house-occupied[data-occupied-house] .claim-after-slot[data-claim-after-slot] .bid-row[data-after-action] .field input {
-  height: 2.75rem;
-  min-height: 2.75rem;
+  height: 2.4rem;
   font-size: 0.88rem;
 }
 /* Occupied one-liner recedes with company/url so ± Outbid stay the action cluster. */
