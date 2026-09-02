@@ -310,6 +310,8 @@ test("HTML checkout rejects obfuscated schemes and path-only URLs before checkou
     "///example.com",
     "//\\evil.com",
     "//evil.com\\path",
+    "https://[fec0::1]/path",
+    "https://[::ffff:192.168.1.1]/path",
     "//hartevo.com\n/path",
   ];
   for (const [index, url] of invalidUrls.entries()) {

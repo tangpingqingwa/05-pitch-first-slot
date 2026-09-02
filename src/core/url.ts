@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 /** Canonical https URL: infer a scheme for bare pitch domains, strip tracking, reject chat/NSFW. */
 
 export class UrlError extends Error {
@@ -149,6 +151,87 @@ function looksLikeProtocolRelativeAuthority(raw: string): boolean {
   );
 }
 
+function isPrivateIpv4(host: string): boolean {
+  const octets = host.split(".").map(Number);
+  if (
+    octets.length !== 4 ||
+    octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)
+  ) {
+    return true;
+  }
+  const [first, second] = octets;
+  return (
+    first === 0 ||
+    first === 10 ||
+    first === 127 ||
+    (first === 100 && second >= 64 && second <= 127) ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 0) ||
+    (first === 192 && second === 168) ||
+    (first === 198 && (second === 18 || second === 19)) ||
+    (first === 198 && second === 51) ||
+    (first === 203 && second === 0) ||
+    first >= 224
+  );
+}
+
+function ipv4FromMappedIpv6(host: string): string | undefined {
+  if (!host.startsWith("::ffff:")) {
+    return undefined;
+  }
+  const suffix = host.slice("::ffff:".length);
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(suffix)) {
+    return suffix;
+  }
+  const pieces = suffix.split(":");
+  if (pieces.length !== 2 || pieces.some((piece) => !/^[0-9a-f]{1,4}$/.test(piece))) {
+    return undefined;
+  }
+  const high = Number.parseInt(pieces[0]!, 16);
+  const low = Number.parseInt(pieces[1]!, 16);
+  return [high >> 8, high & 0xff, low >> 8, low & 0xff].join(".");
+}
+
+function isPrivateHost(hostname: string): boolean {
+  const host = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.+$/, "");
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host === "local" ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal")
+  ) {
+    return true;
+  }
+
+  const version = isIP(host);
+  if (version === 4) {
+    return isPrivateIpv4(host);
+  }
+  if (version !== 6) {
+    return false;
+  }
+
+  const mappedIpv4 = ipv4FromMappedIpv6(host);
+  if (mappedIpv4 !== undefined) {
+    return isPrivateIpv4(mappedIpv4);
+  }
+
+  const firstHextet = Number.parseInt(host.split(":")[0] || "0", 16);
+  return (
+    host === "::" ||
+    host === "::1" ||
+    (firstHextet & 0xfe00) === 0xfc00 ||
+    (firstHextet & 0xffc0) === 0xfe80 ||
+    (firstHextet & 0xffc0) === 0xfec0 ||
+    (firstHextet & 0xff00) === 0xff00
+  );
+}
+
 /**
  * Infer HTTPS only for a validated bare authority or an exact protocol-relative
  * authority. Explicit schemes are left intact for the HTTPS-only check below.
@@ -214,6 +297,9 @@ export function canonicalizeUrl(raw: string): string {
 
   const host = hostnameOf(parsed);
   if (!host) {
+    throw new UrlError("invalid_url", "url must be an https URL");
+  }
+  if (isPrivateHost(host)) {
     throw new UrlError("invalid_url", "url must be an https URL");
   }
 

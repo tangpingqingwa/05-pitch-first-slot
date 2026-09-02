@@ -434,6 +434,8 @@ if [[ -f package.json ]]; then
     || fail "checkout tests must cover unsafe protocol-relative authority input"
   grep -q 'repeated trailing dots cannot bypass chat or NSFW host policy' tests/url.test.ts \
     || fail "URL tests must close repeated trailing-dot policy bypasses"
+  grep -q 'private and special-use IP literals fail closed' tests/url.test.ts \
+    || fail "URL tests must reject private and special-use IP literals"
   grep -q 'The room is empty' src/http/pages.ts \
     || fail "empty week must be an honest room"
   grep -q "This week's first slot is still open" src/http/pages.ts \

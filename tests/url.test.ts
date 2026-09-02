@@ -192,3 +192,31 @@ test("repeated trailing dots cannot bypass chat or NSFW host policy", () => {
     });
   }
 });
+
+test("private and special-use IP literals fail closed", () => {
+  for (const raw of [
+    "https://10.0.0.1/path",
+    "https://169.254.1.1/path",
+    "https://127.0.0.1/path",
+    "https://[::]/path",
+    "https://[::1]/path",
+    "https://[fc00::1]/path",
+    "https://[fe80::1]/path",
+    "https://[fec0::1]/path",
+    "https://[ff02::1]/path",
+    "https://[::ffff:10.0.0.1]/path",
+    "https://[::ffff:172.16.0.1]/path",
+    "https://[::ffff:192.168.1.1]/path",
+    "https://[::ffff:127.0.0.1]/path",
+  ]) {
+    assert.throws(() => canonicalizeUrl(raw), (err: unknown) => {
+      assert.ok(err instanceof UrlError);
+      assert.equal(err.code, "invalid_url");
+      return true;
+    });
+  }
+  assert.equal(
+    canonicalizeUrl("https://[2001:4860:4860::8888]/path"),
+    "https://[2001:4860:4860::8888]/path",
+  );
+});
