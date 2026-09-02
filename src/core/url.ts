@@ -65,7 +65,7 @@ function hostnameOf(parsed: URL): string {
   return parsed.hostname
     .toLowerCase()
     .replace(/^\[|\]$/g, "")
-    .replace(/\.$/, "");
+    .replace(/\.+$/, "");
 }
 
 const HOST_LABEL_RE = /^[\p{L}\p{N}](?:[\p{L}\p{N}_-]{0,61}[\p{L}\p{N}_])?$/u;
@@ -173,7 +173,7 @@ export function isChatUrl(parsed: URL): boolean {
 }
 
 export function isNsfwHost(host: string): boolean {
-  const lowered = host.toLowerCase().replace(/\.$/, "");
+  const lowered = host.toLowerCase().replace(/\.+$/, "");
   return NSFW_HOSTS.some((listed) => hostMatches(lowered, listed));
 }
 

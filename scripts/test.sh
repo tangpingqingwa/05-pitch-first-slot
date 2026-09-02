@@ -428,6 +428,8 @@ if [[ -f package.json ]]; then
     || fail "URL tests must reject obfuscated schemes and path-only input"
   grep -q 'HTML checkout rejects obfuscated schemes and path-only URLs before checkout' tests/listings.test.ts \
     || fail "checkout tests must reject obfuscated URL input before checkout"
+  grep -q 'repeated trailing dots cannot bypass chat or NSFW host policy' tests/url.test.ts \
+    || fail "URL tests must close repeated trailing-dot policy bypasses"
   grep -q 'The room is empty' src/http/pages.ts \
     || fail "empty week must be an honest room"
   grep -q "This week's first slot is still open" src/http/pages.ts \

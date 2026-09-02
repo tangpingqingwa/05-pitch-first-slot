@@ -161,3 +161,16 @@ test("operator NSFW hosts are 400 nsfw", () => {
     },
   );
 });
+
+test("repeated trailing dots cannot bypass chat or NSFW host policy", () => {
+  for (const [raw, code] of [
+    ["//t.me..", "no_chat"],
+    ["//pornhub.com...", "nsfw"],
+  ] as const) {
+    assert.throws(() => canonicalizeUrl(raw), (err: unknown) => {
+      assert.ok(err instanceof UrlError);
+      assert.equal(err.code, code);
+      return true;
+    });
+  }
+});
