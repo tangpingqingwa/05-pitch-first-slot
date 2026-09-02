@@ -387,6 +387,10 @@ function assertPitchHouseCss(html: string, occupied: boolean): void {
   assert.match(html, /h1\.headline \{[\s\S]*font-family: var\(--serif\)/);
   assert.match(html, /\.bid-field \{[\s\S]*text-decoration: none/);
   assert.match(html, /\.outbid \{[\s\S]*background: var\(--spot\)/);
+  assert.match(html, /\.hero-line \{[\s\S]*display: flex;[\s\S]*align-items: center;[\s\S]*justify-content: center;/);
+  assert.match(html, /\.hero-title-copy \{[\s\S]*white-space: nowrap;/);
+  assert.match(html, /\.claim \{[\s\S]*flex-wrap: nowrap;[\s\S]*white-space: nowrap;/);
+  assert.match(html, /\.bid-row\[data-primary-form-row\] > \.field input,[\s\S]*height: 2\.75rem;[\s\S]*min-height: 2\.75rem;/);
   assert.match(html, /@media \(max-width: 640px\)/);
   assert.match(html, /\.bid-row \{[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(html, /<header class="site-header" data-slot="site-header">/);
@@ -447,7 +451,9 @@ test("unpaid and empty states stay honest", async () => {
   assert.match(empty, /data-find-empty="true"/);
   assert.doesNotMatch(empty, /data-find-result="true"/);
   assert.match(empty, /data-claim-submit="true" disabled/);
-  assert.match(empty, /class="outbid">Outbid<\/button>/);
+  assert.match(empty, /class="outbid">Claim rank<\/button>/);
+  assert.match(empty, /aria-label="Claim rank"/);
+  assert.doesNotMatch(empty, /field\.id === "url"/);
   assert.match(empty, /class="claim-note" data-empty-room/);
   assert.match(empty, /This week's first slot is still open\. A confirmed bid takes it\./);
   assert.match(empty, /class="bid-form claim-form later-write" data-slot="claim-form" data-later-write="true"/);
@@ -463,13 +469,15 @@ test("unpaid and empty states stay honest", async () => {
   assert.match(empty, /data-slot="claim-button" data-claim-submit="true"/);
   assert.match(empty, /<label class="sr-only" for="company">Company<\/label><input id="company" name="company"/);
   assert.match(empty, /<label class="sr-only" for="url">Deck or site<\/label><input id="url" name="url"/);
+  assert.match(empty, /id="url" name="url"[^>]*type="text"[^>]*inputmode="url"/);
   assert.match(empty, /<label class="sr-only" for="oneLiner">One-line pitch<\/label><input id="oneLiner" name="oneLiner"/);
   assert.match(empty, /id="company" name="company" form="bid-form" data-required-field="true"/);
   assert.match(empty, /id="oneLiner" name="oneLiner" form="bid-form" data-required-field="true"/);
   assert.doesNotMatch(empty, /<a class="outbid"/);
-  assert.equal(count(empty, /class="outbid">Outbid<\/button>/g), 1);
+  assert.equal(count(empty, /class="outbid">Claim rank<\/button>/g), 1);
+  assert.doesNotMatch(empty, /class="outbid">Outbid<\/button>/);
   const emptyUrlAt = empty.indexOf('name="url"');
-  const emptySubmitAt = empty.indexOf('class="outbid">Outbid</button>');
+  const emptySubmitAt = empty.indexOf('class="outbid">Claim rank</button>');
   const emptyCompanyAt = empty.indexOf('name="company"');
   const emptyOneLinerAt = empty.indexOf('name="oneLiner"');
   assert.ok(emptyUrlAt > -1 && emptySubmitAt > emptyUrlAt);
@@ -525,7 +533,7 @@ test("rendered pages never invent traction or social proof", async () => {
   assertNoInventedTractionOrSocialProof(rules.body);
 });
 
-test("product contract: one Open deck per paid card and one #1 Outbid entry", async () => {
+test("product contract: one Open deck per paid card and one #1 Claim rank entry", async () => {
   const { app } = await makeApp();
   const leader = await createListing(app, {
     company: "Stage Co",
@@ -619,7 +627,8 @@ test("product contract: one Open deck per paid card and one #1 Outbid entry", as
   assert.equal(count(markup, /data-first-click="open"/g), 1);
   assert.equal(count(markup, /data-open-deck="true"/g), 1);
   assert.equal(count(markup, /data-open-later="true"/g), 1);
-  assert.equal(count(html, /class="outbid">Outbid<\/button>/g), 1);
+  assert.equal(count(html, /class="outbid">Claim rank<\/button>/g), 1);
+  assert.doesNotMatch(html, /class="outbid">Outbid<\/button>/);
   assert.match(html, /data-bid-step="-1"/);
   assert.match(html, /data-bid-step="1"/);
   assert.match(html, /class="bid-field"/);
@@ -629,7 +638,7 @@ test("product contract: one Open deck per paid card and one #1 Outbid entry", as
   const minusAt = markup.indexOf('data-bid-step="-1"');
   const amountAt = markup.indexOf('class="bid-field"');
   const plusAt = markup.indexOf('data-bid-step="1"');
-  const occupiedOutbidAt = markup.indexOf('class="outbid">Outbid<\/button>');
+  const occupiedOutbidAt = markup.indexOf('class="outbid">Claim rank<\/button>');
   const afterActionAt = markup.indexOf('data-after-action="true"');
   assert.ok(minusAt > -1 && amountAt > minusAt && plusAt > amountAt);
   assert.ok(occupiedOutbidAt > plusAt && occupiedOutbidAt > afterActionAt);
@@ -740,7 +749,7 @@ test("period tabs navigate to a truthful paid archive", async () => {
   assert.doesNotMatch(open.body, /data-archive-board="true"/);
 });
 
-test("HTML Outbid form creates a paid listing and preserves difference raise", async () => {
+test("HTML Claim rank form creates a paid listing and preserves difference raise", async () => {
   const { app, db } = await makeApp();
   const posted = await app.inject({
     method: "POST",

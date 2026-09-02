@@ -1,4 +1,4 @@
-/** Canonical https URL: strip tracking, reject chat/NSFW. */
+/** Canonical https URL: infer a scheme for bare pitch domains, strip tracking, reject chat/NSFW. */
 
 export class UrlError extends Error {
   readonly code: "invalid_url" | "no_chat" | "nsfw";
@@ -62,7 +62,35 @@ function hostMatches(host: string, listed: string): boolean {
 }
 
 function hostnameOf(parsed: URL): string {
-  return parsed.hostname.toLowerCase().replace(/\.$/, "");
+  return parsed.hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.$/, "");
+}
+
+/**
+ * Treat a host entered without a scheme as a website URL while preserving
+ * explicit schemes for the normal HTTPS-only validation below. A port is
+ * allowed in a bare host (`example.com:8443`) and must not be mistaken for a
+ * custom URL scheme.
+ */
+function withHttpsScheme(raw: string): string {
+  if (raw.startsWith("//")) {
+    return `https:${raw}`;
+  }
+  // A slash-delimited scheme typo (for example `https//example.com`) is not
+  // a bare host and must remain invalid rather than becoming an HTTPS path.
+  if (/^[a-z][a-z\d+.-]*\/\//i.test(raw)) {
+    return raw;
+  }
+
+  const explicitScheme = /^([a-z][a-z\d+.-]*):/i.exec(raw)?.[1].toLowerCase();
+  const looksLikeBareHostWithPort =
+    /^(?:[a-z0-9](?:[a-z0-9-]*\.)+[a-z]{2,}|localhost|\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-f:]+\]):\d+(?:[/?#]|$)/i.test(raw);
+  if (explicitScheme === undefined || (looksLikeBareHostWithPort && explicitScheme !== "http" && explicitScheme !== "https")) {
+    return `https://${raw}`;
+  }
+  return raw;
 }
 
 export function isTrackingQueryKey(key: string): boolean {
@@ -88,8 +116,8 @@ export function isNsfwHost(host: string): boolean {
 }
 
 /**
- * Require https, lowercase host, drop fragment and tracking query keys.
- * Empty `?` is dropped. Chat and NSFW hosts are 400.
+ * Require HTTPS after normalizing bare hosts, lowercase host, drop fragment
+ * and tracking query keys. Empty `?` is dropped. Chat and NSFW hosts are 400.
  */
 export function canonicalizeUrl(raw: string): string {
   const trimmed = raw.trim();
@@ -99,7 +127,7 @@ export function canonicalizeUrl(raw: string): string {
 
   let parsed: URL;
   try {
-    parsed = new URL(trimmed);
+    parsed = new URL(withHttpsScheme(trimmed));
   } catch {
     throw new UrlError("invalid_url", "url must be an https URL");
   }

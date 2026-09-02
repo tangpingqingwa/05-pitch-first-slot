@@ -784,17 +784,17 @@ function claimChrome(
     emptyRoom === true
       ? `<form id="bid-form" class="bid-form claim-form later-write" data-slot="claim-form" data-later-write="true" data-stage-form="opening-cue" method="post" action="/listings">
     <div class="bid-row" data-primary-form-row="true">
-      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" data-slot="url-input" data-required-field="true" type="url" required placeholder="https://deck-or-site" autocomplete="url"/></div>
+      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" data-slot="url-input" data-required-field="true" type="text" inputmode="url" required placeholder="deck-or-site.example" autocomplete="url"/></div>
       <div class="function-choice" data-slot="category-control" data-function-choice="opening-slot" aria-label="Pitch function"><span>Opening slot</span><span class="function-choice-detail">3 minutes</span></div>
-      <button type="submit" data-slot="claim-button" data-claim-submit="true" disabled aria-disabled="true" aria-label="Claim rank" data-action="outbid" class="outbid">Outbid</button>
+      <button type="submit" data-slot="claim-button" data-claim-submit="true" disabled aria-disabled="true" aria-label="Claim rank" data-action="outbid" class="outbid">Claim rank</button>
     </div>
     <p class="form-hint">${hint}</p>
   </form>`
       : `<form id="bid-form" class="bid-form claim-form" data-slot="claim-form" data-stage-form="opening-cue" method="post" action="/listings">
     <div class="bid-row"${occupiedOutbidBesidePlus ? ' data-after-action="true"' : ""} data-primary-form-row="true">
-      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" data-slot="url-input" data-required-field="true" type="url" required placeholder="https://deck-or-site" autocomplete="url"/></div>
+      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" data-slot="url-input" data-required-field="true" type="text" inputmode="url" required placeholder="deck-or-site.example" autocomplete="url"/></div>
       <div class="function-choice" data-slot="category-control" data-function-choice="opening-slot" aria-label="Pitch function"><span>Opening slot</span><span class="function-choice-detail">3 minutes</span></div>
-      <button type="submit" data-slot="claim-button" data-claim-submit="true"${occupiedOutbidBesidePlus ? ' data-beside-plus="true"' : ""} disabled aria-disabled="true" aria-label="Claim rank" data-action="outbid" class="outbid">Outbid</button>
+      <button type="submit" data-slot="claim-button" data-claim-submit="true"${occupiedOutbidBesidePlus ? ' data-beside-plus="true"' : ""} disabled aria-disabled="true" aria-label="Claim rank" data-action="outbid" class="outbid">Claim rank</button>
     </div>
     ${occupiedNoteAfterOutbid ? note : ""}
     <p class="form-hint">${hint}</p>
@@ -819,7 +819,6 @@ function claimChrome(
         requiredFields.forEach(function (field) {
           var value = String(field.value || "").trim();
           if (!value) ready = false;
-          if (field.id === "url" && value.toLowerCase().indexOf("https://") !== 0) ready = false;
         });
         submitters.forEach(function (button) {
           button.disabled = !ready;

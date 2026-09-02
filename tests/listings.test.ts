@@ -29,7 +29,8 @@ test("GET / empty week is 200 with zero listings and no sample companies", async
   assert.doesNotMatch(html, /The board is empty/);
   assert.doesNotMatch(html, /No listings this week/);
   assert.match(html, /Opening three minutes/);
-  assert.match(html, /Outbid/);
+  assert.match(html, /Claim rank/);
+  assert.doesNotMatch(html, /class="outbid">Outbid<\/button>/);
   assert.doesNotMatch(html, /class="listing"/);
   assert.doesNotMatch(html, /\$[0-9]/);
   assert.doesNotMatch(html, /#1/);

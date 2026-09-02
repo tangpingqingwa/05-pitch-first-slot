@@ -1782,10 +1782,17 @@ h1.headline {
   color: rgb(203 183 154);
   font-size: 0.9rem;
 }
-.hero-line { width: 100%; }
+.hero-line {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
 .hero-title {
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
@@ -1796,18 +1803,25 @@ h1.headline {
   font-weight: 400;
   line-height: 1.1;
 }
-.hero-title-copy { min-width: 0; }
+.hero-title-copy {
+  min-width: 0;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
 .claim {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
   margin: 0;
+  white-space: nowrap;
 }
 .step {
   width: 2rem;
   height: 2rem;
+  flex: 0 0 2rem;
   border: 1px solid rgb(232 177 90 / 0.3);
   border-radius: 999px;
   background: rgb(232 177 90 / 0.12);
@@ -1823,6 +1837,7 @@ h1.headline {
 }
 .bid-field {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: baseline;
   color: var(--spot);
   font-family: var(--serif);
@@ -1847,6 +1862,7 @@ h1.headline {
 .bid-form { display: grid; gap: 0.6rem; margin-top: 1.35rem; }
 .bid-row {
   display: grid;
+  width: 100%;
   grid-template-columns: minmax(0, 1fr) 9rem auto;
   gap: 0.5rem;
   align-items: center;
@@ -1860,6 +1876,13 @@ h1.headline {
   background: rgb(11 7 5 / 0.45);
   padding: 0 0.8rem;
   color: var(--cream);
+}
+.bid-row[data-primary-form-row] > .field input,
+.bid-row[data-primary-form-row] > .function-choice,
+.bid-row[data-primary-form-row] > .outbid {
+  height: 2.75rem;
+  min-height: 2.75rem;
+  align-self: center;
 }
 .field input::placeholder { color: rgb(143 122 98); opacity: 1; }
 .field input:hover, .function-choice:hover { border-color: var(--spot); }
@@ -1989,7 +2012,9 @@ html[data-theme="dark"] {
   #claim { margin-top: 1.55rem; }
   .hero-kicker { font-size: 0.62rem; }
   h1.headline { font-size: 2.65rem; }
-  .hero-title { font-size: 1.45rem; gap: 0.45rem; }
+  .hero-title { font-size: 1.45rem; gap: 0.45rem; row-gap: 0.2rem; }
+  .hero-title-copy { white-space: nowrap; }
+  .claim { gap: 0.45rem; }
   .bid-field { font-size: 2rem; }
   .step { width: 2.25rem; height: 2.25rem; }
   .bid-form { margin-top: 1.1rem; }

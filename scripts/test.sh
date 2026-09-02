@@ -418,8 +418,8 @@ if [[ -f package.json ]]; then
     || fail "board must expose the in-wings unpaid section"
   grep -q 'Opening three minutes' src/http/pages.ts \
     || fail "board headline must be Opening three minutes"
-  grep -q 'class="outbid">Outbid' src/http/pages.ts \
-    || fail "board must keep the Outbid claim action"
+  grep -q 'class="outbid">Claim rank' src/http/pages.ts \
+    || fail "board must keep the Claim rank action"
   grep -q 'data-bid-step' src/http/pages.ts \
     || fail "board must keep the ± bid stepper"
   grep -q 'bid-field' src/http/pages.ts \
@@ -461,8 +461,8 @@ if [[ -f package.json ]]; then
     || fail "pages tests must cover rendered anti-traction/social-proof output"
   grep -q 'one Open deck per paid card' tests/pages.test.ts \
     || fail "page tests must assert one Open deck per paid card"
-  grep -q 'one #1 Outbid entry' tests/pages.test.ts \
-    || fail "page tests must assert one #1 Outbid entry"
+  grep -q 'one #1 Claim rank entry' tests/pages.test.ts \
+    || fail "page tests must assert one #1 Claim rank entry"
   grep -q 'unpaid and empty states stay honest' tests/pages.test.ts \
     || fail "page tests must keep unpaid and empty honesty"
   if grep -Eqi 'Then Outbid|after Open deck|after Then Outbid|raise-after-deck|open-after-raise|raise-after-open|data-raise-after|data-open-after' src/http/pages.ts src/views/skin.ts; then

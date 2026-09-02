@@ -40,6 +40,39 @@ test("canonicalizeUrl drops tracking keys and empty query", () => {
   );
 });
 
+test("bare pitch domains are normalized to https before storage", async () => {
+  assert.equal(
+    canonicalizeUrl("PitchSlot.LOL/deck?utm_source=launch#top"),
+    "https://pitchslot.lol/deck",
+  );
+  assert.equal(
+    canonicalizeUrl("example.com:8443/deck"),
+    "https://example.com:8443/deck",
+  );
+  assert.equal(
+    canonicalizeUrl("//example.com/deck"),
+    "https://example.com/deck",
+  );
+  assert.equal(
+    canonicalizeUrl("[2001:db8::1]:8443/deck"),
+    "https://[2001:db8::1]:8443/deck",
+  );
+
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+  const created = await app.inject({
+    method: "POST",
+    url: "/listings",
+    payload: {
+      company: "Bare Domain Pitch",
+      oneLiner: "A pitch entered without a scheme",
+      url: "PitchSlot.LOL/deck?utm_source=launch#top",
+    },
+  });
+  assert.equal(created.statusCode, 200);
+  assert.equal(created.json().url, "https://pitchslot.lol/deck");
+});
+
 test("SPEC 8: https://t.me/foo is 400 no_chat", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   after(() => app.close());
@@ -86,6 +119,7 @@ test("javascript, data, and http URLs are 400 invalid_url", () => {
     "javascript:alert(1)",
     "data:text/html,hi",
     "http://ok.example",
+    "https//ok.example",
     "not a url",
   ]) {
     assert.throws(() => canonicalizeUrl(raw), (err: unknown) => {
