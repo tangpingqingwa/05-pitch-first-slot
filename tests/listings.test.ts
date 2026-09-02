@@ -254,7 +254,7 @@ test("HTML /listings validates bid and SKU before inserting or starting checkout
   assert.deepEqual(checkoutInputs, [{ chargeUsd: 5, nextUsd: 5 }]);
 });
 
-test("HTML checkout rejects obfuscated schemes and path-only URLs before checkout", async () => {
+test("HTML checkout rejects obfuscated schemes and path-only URLs before checkout, including unsafe protocol-relative URLs", async () => {
   const db = openDatabase(":memory:");
   const fixture = new WaffoFixture(db, { autoSettle: false });
   const checkoutInputs: Array<{ chargeUsd: number; nextUsd: number }> = [];
@@ -288,6 +288,17 @@ test("HTML checkout rejects obfuscated schemes and path-only URLs before checkou
   const listingCount = () =>
     (db.prepare("SELECT COUNT(*) AS count FROM listings").get() as { count: number }).count;
 
+  const validProtocolRelative = await postForm({
+    company: "Protocol Relative Pitch",
+    oneLiner: "A safe protocol-relative pitch",
+    url: "//hartevo.com/path",
+    amountUsd: "5",
+    sku: "opening_slot",
+  });
+  assert.equal(validProtocolRelative.statusCode, 303);
+  assert.equal(listingCount(), 1);
+  assert.equal(checkoutInputs.length, 1);
+
   const invalidUrls = [
     "javascript\n://example.com",
     "data\r://example.com",
@@ -297,6 +308,9 @@ test("HTML checkout rejects obfuscated schemes and path-only URLs before checkou
     "java\nscript:123",
     "/path",
     "///example.com",
+    "//\\evil.com",
+    "//evil.com\\path",
+    "//hartevo.com\n/path",
   ];
   for (const [index, url] of invalidUrls.entries()) {
     const before = listingCount();
@@ -310,7 +324,7 @@ test("HTML checkout rejects obfuscated schemes and path-only URLs before checkou
     assert.equal(response.statusCode, 400);
     assert.match(response.body, /url must be an https URL/);
     assert.equal(listingCount(), before);
-    assert.equal(checkoutInputs.length, 0);
+    assert.equal(checkoutInputs.length, 1);
   }
 });
 

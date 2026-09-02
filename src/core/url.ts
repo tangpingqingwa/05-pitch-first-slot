@@ -118,14 +118,15 @@ function looksLikeBareAuthority(raw: string): boolean {
     return false;
   }
 
-  const loweredHost = host.toLowerCase();
-  if (loweredHost !== "localhost" && !host.includes(".")) {
+  const normalizedHost = host.replace(/\.+$/, "");
+  if (!normalizedHost) {
     return false;
   }
-  const labels = host.split(".");
-  if (labels.at(-1) === "") {
-    labels.pop();
+  const loweredHost = normalizedHost.toLowerCase();
+  if (loweredHost !== "localhost" && !normalizedHost.includes(".")) {
+    return false;
   }
+  const labels = normalizedHost.split(".");
   if (loweredHost !== "localhost" && labels.length < 2) {
     return false;
   }
@@ -139,13 +140,22 @@ function looksLikeBareAuthority(raw: string): boolean {
   }
 }
 
+function looksLikeProtocolRelativeAuthority(raw: string): boolean {
+  return (
+    raw.startsWith("//") &&
+    !raw.startsWith("///") &&
+    !raw.includes("\\") &&
+    looksLikeBareAuthority(raw.slice(2))
+  );
+}
+
 /**
  * Infer HTTPS only for a validated bare authority or an exact protocol-relative
  * authority. Explicit schemes are left intact for the HTTPS-only check below.
  */
 function withHttpsScheme(raw: string): string {
   if (raw.startsWith("//")) {
-    return `https:${raw}`;
+    return looksLikeProtocolRelativeAuthority(raw) ? `https:${raw}` : raw;
   }
   // A slash-delimited scheme typo (for example `https//example.com`) is not
   // a bare host and must remain invalid rather than becoming an HTTPS path.

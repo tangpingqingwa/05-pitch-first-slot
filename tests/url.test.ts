@@ -73,6 +73,24 @@ test("bare pitch domains are normalized to https before storage", async () => {
   assert.equal(created.json().url, "https://pitchslot.lol/deck");
 });
 
+test("protocol-relative URLs require a plausible authority without backslashes", () => {
+  assert.equal(
+    canonicalizeUrl("//hartevo.com/path"),
+    "https://hartevo.com/path",
+  );
+  for (const raw of [
+    "//\\evil.com",
+    "//evil.com\\path",
+    "//hartevo.com\n/path",
+  ]) {
+    assert.throws(() => canonicalizeUrl(raw), (err: unknown) => {
+      assert.ok(err instanceof UrlError);
+      assert.equal(err.code, "invalid_url");
+      return true;
+    });
+  }
+});
+
 test("obfuscated schemes and path-only inputs fail closed", () => {
   for (const raw of [
     "javascript\n://example.com",
