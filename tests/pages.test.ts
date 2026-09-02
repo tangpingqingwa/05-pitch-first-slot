@@ -411,6 +411,10 @@ function assertPitchHouseCss(html: string, occupied: boolean): void {
     );
     assert.match(html, /data-stage-section="on-stage"/);
     assert.match(html, /data-stage-card="lead-cue"/);
+    assert.match(
+      html,
+      /\.house-occupied\[data-occupied-house\] \.claim-after-slot\[data-claim-after-slot\] \.outbid \{[\s\S]*height: 2\.75rem;[\s\S]*min-height: 2\.75rem;/,
+    );
   } else {
     assert.doesNotMatch(boardMarkup(html), /data-stage-section="on-stage"|data-stage-card="lead-cue"/);
   }

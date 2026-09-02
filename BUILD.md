@@ -214,10 +214,10 @@ Each PR is independently mergeable. Dependencies are hard.
 
 ### PR 10: product UI — opening three minutes
 
-- **Description:** Pitch-night stage for the opening slot. Claim chrome, dashed $amount, ±, Outbid. Empty week is an empty room. Company + deck URL + one-liner is the whole card. Unranked stays unranked until paid. Not a night-blue recolor.
+- **Description:** Pitch-night stage for the opening slot. Claim chrome, `Claim #1 for`, and a compact `− amount +` cluster. Empty week is an empty room. Company + deck URL + one-liner is the whole card. Unranked stays unranked until paid. Not a night-blue recolor.
 - **Files:** `src/http/pages.ts`, `src/http/listings.ts`, `src/views/skin.ts`, `tests/pages.test.ts`, `scripts/test.sh`
 - **Dependencies:** PR 9
-- **Acceptance:** `GET /` headline is opening three minutes. Empty/unranked HTML still forbids false-positive `#1`. Form Outbid starts Waffo/fixture checkout. `scripts/test.sh` green offline.
+- **Acceptance:** `GET /` headline is opening three minutes. Empty/unranked HTML still forbids false-positive `#1`. The `Claim rank` form starts Waffo/fixture checkout, and its visible `− amount +` controls stay centered and aligned on responsive rows. `scripts/test.sh` green offline.
 
 ---
 

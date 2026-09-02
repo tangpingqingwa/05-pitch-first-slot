@@ -73,6 +73,27 @@ test("bare pitch domains are normalized to https before storage", async () => {
   assert.equal(created.json().url, "https://pitchslot.lol/deck");
 });
 
+test("obfuscated schemes and path-only inputs fail closed", () => {
+  for (const raw of [
+    "javascript\n://example.com",
+    "data\r://example.com",
+    "ftp\t://example.com",
+    "http\r://example.com",
+    "http\t://example.com",
+    "java\nscript:123",
+    "java\rscript:123",
+    "java\tscript:123",
+    "/path",
+    "///example.com",
+  ]) {
+    assert.throws(() => canonicalizeUrl(raw), (err: unknown) => {
+      assert.ok(err instanceof UrlError);
+      assert.equal(err.code, "invalid_url");
+      return true;
+    });
+  }
+});
+
 test("SPEC 8: https://t.me/foo is 400 no_chat", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   after(() => app.close());

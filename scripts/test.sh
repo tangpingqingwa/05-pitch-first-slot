@@ -424,6 +424,10 @@ if [[ -f package.json ]]; then
     || fail "board must keep the ± bid stepper"
   grep -q 'bid-field' src/http/pages.ts \
     || fail "board must keep the dashed amount field"
+  grep -q 'obfuscated schemes and path-only inputs fail closed' tests/url.test.ts \
+    || fail "URL tests must reject obfuscated schemes and path-only input"
+  grep -q 'HTML checkout rejects obfuscated schemes and path-only URLs before checkout' tests/listings.test.ts \
+    || fail "checkout tests must reject obfuscated URL input before checkout"
   grep -q 'The room is empty' src/http/pages.ts \
     || fail "empty week must be an honest room"
   grep -q "This week's first slot is still open" src/http/pages.ts \

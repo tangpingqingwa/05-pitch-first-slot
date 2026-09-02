@@ -254,6 +254,66 @@ test("HTML /listings validates bid and SKU before inserting or starting checkout
   assert.deepEqual(checkoutInputs, [{ chargeUsd: 5, nextUsd: 5 }]);
 });
 
+test("HTML checkout rejects obfuscated schemes and path-only URLs before checkout", async () => {
+  const db = openDatabase(":memory:");
+  const fixture = new WaffoFixture(db, { autoSettle: false });
+  const checkoutInputs: Array<{ chargeUsd: number; nextUsd: number }> = [];
+  const payment: PaymentPort = {
+    kind: "fixture",
+    createCheckout: async (input) => {
+      checkoutInputs.push({ chargeUsd: input.chargeUsd, nextUsd: input.nextUsd });
+      return fixture.createCheckout(input);
+    },
+    applyPaid: fixture.applyPaid.bind(fixture),
+    getCheckout: fixture.getCheckout.bind(fixture),
+    handleWebhook: fixture.handleWebhook.bind(fixture),
+    database: () => db,
+  };
+  const app = await buildApp({ db, payment });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const postForm = (fields: Record<string, string>) =>
+    app.inject({
+      method: "POST",
+      url: "/listings",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        accept: "text/html",
+      },
+      payload: new URLSearchParams(fields).toString(),
+    });
+  const listingCount = () =>
+    (db.prepare("SELECT COUNT(*) AS count FROM listings").get() as { count: number }).count;
+
+  const invalidUrls = [
+    "javascript\n://example.com",
+    "data\r://example.com",
+    "ftp\t://example.com",
+    "http\r://example.com",
+    "http\t://example.com",
+    "java\nscript:123",
+    "/path",
+    "///example.com",
+  ];
+  for (const [index, url] of invalidUrls.entries()) {
+    const before = listingCount();
+    const response = await postForm({
+      company: `Rejected URL ${index}`,
+      oneLiner: "No unsafe checkout",
+      url,
+      amountUsd: "5",
+      sku: "opening_slot",
+    });
+    assert.equal(response.statusCode, 400);
+    assert.match(response.body, /url must be an https URL/);
+    assert.equal(listingCount(), before);
+    assert.equal(checkoutInputs.length, 0);
+  }
+});
+
 test("listings schema has no traction columns", () => {
   const db = openDatabase(":memory:");
   after(() => db.close());

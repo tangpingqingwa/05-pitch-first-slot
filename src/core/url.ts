@@ -68,11 +68,80 @@ function hostnameOf(parsed: URL): string {
     .replace(/\.$/, "");
 }
 
+const HOST_LABEL_RE = /^[\p{L}\p{N}](?:[\p{L}\p{N}_-]{0,61}[\p{L}\p{N}_])?$/u;
+const RAW_URL_WHITESPACE_OR_CONTROL_RE = /[\u0000-\u0020\u007f]|\s/u;
+
 /**
- * Treat a host entered without a scheme as a website URL while preserving
- * explicit schemes for the normal HTTPS-only validation below. A port is
- * allowed in a bare host (`example.com:8443`) and must not be mistaken for a
- * custom URL scheme.
+ * Return true only for a plausible bare authority. This lexical check keeps
+ * path-only input from being turned into a host by the WHATWG URL parser, and
+ * lets a dotted host with a numeric port (`example.com:8443`) be distinguished
+ * from a custom scheme such as `javascript:123`.
+ */
+function looksLikeBareAuthority(raw: string): boolean {
+  if (raw.startsWith("/")) {
+    return false;
+  }
+
+  const authorityEnd = raw.search(/[/?#]/);
+  const authority = authorityEnd === -1 ? raw : raw.slice(0, authorityEnd);
+  if (!authority || authority.includes("@") || authority.includes("\\")) {
+    return false;
+  }
+
+  let host = authority;
+  if (authority.startsWith("[")) {
+    const closingBracket = authority.indexOf("]");
+    if (closingBracket === -1) {
+      return false;
+    }
+    host = authority.slice(0, closingBracket + 1);
+    const suffix = authority.slice(closingBracket + 1);
+    if (!/^\[[0-9a-f:]+\]$/i.test(host) || (suffix !== "" && !/^:\d+$/.test(suffix))) {
+      return false;
+    }
+    try {
+      return new URL(`https://${authority}`).hostname !== "";
+    } catch {
+      return false;
+    }
+  }
+
+  const portSeparator = authority.lastIndexOf(":");
+  if (portSeparator !== -1) {
+    const port = authority.slice(portSeparator + 1);
+    if (!/^\d+$/.test(port)) {
+      return false;
+    }
+    host = authority.slice(0, portSeparator);
+  }
+  if (!host || host.includes(":") || host.includes("[") || host.includes("]")) {
+    return false;
+  }
+
+  const loweredHost = host.toLowerCase();
+  if (loweredHost !== "localhost" && !host.includes(".")) {
+    return false;
+  }
+  const labels = host.split(".");
+  if (labels.at(-1) === "") {
+    labels.pop();
+  }
+  if (loweredHost !== "localhost" && labels.length < 2) {
+    return false;
+  }
+  if (labels.length === 0 || labels.some((label) => !HOST_LABEL_RE.test(label))) {
+    return false;
+  }
+  try {
+    return new URL(`https://${authority}`).hostname !== "";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Infer HTTPS only for a validated bare authority or an exact protocol-relative
+ * authority. Explicit schemes are left intact for the HTTPS-only check below.
  */
 function withHttpsScheme(raw: string): string {
   if (raw.startsWith("//")) {
@@ -83,14 +152,7 @@ function withHttpsScheme(raw: string): string {
   if (/^[a-z][a-z\d+.-]*\/\//i.test(raw)) {
     return raw;
   }
-
-  const explicitScheme = /^([a-z][a-z\d+.-]*):/i.exec(raw)?.[1].toLowerCase();
-  const looksLikeBareHostWithPort =
-    /^(?:[a-z0-9](?:[a-z0-9-]*\.)+[a-z]{2,}|localhost|\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-f:]+\]):\d+(?:[/?#]|$)/i.test(raw);
-  if (explicitScheme === undefined || (looksLikeBareHostWithPort && explicitScheme !== "http" && explicitScheme !== "https")) {
-    return `https://${raw}`;
-  }
-  return raw;
+  return looksLikeBareAuthority(raw) ? `https://${raw}` : raw;
 }
 
 export function isTrackingQueryKey(key: string): boolean {
@@ -122,6 +184,9 @@ export function isNsfwHost(host: string): boolean {
 export function canonicalizeUrl(raw: string): string {
   const trimmed = raw.trim();
   if (trimmed.length < 1) {
+    throw new UrlError("invalid_url", "url must be an https URL");
+  }
+  if (RAW_URL_WHITESPACE_OR_CONTROL_RE.test(trimmed) || trimmed.startsWith("///")) {
     throw new UrlError("invalid_url", "url must be an https URL");
   }
 
