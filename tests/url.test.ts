@@ -91,6 +91,20 @@ test("protocol-relative URLs require a plausible authority without backslashes",
   }
 });
 
+test("explicit HTTPS backslash forms fail closed", () => {
+  for (const raw of [
+    "https://\\evil.com",
+    "https://evil.com\\path",
+    "https:\\evil.com",
+  ]) {
+    assert.throws(() => canonicalizeUrl(raw), (err: unknown) => {
+      assert.ok(err instanceof UrlError);
+      assert.equal(err.code, "invalid_url");
+      return true;
+    });
+  }
+});
+
 test("obfuscated schemes and path-only inputs fail closed", () => {
   for (const raw of [
     "javascript\n://example.com",

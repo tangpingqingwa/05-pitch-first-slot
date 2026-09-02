@@ -71,7 +71,7 @@ function hostnameOf(parsed: URL): string {
 }
 
 const HOST_LABEL_RE = /^[\p{L}\p{N}](?:[\p{L}\p{N}_-]{0,61}[\p{L}\p{N}_])?$/u;
-const RAW_URL_WHITESPACE_OR_CONTROL_RE = /[\u0000-\u0020\u007f]|\s/u;
+const RAW_URL_WHITESPACE_OR_CONTROL_RE = /[\\\u0000-\u0020\u007f]|\s/u;
 
 /**
  * Return true only for a plausible bare authority. This lexical check keeps
