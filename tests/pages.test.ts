@@ -448,7 +448,7 @@ test("unpaid and empty states stay honest", async () => {
   assert.ok(mobileTabsAt > contextAt && mobileTabsAt < claimAt);
   assert.match(empty, /data-function-rail="true"/);
   assert.match(empty, /data-function-choice="opening-slot"/);
-  assert.match(empty, /data-pitch-details="true"/);
+  assert.match(empty, /<details class="pitch-details" data-pitch-details="true" open>/);
   assert.match(empty, /data-find-empty="true"/);
   assert.doesNotMatch(empty, /data-find-result="true"/);
   assert.match(empty, /data-claim-submit="true" disabled/);
@@ -470,9 +470,10 @@ test("unpaid and empty states stay honest", async () => {
   assert.match(empty, /data-slot="claim-button" data-claim-submit="true"/);
   assert.match(empty, /<label class="sr-only" for="company">Company<\/label><input id="company" name="company"/);
   assert.match(empty, /<label class="sr-only" for="url">Deck or site<\/label><input id="url" name="url"/);
-  assert.match(empty, /id="url" name="url"[^>]*type="text"[^>]*inputmode="url"/);
+  assert.match(empty, /id="url" name="url" form="bid-form"[^>]*type="text"[^>]*inputmode="url"/);
   assert.match(empty, /<label class="sr-only" for="oneLiner">One-line pitch<\/label><input id="oneLiner" name="oneLiner"/);
   assert.match(empty, /id="company" name="company" form="bid-form" data-required-field="true"/);
+  assert.match(empty, /id="url" name="url" form="bid-form" data-slot="url-input" data-required-field="true"/);
   assert.match(empty, /id="oneLiner" name="oneLiner" form="bid-form" data-required-field="true"/);
   assert.doesNotMatch(empty, /<a class="outbid"/);
   assert.equal(count(empty, /class="outbid">Claim rank<\/button>/g), 1);

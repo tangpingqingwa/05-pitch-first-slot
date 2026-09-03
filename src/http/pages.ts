@@ -437,7 +437,7 @@ function renderFunctionRail(): string {
 }
 
 function renderPitchDetails(): string {
-  return `<details class="pitch-details" data-pitch-details="true">
+  return `<details class="pitch-details" data-pitch-details="true" open>
   <summary>Your pitch <span>Company + one-liner · required</span></summary>
   <div class="pitch-detail-fields">
     <div class="field field-company"><label class="sr-only" for="company">Company</label><input id="company" name="company" form="bid-form" data-required-field="true" required maxlength="80" placeholder="Company" autocomplete="organization"/></div>
@@ -784,7 +784,7 @@ function claimChrome(
     emptyRoom === true
       ? `<form id="bid-form" class="bid-form claim-form later-write" data-slot="claim-form" data-later-write="true" data-stage-form="opening-cue" method="post" action="/listings">
     <div class="bid-row" data-primary-form-row="true">
-      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" data-slot="url-input" data-required-field="true" type="text" inputmode="url" required placeholder="deck-or-site.example" autocomplete="url"/></div>
+      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" form="bid-form" data-slot="url-input" data-required-field="true" type="text" inputmode="url" required placeholder="deck-or-site.example" autocomplete="url"/></div>
       <div class="function-choice" data-slot="category-control" data-function-choice="opening-slot" aria-label="Pitch function"><span>Opening slot</span><span class="function-choice-detail">3 minutes</span></div>
       <button type="submit" data-slot="claim-button" data-claim-submit="true" disabled aria-disabled="true" aria-label="Claim rank" data-action="outbid" class="outbid">Claim rank</button>
     </div>
@@ -792,7 +792,7 @@ function claimChrome(
   </form>`
       : `<form id="bid-form" class="bid-form claim-form" data-slot="claim-form" data-stage-form="opening-cue" method="post" action="/listings">
     <div class="bid-row"${occupiedOutbidBesidePlus ? ' data-after-action="true"' : ""} data-primary-form-row="true">
-      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" data-slot="url-input" data-required-field="true" type="text" inputmode="url" required placeholder="deck-or-site.example" autocomplete="url"/></div>
+      <div class="field field-url" data-slot="url-input"><label class="sr-only" for="url">Deck or site</label><input id="url" name="url" form="bid-form" data-slot="url-input" data-required-field="true" type="text" inputmode="url" required placeholder="deck-or-site.example" autocomplete="url"/></div>
       <div class="function-choice" data-slot="category-control" data-function-choice="opening-slot" aria-label="Pitch function"><span>Opening slot</span><span class="function-choice-detail">3 minutes</span></div>
       <button type="submit" data-slot="claim-button" data-claim-submit="true"${occupiedOutbidBesidePlus ? ' data-beside-plus="true"' : ""} disabled aria-disabled="true" aria-label="Claim rank" data-action="outbid" class="outbid">Claim rank</button>
     </div>
