@@ -947,7 +947,7 @@ ${offBoard.join("\n")}
     : claimChrome(defaultBid, emptyRoom, topUsd);
   const context = renderHomeContext(period);
   const rail = renderFunctionRail();
-  const details = renderPitchDetails();
+  const details = period === "open" ? renderPitchDetails() : "";
   // Empty house: Claim #1 leads directly into the visible write fields.
   // Occupied house: the claim action leads the room; the compatibility marker
   // keeps the occupied claim anatomy discoverable without changing rank data.

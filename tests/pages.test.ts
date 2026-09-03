@@ -719,6 +719,10 @@ test("period tabs navigate to a truthful paid archive", async () => {
   assert.match(emptyArchive.body, /data-archive-empty="true"/);
   assert.match(emptyArchive.body, /No historical paid pitches yet\./);
   assert.doesNotMatch(emptyArchive.body, /data-archive-board="true"|data-find-result="true"/);
+  assert.doesNotMatch(
+    emptyArchive.body,
+    /data-pitch-details="true"|id="bid-form"|name="(?:company|oneLiner|url|amountUsd)"|data-claim-submit="true"/,
+  );
 
   const listing = await createListing(app, {
     company: "Archive Pitch",
@@ -743,6 +747,10 @@ test("period tabs navigate to a truthful paid archive", async () => {
   assert.match(archive.body, /data-find-result="true"/);
   assert.match(archive.body, /class="find-result-host">archive\.example<\/span>/);
   assert.doesNotMatch(archive.body, /data-unranked="true"|No historical paid pitches yet\./);
+  assert.doesNotMatch(
+    archive.body,
+    /data-pitch-details="true"|id="bid-form"|name="(?:company|oneLiner|url|amountUsd)"|data-claim-submit="true"/,
+  );
 
   const open = await app.inject({ method: "GET", url: "/" });
   assert.match(open.body, /data-period="open"/);
